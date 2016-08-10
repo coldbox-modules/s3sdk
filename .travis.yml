@@ -25,7 +25,7 @@ install:
 
 script: 
   # Create API Docs > apidocs/S3SDK-APIDocs
-  - curl http://localhost:8511/apidocs?version=$RELEASE_VERSION+$TRAVIS_BUILD_NUMBER -o doclog.txt
+  - curl http://127.0.0.1:8511/apidocs/index.cfm?version=$RELEASE_VERSION+$TRAVIS_BUILD_NUMBER -o doclog.txt
   - cat doclog.txt
 
 after_success:
