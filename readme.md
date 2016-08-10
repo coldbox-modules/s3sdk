@@ -1,3 +1,7 @@
+[![Build Status](https://travis-ci.org/coldbox-modules/s3sdk.svg?branch=master)](https://travis-ci.org/coldbox-modules/s3sdk)
+
+# Welcome to the Amazon S3 SDK
+
 This SDK allows you to add Amazon S3 capabilities to your ColdFusion (CFML) applications. It is also a ColdBox Module, so if you are using ColdBox, you get auto-registration and much more.
 
 ## Resources

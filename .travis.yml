@@ -25,11 +25,12 @@ install:
 
 script: 
   # Create API Docs > apidocs/S3SDK-APIDocs
-  - curl http://localhost:8511/apidocs?version=${RELEASE_VERSION}+${TRAVIS_BUILD_NUMBER}
+  - curl http://localhost:8511/apidocs?version=$RELEASE_VERSION+$TRAVIS_BUILD_NUMBER -o doclog.txt
+  - cat doclog.txt
 
 after_success:
   ## Change placeholders
-  - sudo sed -i "s/$RELEASE_PLACEHOLDER/${RELEASE_VERSION}/g;" 'box.json' 'ModuleConfig.cfc'
+  - sudo sed -i "s/$RELEASE_PLACEHOLDER/$RELEASE_VERSION/g;" 'box.json' 'ModuleConfig.cfc'
   - sleep 2 #let it finish
 
 before_deploy:
@@ -49,6 +50,6 @@ deploy:
   access_key_id: $AWS_ACCESS_KEY
   secret_access_key: $AWS_ACCESS_SECRET
   bucket: "downloads.ortussolutions.com"
-  upload-dir: s3sdk/${RELEASE_VERSION}
+  upload-dir: ortussolutions/s3sdk/$RELEASE_VERSION
   # What to deploy
   local-dir: deploy
