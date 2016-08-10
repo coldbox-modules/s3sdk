@@ -1,0 +1,6 @@
+# apidocs
+apidocs/docbox
+apidocs/S3SDK-APIDocs
+# testing
+testbox/*
+tests/specs/apikey.txt

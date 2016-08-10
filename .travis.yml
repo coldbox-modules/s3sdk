@@ -1,0 +1,54 @@
+language: java
+notifications:
+  slack:
+    secure: FIHlTn/YO7Wgumm1uIqmoEsqjQA7fV0AE94Rjc5yKzM3AquQa8HicgDVVk0d2GrKRnl0xt3j4ZJV//VJyIjlCd/QVKuj48R2ChjEY2im3+99HFPafCUI5/S2uyowKU6mJTFonH9v6p41eqxdbiAxJdDGOT0V2Gpt3UBSNuHz8ED9/aIHqv+P7M+VD6Xd2XYwctPniWlaSWx57sWcnG/VkFG45qFQAyha64uxOOe4M3ZmG/n5FfauZ8cBVLiRKEIr+CyNhh1ujfzi7+4uzMlSNL5t/BbZamAQuZzqGzGQ9RVvIlyPgUGNJtDEE/hWS09aagXF5T6EMj00szizErh4J1/x4qZwml5+TcBN31E0QmAhCtZe85sr3tYgic+hEz9XX1yymQzf/C7n4to2yNvq0r4g51xDk8IuP95WEh7zaqLlvFZvBFgxpHZBMYlRvhytjOYDeIFRMcGwHZcXosaG2ejqDwcGq/LC4oeG4sSwmg9sdRrtcmcanrNqrBka86WYO6LntI3JdZ86/1ACEUHzhCCwvrKELc9Ji1xxGAgS7QKH+s2/hnJuiMyv73gOVLKYC+wPMLt+fvOmPLSEl+PJiAIlToBq1KUBg03RSQLfPOLD7OrJ8VvDZsEPwejqlGDyc4wRglS9OTi7SnN5LYHSDNDdGdREegWqq9qDHEYEVLI=
+dist: trusty
+sudo: required
+
+env:
+  global:
+    - RELEASE_VERSION="3.0.0"
+    - RELEASE_PLACEHOLDER="@version.number@"
+    - BUILD_PLACEHOLDER="@build.number@"
+
+before_install:
+  - sudo apt-key adv --keyserver keys.gnupg.net --recv 6DA70622
+  - sudo echo "deb http://downloads.ortussolutions.com/debs/noarch /" | sudo tee -a /etc/apt/sources.list.d/commandbox.list
+
+install:
+  - sudo apt-get update && sudo apt-get --assume-yes install commandbox zip unzip
+  # Core Installs
+  - box install
+  - box server start
+  # Docs Install
+  - cd apidocs && box install
+
+script: 
+  # Create API Docs > apidocs/S3SDK-APIDocs
+  - curl http://localhost:8511/apidocs?version=${RELEASE_VERSION}+${TRAVIS_BUILD_NUMBER}
+
+after_success:
+  ## Change placeholders
+  - sudo sed -i "s/$RELEASE_PLACEHOLDER/${RELEASE_VERSION}/g;" 'box.json' 'ModuleConfig.cfc'
+  - sleep 2 #let it finish
+
+before_deploy:
+  # Prepare build
+  - mkdir build && mkdir deploy
+  # Copy src
+  - rsync -av . build --exclude='apidocs' --exclude='.*' --exclude='sever.json'
+  # Copy API Docs
+  - rsync -av apidocs/S3SDK-APIDocs build/APIDocs
+  # Archive the build
+  - cd build && sudo zip -r "../deploy/s3sdk-$RELEASE_VERSION.zip" ./*
+  - cp box.json deploy/
+
+deploy:
+  skip_cleanup: true
+  provider: s3
+  access_key_id: $AWS_ACCESS_KEY
+  secret_access_key: $AWS_ACCESS_SECRET
+  bucket: "downloads.ortussolutions.com"
+  upload-dir: s3sdk/${RELEASE_VERSION}
+  # What to deploy
+  local-dir: deploy

@@ -1,0 +1,39 @@
+{
+    "name":"Amazon S3 SDK",
+    "version":"@version.number@+@build.number@",
+    "slug":"s3sdk",
+    "location":"coldbox-modules/cfakismet#v@version.number@",
+    "author":"Ortus Solutions",
+    "homepage":"https://github.com/coldbox-modules/s3sdk",
+    "documentation":"https://github.com/coldbox-modules/s3sdk",
+    "repository":{
+        "type":"git",
+        "URL":"https://github.com/coldbox-modules/s3sdk"
+    },
+    "bugs":"https://github.com/coldbox-modules/s3sdk/issues",
+    "shortDescription":"This SDK will provide you with Amazon S3 connectivity for any ColdFusion (CFML) application.",
+    "type":"modules",
+    "license":[
+        {
+            "type":"Apache2",
+            "URL":"http://www.apache.org/licenses/LICENSE-2.0"
+        }
+    ],
+    "contributors":[
+        
+    ],
+    "dependencies":{
+        
+    },
+    "devDependencies":{
+        "testbox":"^2.3.0+00044"
+    },
+    "installPaths":{
+        "testbox":"testbox"
+    },
+    "ignore":[
+        "**/.*",
+        "tests",
+        "builds/**"
+    ]
+}
