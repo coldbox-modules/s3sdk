@@ -7,7 +7,7 @@
 		projectTitle 	= "S3SDK v#url.version#",
 		outputDir 		= url.path
 	} );
-	docbox.generate( source=base, mapping="s3sdk", excludes="(tests|apidocs)" );
+	docbox.generate( source=base, mapping="s3sdk", excludes="(tests|apidocs|testbox)" );
 </cfscript>
 
 <!---
