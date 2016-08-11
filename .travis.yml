@@ -49,6 +49,9 @@ before_deploy:
   - cp box.json deploy/
 
 deploy:
+  on:
+    branch:
+      - master
   provider: s3
   skip_cleanup: true
   access_key_id: $AWS_ACCESS_KEY
