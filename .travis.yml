@@ -25,8 +25,8 @@ install:
 
 script: 
   # Create API Docs > apidocs/S3SDK-APIDocs
-  - curl http://127.0.0.1:8511/apidocs/index.cfm?version=$RELEASE_VERSION -o doclog.txt
-  - cat doclog.txt
+  - curl http://127.0.0.1:8511/apidocs/index.cfm?version=$RELEASE_VERSION
+  #- cat doclog.txt && rm doclog.txt
 
 after_success:
   ## Change placeholders
@@ -36,10 +36,10 @@ after_success:
 before_deploy:
   # Copy src
   - rsync -av . build --exclude='apidocs' --exclude='.*' --exclude='testbox' --exclude='sever.json'
-  # Prepare build
-  - mkdir build && mkdir deploy
-  # Copy API Docs
+  # Copy API Docs to build folder
   - rsync -av apidocs/S3SDK-APIDocs build/APIDocs
+  # Prepare deployable folder
+  - mkdir deploy
   # Archive the build
   - sudo zip -r "deploy/s3sdk-$RELEASE_VERSION.zip" build/.*
   # Archive the Docs
