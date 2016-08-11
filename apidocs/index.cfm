@@ -16,7 +16,7 @@
 --->
 
 <cfoutput>
-<h1>Done!</h1>
+<h1>APIDocs Created v#url.version#!</h1>
 <a href="#docName#/index.html">Go to Docs!</a>
 </cfoutput>
 

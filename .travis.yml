@@ -20,8 +20,8 @@ install:
   # Core Installs
   - box install
   - box server start
-  # Docs Install
-  - cd apidocs && box install
+  # Docs Install and go back again
+  - cd apidocs && box install && cd ..
 
 script: 
   # Create API Docs > apidocs/S3SDK-APIDocs
