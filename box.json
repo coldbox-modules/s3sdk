@@ -1,8 +1,8 @@
 {
     "name":"Amazon S3 SDK",
-    "version":"@version.number@+@build.number@",
+    "version":"3.0.0",
     "slug":"s3sdk",
-    "location":"http://downloads.ortussolutions.com/ortussolutions/s3sdk/@version.number@/s3sdk-@version.number@.zip",
+    "location":"http://downloads.ortussolutions.com/ortussolutions/s3sdk/3.0.0/s3sdk-3.0.0.zip",
     "author":"Ortus Solutions",
     "homepage":"https://github.com/coldbox-modules/s3sdk",
     "documentation":"https://github.com/coldbox-modules/s3sdk",
@@ -35,5 +35,9 @@
         "**/.*",
         "tests",
         "builds/**"
-    ]
+    ],
+    "scripts" : {
+        "postVersion" : "package set location='http://downloads.ortussolutions.com/ortussolutions/s3sdk/`package version`/s3sdk-`package version`.zip'",
+        "postPublish" : "!git push --follow-tags"
+    }
 }
