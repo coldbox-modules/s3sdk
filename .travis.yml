@@ -1,59 +1,60 @@
 language: java
 notifications:
-  slack:
-    secure: FIHlTn/YO7Wgumm1uIqmoEsqjQA7fV0AE94Rjc5yKzM3AquQa8HicgDVVk0d2GrKRnl0xt3j4ZJV//VJyIjlCd/QVKuj48R2ChjEY2im3+99HFPafCUI5/S2uyowKU6mJTFonH9v6p41eqxdbiAxJdDGOT0V2Gpt3UBSNuHz8ED9/aIHqv+P7M+VD6Xd2XYwctPniWlaSWx57sWcnG/VkFG45qFQAyha64uxOOe4M3ZmG/n5FfauZ8cBVLiRKEIr+CyNhh1ujfzi7+4uzMlSNL5t/BbZamAQuZzqGzGQ9RVvIlyPgUGNJtDEE/hWS09aagXF5T6EMj00szizErh4J1/x4qZwml5+TcBN31E0QmAhCtZe85sr3tYgic+hEz9XX1yymQzf/C7n4to2yNvq0r4g51xDk8IuP95WEh7zaqLlvFZvBFgxpHZBMYlRvhytjOYDeIFRMcGwHZcXosaG2ejqDwcGq/LC4oeG4sSwmg9sdRrtcmcanrNqrBka86WYO6LntI3JdZ86/1ACEUHzhCCwvrKELc9Ji1xxGAgS7QKH+s2/hnJuiMyv73gOVLKYC+wPMLt+fvOmPLSEl+PJiAIlToBq1KUBg03RSQLfPOLD7OrJ8VvDZsEPwejqlGDyc4wRglS9OTi7SnN5LYHSDNDdGdREegWqq9qDHEYEVLI=
+	slack:
+		secure: FIHlTn/YO7Wgumm1uIqmoEsqjQA7fV0AE94Rjc5yKzM3AquQa8HicgDVVk0d2GrKRnl0xt3j4ZJV//VJyIjlCd/QVKuj48R2ChjEY2im3+99HFPafCUI5/S2uyowKU6mJTFonH9v6p41eqxdbiAxJdDGOT0V2Gpt3UBSNuHz8ED9/aIHqv+P7M+VD6Xd2XYwctPniWlaSWx57sWcnG/VkFG45qFQAyha64uxOOe4M3ZmG/n5FfauZ8cBVLiRKEIr+CyNhh1ujfzi7+4uzMlSNL5t/BbZamAQuZzqGzGQ9RVvIlyPgUGNJtDEE/hWS09aagXF5T6EMj00szizErh4J1/x4qZwml5+TcBN31E0QmAhCtZe85sr3tYgic+hEz9XX1yymQzf/C7n4to2yNvq0r4g51xDk8IuP95WEh7zaqLlvFZvBFgxpHZBMYlRvhytjOYDeIFRMcGwHZcXosaG2ejqDwcGq/LC4oeG4sSwmg9sdRrtcmcanrNqrBka86WYO6LntI3JdZ86/1ACEUHzhCCwvrKELc9Ji1xxGAgS7QKH+s2/hnJuiMyv73gOVLKYC+wPMLt+fvOmPLSEl+PJiAIlToBq1KUBg03RSQLfPOLD7OrJ8VvDZsEPwejqlGDyc4wRglS9OTi7SnN5LYHSDNDdGdREegWqq9qDHEYEVLI=
 dist: trusty
 sudo: required
 
 env:
-  global:
-    - RELEASE_VERSION="3.0.0"
-    - RELEASE_PLACEHOLDER="@version.number@"
-    - BUILD_PLACEHOLDER="@build.number@"
+	global:
+		- RELEASE_VERSION="3.0.0"
+		- RELEASE_PLACEHOLDER="@version.number@"
+		- BUILD_PLACEHOLDER="@build.number@"
 
 before_install:
-  - sudo apt-key adv --keyserver keys.gnupg.net --recv 6DA70622
-  - sudo echo "deb http://downloads.ortussolutions.com/debs/noarch /" | sudo tee -a /etc/apt/sources.list.d/commandbox.list
+	- sudo apt-key adv --keyserver keys.gnupg.net --recv 6DA70622
+	- sudo echo "deb http://downloads.ortussolutions.com/debs/noarch /" | sudo tee -a /etc/apt/sources.list.d/commandbox.list
 
 install:
-  - sudo apt-get update && sudo apt-get --assume-yes install commandbox zip unzip
-  # Core Installs
-  - box install
-  - box server start
-  # Docs Install and go back again
-  - cd apidocs && box install && cd ..
+	- sudo apt-get update && sudo apt-get --assume-yes install commandbox zip unzip
+	# Core Installs
+	- box install
+	- box server start
+	# Docs Install and go back again
+	- cd apidocs && box install && cd ..
 
 script: 
-  # Create API Docs > apidocs/S3SDK-APIDocs
-  - curl http://127.0.0.1:8511/apidocs/index.cfm?version=$RELEASE_VERSION
-  #- cat doclog.txt && rm doclog.txt
+	# Create API Docs > apidocs/S3SDK-APIDocs
+	- curl http://127.0.0.1:8511/apidocs/index.cfm?version=$RELEASE_VERSION
+	#- cat doclog.txt && rm doclog.txt
 
 after_success:
-  ## Change placeholders
-  - sudo sed -i "s/$RELEASE_PLACEHOLDER/$RELEASE_VERSION/g;" 'box.json' 'ModuleConfig.cfc'
-  - sleep 2 #let it finish
+	## Change placeholders
+	- sudo sed -i "s/$RELEASE_PLACEHOLDER/$RELEASE_VERSION/g;" 'box.json' 'ModuleConfig.cfc'
+	- sudo sed -i "s/$BUILD_PLACEHOLDER/$TRAVIS_BUILD_NUMBER/g;" 'box.json' 'ModuleConfig.cfc'
+	- sleep 2 #let it finish
 
 before_deploy:
-  # Copy src
-  - rsync -av . build --exclude='apidocs' --exclude='.*' --exclude='testbox' --exclude='sever.json'
-  # Copy API Docs to build folder
-  - rsync -av apidocs/S3SDK-APIDocs build/APIDocs
-  # Prepare deployable folder
-  - mkdir deploy
-  # Archive the build
-  - sudo zip -r "deploy/s3sdk-$RELEASE_VERSION.zip" build/.*
-  # Archive the Docs
-  - sudo zip -r "deploy/s3sdk-apidocs-$RELEASE_VERSION.zip" build/APIDocs/.*
-  # Copy over box.json
-  - cp box.json deploy/
+	# Copy src
+	- rsync -av . build --exclude='apidocs' --exclude='.*' --exclude='testbox' --exclude='sever.json'
+	# Copy API Docs to build folder
+	- rsync -av apidocs/S3SDK-APIDocs build/APIDocs
+	# Prepare deployable folder
+	- mkdir deploy
+	# Archive the build
+	- sudo zip -r "deploy/s3sdk-$RELEASE_VERSION.zip" build/.*
+	# Archive the Docs
+	- sudo zip -r "deploy/s3sdk-apidocs-$RELEASE_VERSION.zip" build/APIDocs/.*
+	# Copy over box.json
+	- cp box.json deploy/
 
 deploy:
-  provider: s3
-  skip_cleanup: true
-  access_key_id: $AWS_ACCESS_KEY
-  secret_access_key: $AWS_ACCESS_SECRET
-  bucket: "downloads.ortussolutions.com"
-  upload-dir: "ortussolutions/s3sdk/$RELEASE_VERSION"
-  acl: public_read
-  # What to deploy
-  local_dir: deploy
+	provider: s3
+	skip_cleanup: true
+	access_key_id: $AWS_ACCESS_KEY
+	secret_access_key: $AWS_ACCESS_SECRET
+	bucket: "downloads.ortussolutions.com"
+	upload-dir: "ortussolutions/s3sdk/$RELEASE_VERSION"
+	acl: public_read
+	# What to deploy
+	local_dir: deploy

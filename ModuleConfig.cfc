@@ -20,6 +20,9 @@ component {
 	this.entryPoint			= "s3sdk";
 	this.autoMapModels 		= false;
 
+	/**
+	 * Configure
+	 */
 	function configure(){
 
 		// Settings
