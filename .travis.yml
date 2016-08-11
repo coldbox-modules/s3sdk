@@ -44,9 +44,9 @@ before_deploy:
   # Prepare deployable folder
   - mkdir deploy
   # Archive the build
-  - zip -r deploy/s3sdk-$RELEASE_VERSION.zip build/*
+  - cd build && zip -r ../deploy/s3sdk-$RELEASE_VERSION.zip *
   # Archive the Docs
-  - zip -r deploy/s3sdk-apidocs-$RELEASE_VERSION.zip build/APIDocs/*
+  - cd APIDocs && zip -r ../deploy/s3sdk-apidocs-$RELEASE_VERSION.zip * && cd ../../
   # Copy over box.json
   - cp box.json deploy/
 
