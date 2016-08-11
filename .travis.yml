@@ -34,22 +34,26 @@ after_success:
   - sleep 2 #let it finish
 
 before_deploy:
+  # Copy src
+  - rsync -av . build --exclude='apidocs' --exclude='.*' --exclude='testbox' --exclude='sever.json'
   # Prepare build
   - mkdir build && mkdir deploy
-  # Copy src
-  - rsync -av . build --exclude='apidocs' --exclude='.*' --exclude='sever.json'
   # Copy API Docs
   - rsync -av apidocs/S3SDK-APIDocs build/APIDocs
   # Archive the build
-  - cd build && sudo zip -r "../deploy/s3sdk-$RELEASE_VERSION.zip" ./*
+  - sudo zip -r "deploy/s3sdk-$RELEASE_VERSION.zip" build/.*
+  # Archive the Docs
+  - sudo zip -r "deploy/s3sdk-apidocs-$RELEASE_VERSION.zip" build/APIDocs/.*
+  # Copy over box.json
   - cp box.json deploy/
 
 deploy:
-  skip_cleanup: true
   provider: s3
+  skip_cleanup: true
   access_key_id: $AWS_ACCESS_KEY
   secret_access_key: $AWS_ACCESS_SECRET
   bucket: "downloads.ortussolutions.com"
-  upload-dir: ortussolutions/s3sdk/$RELEASE_VERSION
+  upload-dir: "ortussolutions/s3sdk/$RELEASE_VERSION"
+  acl: public_read
   # What to deploy
-  local-dir: deploy
+  local_dir: deploy
