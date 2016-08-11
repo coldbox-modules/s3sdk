@@ -37,14 +37,19 @@ after_success:
 before_deploy:
   # Copy src
   - rsync -av . build --exclude='apidocs' --exclude='.*' --exclude='testbox' --exclude='sever.json'
+  - ls -l build
   # Copy API Docs to build folder
   - rsync -av apidocs/S3SDK-APIDocs build/APIDocs
+  - ls -l build/APIDocs
   # Prepare deployable folder
   - mkdir deploy
   # Archive the build
-  - sudo zip -r "deploy/s3sdk-$RELEASE_VERSION.zip" build/.*
+  - cd build
+  - sudo zip -r "deploy/s3sdk-$RELEASE_VERSION.zip" .*
   # Archive the Docs
-  - sudo zip -r "deploy/s3sdk-apidocs-$RELEASE_VERSION.zip" build/APIDocs/.*
+  - cd APIDocs && sudo zip -r "deploy/s3sdk-apidocs-$RELEASE_VERSION.zip" .*
+  # Go back to root
+  - cd ../../
   # Copy over box.json
   - cp box.json deploy/
 
