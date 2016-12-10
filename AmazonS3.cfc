@@ -289,13 +289,14 @@ s3_ssl : Whether to use ssl on all cals or not (Optional, defaults to false)
 			// Parse results
 			var contentsXML 	= xmlSearch( results.response, "//*[local-name()='Contents']" );
 			var foundContents 	= [];
+
 			for( var x=1; x lte arrayLen( contentsXML ); x++ ){
 				var thisContent = {
 					key				= trim( contentsXML[ x ].key.xmlText ),
 					lastModified	= trim( contentsXML[ x ].lastModified.xmlText ),
 					size			= trim( contentsXML[ x ].Size.xmlText ),
 					eTag 			= trim( contentsXML[ x ].etag.xmlText ),
-					isDirectory 	= ( findNoCase( "_$folder$", contentsXML[ x ].key.xmlText ) ? true : false )
+					isDirectory 	= ( right( contentsXML[ x ].key.xmlText , 1 ) == '/' ? true : false )
 				};
 				arrayAppend( foundContents, thisContent );
 			}
