@@ -48,6 +48,10 @@ component {
 			.initArg( name="secretKey", 			value=s3settings.secretKey )
 			.initArg( name="encryption_charset", 	value=s3settings.encryption_charset )
 			.initArg( name="ssl", 					value=s3settings.ssl );
+
+		binder.map( "CFMLFacade@s3sdk" )
+			.to( "#moduleMapping#.CFMLFacade" )
+			.noInit();
 	}
 
 	/**
