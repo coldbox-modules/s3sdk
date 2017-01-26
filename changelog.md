@@ -1,3 +1,6 @@
+## v3.0.1
+* Travis Updates and self-publishing
+
 ## v3.0.0
 * Ugprade to ColdBox 4 standards
 * Upgrade to latest Amazon S3 SDK standards

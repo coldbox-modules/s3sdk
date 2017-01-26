@@ -1,13 +1,12 @@
 language: java
-notifications:
-  slack:
-    secure: FIHlTn/YO7Wgumm1uIqmoEsqjQA7fV0AE94Rjc5yKzM3AquQa8HicgDVVk0d2GrKRnl0xt3j4ZJV//VJyIjlCd/QVKuj48R2ChjEY2im3+99HFPafCUI5/S2uyowKU6mJTFonH9v6p41eqxdbiAxJdDGOT0V2Gpt3UBSNuHz8ED9/aIHqv+P7M+VD6Xd2XYwctPniWlaSWx57sWcnG/VkFG45qFQAyha64uxOOe4M3ZmG/n5FfauZ8cBVLiRKEIr+CyNhh1ujfzi7+4uzMlSNL5t/BbZamAQuZzqGzGQ9RVvIlyPgUGNJtDEE/hWS09aagXF5T6EMj00szizErh4J1/x4qZwml5+TcBN31E0QmAhCtZe85sr3tYgic+hEz9XX1yymQzf/C7n4to2yNvq0r4g51xDk8IuP95WEh7zaqLlvFZvBFgxpHZBMYlRvhytjOYDeIFRMcGwHZcXosaG2ejqDwcGq/LC4oeG4sSwmg9sdRrtcmcanrNqrBka86WYO6LntI3JdZ86/1ACEUHzhCCwvrKELc9Ji1xxGAgS7QKH+s2/hnJuiMyv73gOVLKYC+wPMLt+fvOmPLSEl+PJiAIlToBq1KUBg03RSQLfPOLD7OrJ8VvDZsEPwejqlGDyc4wRglS9OTi7SnN5LYHSDNDdGdREegWqq9qDHEYEVLI=
+
 dist: trusty
+
 sudo: required
 
 env:
   global:
-    - RELEASE_VERSION="3.0.0"
+    - RELEASE_VERSION="3.0.1"
     - RELEASE_PLACEHOLDER="@version.number@"
     - BUILD_PLACEHOLDER="@build.number@"
 
@@ -19,6 +18,9 @@ install:
   - sudo apt-get update && sudo apt-get --assume-yes install commandbox zip unzip
   # Core Installs
   - box install
+  # Store the Ortus API Key for forgebox publishing in `master`
+  - box config set endpoints.forgebox.APIToken=$FORGEBOX_API_TOKEN > /dev/null
+  # Install server
   - box server start
   # Docs Install and go back again
   - cd apidocs && box install && cd ..
@@ -32,7 +34,6 @@ after_success:
   ## Change placeholders
   - sudo sed -i "s/$RELEASE_PLACEHOLDER/$RELEASE_VERSION/g;" 'box.json' 'ModuleConfig.cfc'
   - sudo sed -i "s/$BUILD_PLACEHOLDER/$TRAVIS_BUILD_NUMBER/g;" 'box.json' 'ModuleConfig.cfc'
-  - sleep 2 #let it finish
 
 before_deploy:
   # Copy src
@@ -62,3 +63,10 @@ deploy:
   acl: public_read
   # What to deploy
   local_dir: deploy
+
+after_deploy:
+  - cd $TRAVIS_BUILD_DIR/deploy && box forgebox publish
+
+notifications:
+  slack:
+    secure: FIHlTn/YO7Wgumm1uIqmoEsqjQA7fV0AE94Rjc5yKzM3AquQa8HicgDVVk0d2GrKRnl0xt3j4ZJV//VJyIjlCd/QVKuj48R2ChjEY2im3+99HFPafCUI5/S2uyowKU6mJTFonH9v6p41eqxdbiAxJdDGOT0V2Gpt3UBSNuHz8ED9/aIHqv+P7M+VD6Xd2XYwctPniWlaSWx57sWcnG/VkFG45qFQAyha64uxOOe4M3ZmG/n5FfauZ8cBVLiRKEIr+CyNhh1ujfzi7+4uzMlSNL5t/BbZamAQuZzqGzGQ9RVvIlyPgUGNJtDEE/hWS09aagXF5T6EMj00szizErh4J1/x4qZwml5+TcBN31E0QmAhCtZe85sr3tYgic+hEz9XX1yymQzf/C7n4to2yNvq0r4g51xDk8IuP95WEh7zaqLlvFZvBFgxpHZBMYlRvhytjOYDeIFRMcGwHZcXosaG2ejqDwcGq/LC4oeG4sSwmg9sdRrtcmcanrNqrBka86WYO6LntI3JdZ86/1ACEUHzhCCwvrKELc9Ji1xxGAgS7QKH+s2/hnJuiMyv73gOVLKYC+wPMLt+fvOmPLSEl+PJiAIlToBq1KUBg03RSQLfPOLD7OrJ8VvDZsEPwejqlGDyc4wRglS9OTi7SnN5LYHSDNDdGdREegWqq9qDHEYEVLI=
