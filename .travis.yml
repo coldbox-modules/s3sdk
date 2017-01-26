@@ -65,7 +65,7 @@ deploy:
   local_dir: deploy
 
 after_deploy:
-  - cd $TRAVIS_BUILD_DIR/deploy && box forgebox publish
+  - cd $TRAVIS_BUILD_DIR/build && box forgebox publish
 
 notifications:
   slack:
