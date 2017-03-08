@@ -2,7 +2,7 @@
 * Copyright Ortus Solutions, Corp
 * www.ortussolutions.com
 * ---
-* This module connects your application to Akismet
+* This module connects your application to Amazon S3
 **/
 component {
 
@@ -16,8 +16,6 @@ component {
 	this.viewParentLookup 	= true;
 	// If true, looks for layouts in the parent first, if not found, then in module. Else vice-versa
 	this.layoutParentLookup = true;
-	// Module Entry Point
-	this.entryPoint			= "s3sdk";
 	this.autoMapModels 		= false;
 
 	/**
