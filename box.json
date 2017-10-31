@@ -26,7 +26,7 @@
         
     },
     "devDependencies":{
-        "testbox":"^2.3.0+00044"
+        "testbox":"^2.5.0+107"
     },
     "installPaths":{
         "testbox":"testbox"
@@ -36,6 +36,7 @@
         "tests",
         "builds/**"
     ],
-    "scripts" : {
+    "scripts":{
+        
     }
 }

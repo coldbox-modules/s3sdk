@@ -58,9 +58,9 @@ s3_ssl : Whether to use ssl on all cals or not (Optional, defaults to false)
 			}
 
 			if( arguments.ssl ){
-				variables.URLEndPoint = "https://s3.amazonaws.com"; 
-			} else{ 
-				variables.URLEndPoint = "http://s3.amazonaws.com"; 
+				variables.URLEndPoint = "https://s3.amazonaws.com";
+			} else{
+				variables.URLEndPoint = "http://s3.amazonaws.com";
 			}
 
 			return this;
@@ -82,9 +82,9 @@ s3_ssl : Whether to use ssl on all cals or not (Optional, defaults to false)
     	<cfargument name="useSSL" type="boolean" required="false" default="true" hint="Set to true or false"/>
     	<cfscript>
 			if( arguments.useSSL ){
-				variables.URLEndPoint = "https://s3.amazonaws.com"; 
-			} else{ 
-				variables.URLEndPoint = "http://s3.amazonaws.com"; 
+				variables.URLEndPoint = "https://s3.amazonaws.com";
+			} else{
+				variables.URLEndPoint = "http://s3.amazonaws.com";
 			}
 		</cfscript>
     </cffunction>
@@ -216,8 +216,8 @@ s3_ssl : Whether to use ssl on all cals or not (Optional, defaults to false)
 			var resource = arguments.bucketName;
 
 			// incoming URI
-			if( len( arguments.uri ) ){ 
-				resource = resource & "\" & arguments.uri; 
+			if( len( arguments.uri ) ){
+				resource = resource & "\" & arguments.uri;
 			}
 
 			// Invoke call
@@ -357,6 +357,16 @@ s3_ssl : Whether to use ssl on all cals or not (Optional, defaults to false)
 		}
 
 		return false;
+		</cfscript>
+	</cffunction>
+
+	<!--- Delete a Bucket --->
+	<cffunction name="hasBucket" access="public" output="false" returntype="boolean" hint="Checks for the existance of a bucket.">
+		<cfargument name="bucketName" type="string" required="yes">
+		<cfscript>
+			return ! arrayIsEmpty( arrayFilter( listBuckets(), function( bucket ) {
+				return bucket.name == bucketName;
+			} ) );
 		</cfscript>
 	</cffunction>
 
@@ -551,8 +561,8 @@ s3_ssl : Whether to use ssl on all cals or not (Optional, defaults to false)
 			log.debug( "String to sign: #stringToSign# . Signature: #signature#" );
 
 			// SSL?
-			if( arguments.useSSL ){ 
-				HTTPPrefix = "https://"; 
+			if( arguments.useSSL ){
+				HTTPPrefix = "https://";
 			}
 
 			// VH style Link
@@ -574,7 +584,7 @@ s3_ssl : Whether to use ssl on all cals or not (Optional, defaults to false)
 			arguments.uri = replacenocase( arguments.uri, "%2E", ".", "all" );
 			arguments.uri = replacenocase( arguments.uri, "%2D", "-", "all" );
 			arguments.uri = replacenocase( arguments.uri, "%5F", "_", "all" );
-			
+
 			// Invoke call
 			var results = S3Request( method="DELETE", resource=arguments.bucketName & "/" & arguments.uri );
 
@@ -733,7 +743,7 @@ s3_ssl : Whether to use ssl on all cals or not (Optional, defaults to false)
 			// Check XML Parsing?
 			if( structKeyExists( HTTPResults.responseHeader, "content-type" ) AND
 			    HTTPResults.responseHeader["content-type"] eq "application/xml" AND
-				isXML( HTTPResults.fileContent ) 
+				isXML( HTTPResults.fileContent )
 			){
 				results.response = XMLParse( HTTPResults.fileContent );
 				// Check for Errors

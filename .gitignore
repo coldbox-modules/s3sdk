@@ -4,3 +4,5 @@ apidocs/S3SDK-APIDocs
 # testing
 testbox/*
 tests/specs/apikey.txt
+.env
+jmimemagic.log
