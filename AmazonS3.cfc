@@ -63,6 +63,13 @@ s3_ssl : Whether to use ssl on all cals or not (Optional, defaults to false)
 				variables.URLEndPoint = "http://s3.amazonaws.com";
 			}
 
+			variables.sv4Util = new Sv4Util(
+				accessKeyId = variables.accessKey,
+				secretAccessKey = variables.secretKey,
+				defaultRegionName = "us-east-1",
+				defaultServiceName = "s3"
+			);
+
 			return this;
 		</cfscript>
 	</cffunction>
@@ -98,6 +105,100 @@ s3_ssl : Whether to use ssl on all cals or not (Optional, defaults to false)
 			var fixedData = replace( arguments.stringToSign, "\n", "#chr(10)#", "all" );
 
 			return toBase64( HMAC_SHA1( variables.secretKey, fixedData ) );
+		</cfscript>
+	</cffunction>
+
+	<!--- Create Signature v4 --->
+	<cffunction name="createSignatureV4" returntype="any" access="public" output="false" hint="Create request signature according to AWS v4 standards">
+		<cfargument name="date" type="any" required="true" />
+		<cfargument name="region" type="any" required="true" />
+		<cfargument name="headers" type="struct" required="false" default="#structNew()#" />
+		<cfscript>
+			return "AWS4-HMAC-SHA256 " & arrayToList( [
+				"Credential=#createCredential( date, region )#",
+				"SignedHeaders=#createSignedHeaders( headers )#",
+				"Signature=#generateSignature()#"
+			] );
+		</cfscript>
+	</cffunction>
+
+	<!--- Create Credential --->
+	<cffunction name="createCredential" returntype="any" access="public" output="false" hint="Create credential according to AWS v4 standards">
+		<cfargument name="date" type="any" required="true" />
+		<cfargument name="region" type="any" required="true" />
+		<cfscript>
+			return arrayToList( [
+				#variables.accessKey#,
+				#dateFormat( arguments.date, "YYYYMMDD" )#,
+				#arguments.region#,
+				"s3",
+				"aws4_request"
+			], "/" );
+		</cfscript>
+	</cffunction>
+
+	<!--- Create Signed Headers --->
+	<cffunction name="createSignedHeaders" returntype="any" access="public" output="false" hint="Create signed headers according to AWS v4 standards">
+		<cfargument name="headers" type="struct" required="false" default="#structNew()#" />
+		<cfscript>
+			var lowercaseHeaders = arrayMap( structKeyArray( headers ), function( header ) {
+				return lcase( header );
+			} );
+			arraySort( lowercaseHeaders, "text" );
+			return arrayToList( lowercaseHeaders, ";" );
+		</cfscript>
+	</cffunction>
+
+	<!--- Generate Signature --->
+	<cffunction name="generateSignature" returntype="any" access="public" output="false" hint="Generate the signature portion of the authorization according to AWS v4 standards">
+		<cfargument name="date" type="any" required="true" />
+		<cfargument name="region" type="any" required="true" />
+		<cfargument name="httpMethod" type="string" required="true" />
+		<cfargument name="uri" type="string" required="true" />
+		<cfargument name="queryString" type="string" required="false" default="" />
+		<cfargument name="headers" type="struct" required="false" default="#structNew()#" />
+		<cfargument name="payload" type="any" required="false" default="" />
+		<cfscript>
+			return toBase64( HMAC_SHA1(
+				generateSigningKey( date, region ),
+				generateStringToSign(
+					httpMethod,
+					generateCanonicalURI( uri ),
+					generateCanonicalQueryString( queryString ),
+					generateCanonicalHeaders( headers ),
+					createSignedHeaders( headers ),
+					generateHashedPayload( payload )
+				)
+			) );
+		</cfscript>
+	</cffunction>
+
+	<!--- Generate Signing Key --->
+	<cffunction name="generateSigningKey" returntype="any" access="public" output="false" hint="Generate the signature portion of the authorization according to AWS v4 standards">
+		<cfargument name="date" type="any" required="true" />
+		<cfargument name="region" type="any" required="true" />
+		<cfscript>
+			var dateKey = HMAC_SHA1( "AWS4 #variables.secretKey#", dateFormat( date, "yyyymmdd" ) );
+			var dateRegionKey = HMAC_SHA1( dateKey, region );
+			var dateRegionServiceKey = HMAC_SHA1( dateRegionKey, "s3" );
+			return HMAC_SHA1( generateCanonicalRequest(
+
+			), "aws4_request" );
+		</cfscript>
+	</cffunction>
+
+	<cffunction name="generateStringToSign" returntype="any" access="public" output="false" hint="Generate the signature portion of the authorization according to AWS v4 standards">
+		<cfargument name="date" type="any" required="true" />
+		<cfargument name="region" type="any" required="true" />
+		<cfargument name="canonicalRequest" type="any" required="true" />
+		<cfscript>
+			var utcDate = dateConvert( "local2Utc", date );
+			return arrayToList( [
+				"AWS4-HMAC-SHA256",
+				dateTimeFormat( utcDate, "yyyymmdd" ) & "T" & dateTimeFormat( utcDate, "hhnnss" ) & "Z",
+				"#dateFormat( utdDate, "yyyymmdd" )#/#region#/s3/aws4_request",
+				toBase64( lcase( hash( canonicalRequest, "SHA-256" ) ) )
+			], "#chr(10)#" );
 		</cfscript>
 	</cffunction>
 
@@ -678,7 +779,6 @@ s3_ssl : Whether to use ssl on all cals or not (Optional, defaults to false)
 				responseheader 	= {}
 			};
 			var HTTPResults = "";
-			var timestamp = GetHTTPTimeString( Now() );
 			var param = "";
 			var md5 = "";
 			var amz = "";
@@ -697,9 +797,15 @@ s3_ssl : Whether to use ssl on all cals or not (Optional, defaults to false)
 			}
 
 			// Create Signature
-			var signature = "#arguments.method#\n#md5#\n#arguments.headers['content-type']#\n#timestamp##amz#\n/#arguments.resource#";
-			log.debug( "Prepared Signature: #signature#" );
-			signature = createSignature( signature );
+			var signatureData = sv4Util.generateSignatureData(
+				requestMethod = arguments.method,
+				hostName = "s3.amazonaws.com",
+				requestURI = arguments.resource,
+				requestBody = arguments.body,
+				requestHeaders = arguments.headers,
+				requestParams = arguments.parameters
+			);
+			// writeDump( var = signatureData );
 		</cfscript>
 
 		<!--- REST CAll --->
@@ -710,17 +816,17 @@ s3_ssl : Whether to use ssl on all cals or not (Optional, defaults to false)
 				timeout="#arguments.timeout#">
 
 			<!--- Amazon Global Headers  --->
-			<cfhttpparam type="header" name="Date" value="#timestamp#">
-			<cfhttpparam type="header" name="Authorization" value="AWS #variables.accessKey#:#signature#">
+			<cfhttpparam type="header" name="Date" value="#signatureData.amzDate#">
+			<cfhttpparam type="header" name="Authorization" value="#signatureData.authorizationHeader#">
 
 			<!--- Headers --->
-			<cfloop collection="#arguments.headers#" item="param">
-				<cfhttpparam type="header" name="#param#" value="#arguments.headers[param]#" >
+			<cfloop collection="#signatureData.requestHeaders#" item="param">
+				<cfhttpparam type="header" name="#param#" value="#signatureData.requestHeaders[param]#" >
 			</cfloop>
 
 			<!--- URL Parameters: encoded automatically by CF --->
-			<cfloop collection="#arguments.parameters#" item="param">
-				<cfhttpparam type="URL" name="#param#" value="#arguments.parameters[param]#" >
+			<cfloop collection="#signatureData.requestParams#" item="param">
+				<cfhttpparam type="URL" name="#param#" value="#signatureData.requestParams[param]#" >
 			</cfloop>
 
 			<!--- Body --->
@@ -731,7 +837,7 @@ s3_ssl : Whether to use ssl on all cals or not (Optional, defaults to false)
 
 		<cfscript>
 			// Log
-			log.debug( "Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signature#", HTTPResults );
+			log.debug( "Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#", HTTPResults );
 
 			// Set Results
 			results.response 		= HTTPResults.fileContent;
@@ -750,7 +856,11 @@ s3_ssl : Whether to use ssl on all cals or not (Optional, defaults to false)
 				if( NOT listFindNoCase( "200,204", HTTPResults.responseHeader.status_code ) ){
 					// check error xml
 					results.error 	= true;
-					results.message = "Code: #results.response.error.code.XMLText#. Message: #results.response.error.message.XMLText#";
+					var messages = [];
+					for ( var node in results.response.error.XmlChildren ) {
+						arrayAppend( messages, "#node.XmlName#: #node.XmlText#" );
+					}
+					results.message = arrayToList( messages, "\n" );
 				}
 			}
 
