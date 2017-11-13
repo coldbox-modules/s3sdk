@@ -473,8 +473,16 @@ s3_ssl : Whether to use ssl on all cals or not (Optional, defaults to false)
 
 	<!--- Delete a Bucket --->
 	<cffunction name="deleteBucket" access="public" output="false" returntype="boolean" hint="Deletes a bucket.">
-		<cfargument name="bucketName" type="string" required="yes">
+		<cfargument name="bucketName" type="string" required="true">
+		<cfargument name="force" type="boolean" default="false" required="false">
 		<cfscript>
+			if ( force ) {
+				var bucketContents = getBucket( bucketName );
+				for ( var item in bucketContents ) {
+					deleteObject( bucketName, item.key );
+				}
+			}
+
 			// Invoke call
 			var results = S3Request(
 				method 	 = "DELETE",
@@ -805,7 +813,6 @@ s3_ssl : Whether to use ssl on all cals or not (Optional, defaults to false)
 				requestHeaders = arguments.headers,
 				requestParams = arguments.parameters
 			);
-			// writeDump( var = signatureData );
 		</cfscript>
 
 		<!--- REST CAll --->

@@ -375,9 +375,6 @@
             path = "/"& path;
         }
 
-        // Encode path, but preserve slashes "/" and "-"
-        path = replace( replace( urlEncode( path ), "%2F", "/", "all"), "%2D", "-", "all" );
-
         return path;
     }
 
