@@ -407,6 +407,10 @@ component accessors="true" singleton {
         }
 
         arguments.uri = urlEncodedFormat( arguments.uri );
+        arguments.uri = replaceNoCase( arguments.uri, "%2F", "/", "ALL" );
+        arguments.uri = replaceNoCase( arguments.uri, "%2E", ".", "ALL" );
+        arguments.uri = replaceNoCase( arguments.uri, "%2D", "-", "all" );
+        arguments.uri = replaceNoCase( arguments.uri, "%5F", "_", "all" );
 
         return putObject( argumentCollection = arguments );
     }
@@ -601,9 +605,10 @@ component accessors="true" singleton {
         required string uri
     ) {
         arguments.uri = urlEncodedFormat( urlDecode( arguments.uri ) );
-        arguments.uri = replacenocase( arguments.uri, "%2E", ".", "all" );
-        arguments.uri = replacenocase( arguments.uri, "%2D", "-", "all" );
-        arguments.uri = replacenocase( arguments.uri, "%5F", "_", "all" );
+        arguments.uri = replaceNoCase( arguments.uri, "%2F", "/", "all" );
+        arguments.uri = replaceNoCase( arguments.uri, "%2E", ".", "all" );
+        arguments.uri = replaceNoCase( arguments.uri, "%2D", "-", "all" );
+        arguments.uri = replaceNoCase( arguments.uri, "%5F", "_", "all" );
 
         var results = S3Request(
             method = "DELETE",
@@ -642,6 +647,12 @@ component accessors="true" singleton {
 
         amzHeaders[ "x-amz-copy-source" ] 	= "/#arguments.fromBucket#/#arguments.fromURI#";
         amzHeaders[ "x-amz-acl" ] 			= arguments.acl;
+
+        arguments.toURI = urlEncodedFormat( arguments.toURI );
+        arguments.toURI = replaceNoCase( arguments.toURI, "%2F", "/", "ALL" );
+        arguments.toURI = replaceNoCase( arguments.toURI, "%2E", ".", "ALL" );
+        arguments.toURI = replaceNoCase( arguments.toURI, "%2D", "-", "all" );
+        arguments.toURI = replaceNoCase( arguments.toURI, "%5F", "_", "all" );
 
         var results = S3Request(
             method 		= "PUT",
