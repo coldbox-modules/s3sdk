@@ -283,7 +283,7 @@ component accessors="true" singleton {
                 "size"          = trim( node.Size.xmlText ),
                 "eTag"          = trim( node.etag.xmlText ),
                 "isDirectory"   = ( findNoCase( "_$folder$", node.key.xmlText ) ? true : false )
-            }
+            };
         } );
 
         var folderContents = arrayMap( foldersXML, function( node ) {
@@ -293,7 +293,7 @@ component accessors="true" singleton {
                 "size"         = '',
                 "eTag"         = '',
                 "isDirectory"  = true
-            }
+            };
         } );
 
         arrayAppend( objectContents, folderContents, true );
