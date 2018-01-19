@@ -407,8 +407,8 @@ component accessors="true" singleton {
         }
 
         arguments.uri = urlEncodedFormat( arguments.uri );
-        arguments.uri = replaceNoCase( arguments.uri, "%2F", "/", "ALL" );
-        arguments.uri = replaceNoCase( arguments.uri, "%2E", ".", "ALL" );
+        arguments.uri = replaceNoCase( arguments.uri, "%2F", "/", "all" );
+        arguments.uri = replaceNoCase( arguments.uri, "%2E", ".", "all" );
         arguments.uri = replaceNoCase( arguments.uri, "%2D", "-", "all" );
         arguments.uri = replaceNoCase( arguments.uri, "%5F", "_", "all" );
 
@@ -575,6 +575,7 @@ component accessors="true" singleton {
         var HTTPPrefix = arguments.useSSL ? "https://" : "http://";
 
         arguments.uri = urlEncodedFormat( arguments.uri );
+        arguments.uri = replaceNoCase( arguments.uri, "%2F", "/", "all" );
         arguments.uri = replaceNoCase( arguments.uri, "%2E", ".", "all" );
         arguments.uri = replaceNoCase( arguments.uri, "%2D", "-", "all" );
         arguments.uri = replaceNoCase( arguments.uri, "%5F", "_", "all" );
@@ -649,8 +650,8 @@ component accessors="true" singleton {
         amzHeaders[ "x-amz-acl" ] 			= arguments.acl;
 
         arguments.toURI = urlEncodedFormat( arguments.toURI );
-        arguments.toURI = replaceNoCase( arguments.toURI, "%2F", "/", "ALL" );
-        arguments.toURI = replaceNoCase( arguments.toURI, "%2E", ".", "ALL" );
+        arguments.toURI = replaceNoCase( arguments.toURI, "%2F", "/", "all" );
+        arguments.toURI = replaceNoCase( arguments.toURI, "%2E", ".", "all" );
         arguments.toURI = replaceNoCase( arguments.toURI, "%2D", "-", "all" );
         arguments.toURI = replaceNoCase( arguments.toURI, "%5F", "_", "all" );
 
