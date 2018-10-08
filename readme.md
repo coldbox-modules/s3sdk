@@ -29,6 +29,7 @@ This SDK will be installed into a directory called `s3sdk` and then the SDK can 
 <cfargument name="secretKey" 			required="true">
 <cfargument name="encryption_charset" 	required="false" default="utf-8">
 <cfargument name="ssl" 					required="false" default="false">
+<cfargument name="awsregion" 			required="false" default="us-east-1">
 ```
 
 ### ColdBox Module
@@ -44,7 +45,9 @@ s3sdk = {
 	// The default encryption character set
 	encryption_charset = "utf-8",
 	// SSL mode or not on cfhttp calls.
-	ssl = false
+	ssl = false,
+	// Your AWS Region.
+	awsregion = "us-west-1"
 };
 ```
 

@@ -28,7 +28,8 @@ component {
 			accessKey = "",
 			secretKey = "",
 			encryption_charset = "utf-8",
-			ssl = false
+			ssl = false,
+			awsregion = "us-east-1"
 		};
 	}
 
@@ -45,7 +46,8 @@ component {
 			.initArg( name="accessKey", 			value=s3settings.accessKey )
 			.initArg( name="secretKey", 			value=s3settings.secretKey )
 			.initArg( name="encryption_charset", 	value=s3settings.encryption_charset )
-			.initArg( name="ssl", 					value=s3settings.ssl );
+			.initArg( name="ssl", 					value=s3settings.ssl )
+			.initArg( name="awsRegion", 					value=s3settings.awsregion );
 	}
 
 	/**
