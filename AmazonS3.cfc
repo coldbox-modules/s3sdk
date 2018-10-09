@@ -56,17 +56,19 @@ component accessors="true" singleton {
         required string accessKey,
         required string secretKey,
         string encryption_charset = "UTF-8",
-        boolean ssl = false
+        boolean ssl = false,
+        string awsRegion = "us-east-1"
     ) {
         variables.accessKey = arguments.accessKey;
         variables.secretKey = arguments.secretKey;
         variables.encryption_charset = arguments.encryption_charset;
+        variables.awsRegion = arguments.awsRegion;
         setSSL( ssl );
 
         variables.sv4Util = new Sv4Util(
             accessKeyId = variables.accessKey,
             secretAccessKey = variables.secretKey,
-            defaultRegionName = "us-east-1",
+            defaultRegionName = arguments.awsRegion,
             defaultServiceName = "s3"
         );
 
@@ -98,8 +100,8 @@ component accessors="true" singleton {
     public AmazonS3 function setSSL( boolean useSSL = true ) {
         variables.ssl = arguments.useSSL;
         variables.URLEndpoint = arguments.useSSL ?
-            "https://s3.amazonaws.com" :
-            "http://s3.amazonaws.com";
+            "https://s3-#variables.awsRegion#.amazonaws.com" :
+            "http://s3-#variables.awsRegion#.amazonaws.com";
         return this;
     }
 
@@ -740,7 +742,7 @@ component accessors="true" singleton {
         // Create Signature
         var signatureData = sv4Util.generateSignatureData(
             requestMethod = arguments.method,
-            hostName = "s3.amazonaws.com",
+            hostName = "s3-#variables.awsRegion#.amazonaws.com",
             requestURI = arguments.resource,
             requestBody = arguments.body,
             requestHeaders = arguments.headers,
