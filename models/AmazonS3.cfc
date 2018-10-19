@@ -356,10 +356,10 @@ component accessors="true" singleton {
         required string bucketName,
         boolean force = false
     ) {
-        if ( force && hasBucket( arguments.bucketName ) ){
-            var bucketContents = getBucket( bucketName );
+        if ( arguments.force && hasBucket( arguments.bucketName ) ){
+            var bucketContents = getBucket( arguments.bucketName );
             for ( var item in bucketContents ) {
-                deleteObject( bucketName, item.key );
+                deleteObject( arguments.bucketName, item.key );
             }
         }
 
@@ -369,7 +369,7 @@ component accessors="true" singleton {
 			throwOnError    = false
 		);
 
-		var bucketDoesntExist = findNoCase( "The specified bucket does not exist", results.message ) neq 0;
+		var bucketDoesntExist = findNoCase( "NoSuchBucket", results.message ) neq 0;
 
 		if( results.error && !bucketDoesntExist ){
 			throw(

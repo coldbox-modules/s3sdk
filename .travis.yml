@@ -10,7 +10,6 @@ env:
     - MODULE_ID=s3sdk
     - TARGET_VERSION=4.0.0
   matrix:
-    - ENGINE=lucee@45
     - ENGINE=lucee@5
     - ENGINE=adobe@11
     - ENGINE=adobe@2016

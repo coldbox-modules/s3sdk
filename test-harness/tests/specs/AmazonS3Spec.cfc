@@ -28,13 +28,13 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
                 it( "can create a new bucket", function() {
                     expect( function() {
-                        s3.getBucket( testBucket )
+                        s3.getBucket( testBucket );
 					} ).toThrow( regex = "Error making Amazon REST Call" );
 
                     s3.putBucket( testBucket );
 
 					expect( function() {
-                        s3.getBucket( testBucket )
+                        s3.getBucket( testBucket );
                     } ).notToThrow( regex = "Error making Amazon REST Call" );
                 } );
 
