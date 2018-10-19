@@ -12,9 +12,10 @@ This SDK allows you to add Amazon S3 capabilities to your ColdFusion (CFML) appl
 * S3 API Reference: http://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html
 
 ## Installation 
+
 This SDK can be installed as standalone or as a ColdBox Module.  Either approach requires a simple CommandBox command:
 
-```
+```bash
 box install s3sdk
 ```
 
@@ -24,7 +25,7 @@ Then follow either the standalone or module instructions below.
 
 This SDK will be installed into a directory called `s3sdk` and then the SDK can be instantiated via ` new s3sdk.AmazonS3()` with the following constructor arguments:
 
-```
+```html
 <cfargument name="accessKey" 			required="true">
 <cfargument name="secretKey" 			required="true">
 <cfargument name="encryption_charset" 	required="false" default="utf-8">
@@ -36,7 +37,7 @@ This SDK will be installed into a directory called `s3sdk` and then the SDK can 
 
 This package also is a ColdBox module as well.  The module can be configured by creating an `s3sdk` configuration structure in your application configuration file: `config/Coldbox.cfc` with the following settings:
 
-```
+```json
 s3sdk = {
 	// Your amazon access key
 	accessKey = "",

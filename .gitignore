@@ -1,8 +1,15 @@
-# apidocs
-apidocs/docbox
-apidocs/S3SDK-APIDocs
-# testing
-testbox/*
-tests/specs/apikey.txt
-.env
-jmimemagic.log
+.vscode
+
+.artifacts/**
+.tmp/**
+
+test-harness/.engine/**
+test-harness/coldbox/**
+test-harness/docbox/**
+test-harness/testbox/**
+test-harness/logs/**
+test-harness/modules/**
+test-harness/.env
+
+# log files
+logs/**

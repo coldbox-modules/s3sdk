@@ -1,72 +1,104 @@
 language: java
 
+notifications:
+  slack:
+    secure: FIHlTn/YO7Wgumm1uIqmoEsqjQA7fV0AE94Rjc5yKzM3AquQa8HicgDVVk0d2GrKRnl0xt3j4ZJV//VJyIjlCd/QVKuj48R2ChjEY2im3+99HFPafCUI5/S2uyowKU6mJTFonH9v6p41eqxdbiAxJdDGOT0V2Gpt3UBSNuHz8ED9/aIHqv+P7M+VD6Xd2XYwctPniWlaSWx57sWcnG/VkFG45qFQAyha64uxOOe4M3ZmG/n5FfauZ8cBVLiRKEIr+CyNhh1ujfzi7+4uzMlSNL5t/BbZamAQuZzqGzGQ9RVvIlyPgUGNJtDEE/hWS09aagXF5T6EMj00szizErh4J1/x4qZwml5+TcBN31E0QmAhCtZe85sr3tYgic+hEz9XX1yymQzf/C7n4to2yNvq0r4g51xDk8IuP95WEh7zaqLlvFZvBFgxpHZBMYlRvhytjOYDeIFRMcGwHZcXosaG2ejqDwcGq/LC4oeG4sSwmg9sdRrtcmcanrNqrBka86WYO6LntI3JdZ86/1ACEUHzhCCwvrKELc9Ji1xxGAgS7QKH+s2/hnJuiMyv73gOVLKYC+wPMLt+fvOmPLSEl+PJiAIlToBq1KUBg03RSQLfPOLD7OrJ8VvDZsEPwejqlGDyc4wRglS9OTi7SnN5LYHSDNDdGdREegWqq9qDHEYEVLI=
+
+env:
+  # Fill out these global variables for build process
+  global:
+    - MODULE_ID=s3sdk
+    - TARGET_VERSION=4.0.0
+  matrix:
+    - ENGINE=lucee@45
+    - ENGINE=lucee@5
+    - ENGINE=adobe@11
+    - ENGINE=adobe@2016
+    - ENGINE=adobe@2018
+
+branches:
+  only:
+  - development
+  - master
+
 dist: trusty
 
 sudo: required
 
-env:
-  global:
-    - RELEASE_VERSION="3.0.1"
-    - RELEASE_PLACEHOLDER="@version.number@"
-    - BUILD_PLACEHOLDER="@build.number@"
-
 before_install:
-  - sudo apt-key adv --keyserver keys.gnupg.net --recv 6DA70622
-  - sudo echo "deb http://downloads.ortussolutions.com/debs/noarch /" | sudo tee -a /etc/apt/sources.list.d/commandbox.list
+  # CommandBox Keys
+  - curl -fsSl https://downloads.ortussolutions.com/debs/gpg | sudo apt-key add -
+  - sudo echo "deb http://downloads.ortussolutions.com/debs/noarch /" | sudo tee -a
+    /etc/apt/sources.list.d/commandbox.list
 
 install:
-  - sudo apt-get update && sudo apt-get --assume-yes install commandbox zip unzip
-  # Core Installs
-  - box install
-  # Store the Ortus API Key for forgebox publishing in `master`
+  # Install Commandbox
+  - sudo apt-get update && sudo apt-get --assume-yes install rsync jq commandbox
+  # Install CommandBox Supporting Librarires
+  - box install commandbox-cfconfig,commandbox-dotenv,commandbox-docbox
+  # If using auto-publish, you will need to provide your API token with this line:
   - box config set endpoints.forgebox.APIToken=$FORGEBOX_API_TOKEN > /dev/null
-  # Install server
-  - box server start
-  # Docs Install and go back again
-  - cd apidocs && box install && cd ..
 
-script: 
-  # Create API Docs > apidocs/S3SDK-APIDocs
-  - curl http://127.0.0.1:8511/apidocs/index.cfm?version=$RELEASE_VERSION
-  #- cat doclog.txt && rm doclog.txt
+script:
+  # Startup the harness
+  - cd test-harness
+  # run our dependency install to ensure the workbench is in place
+  - box install
+  # run our matrix server
+  - box server start serverConfigFile="server-${ENGINE}.json"
+  # Startup the app
+  - curl http://localhost:60299
+  # Debugging of tests
+  #- curl http://localhost:60299/tests/runner.cfm?reporter=json -o testresults.json && cat testresults.json
+  # move back to build dir to build it
+  - cd $TRAVIS_BUILD_DIR
+  # Build out the project if tests pass
+  - box task run taskfile=build/Build target=run :version=${TARGET_VERSION} :projectName=${MODULE_ID} :buildID=${TRAVIS_BUILD_NUMBER} :branch=${TRAVIS_BRANCH}
 
-after_success:
-  ## Change placeholders
-  - sudo sed -i "s/$RELEASE_PLACEHOLDER/$RELEASE_VERSION/g;" 'box.json' 'ModuleConfig.cfc'
-  - sudo sed -i "s/$BUILD_PLACEHOLDER/$TRAVIS_BUILD_NUMBER/g;" 'box.json' 'ModuleConfig.cfc'
-
-before_deploy:
-  # Copy src
-  - rsync -av . build --exclude='apidocs' --exclude='.*' --exclude='testbox' --exclude='sever.json'
-  # Copy API Docs to build folder
-  - mkdir build/APIDocs
-  - cp -r apidocs/S3SDK-APIDocs/* build/APIDocs
-  # Prepare deployable folder
-  - mkdir deploy
-  # Archive the build
-  - cd build && zip -r ../deploy/s3sdk-$RELEASE_VERSION.zip *
-  # Archive the Docs
-  - cd APIDocs && zip -r ../../deploy/s3sdk-apidocs-$RELEASE_VERSION.zip * && cd ../../
-  # Copy over box.json
-  - cp box.json deploy/
+after_failure:
+  - cd $TRAVIS_BUILD_DIR/test-harness
+  # Display the contents of our root directory
+  # Spit out our Commandbox log in case we need to debug
+  - box server log name=${ENGINE}
+  - cat `box system-log`
 
 deploy:
-  on:
-    branch:
-      - master
-  provider: s3
-  skip_cleanup: true
-  access_key_id: $AWS_ACCESS_KEY
-  secret_access_key: $AWS_ACCESS_SECRET
-  bucket: "downloads.ortussolutions.com"
-  upload-dir: "ortussolutions/s3sdk/$RELEASE_VERSION"
-  acl: public_read
-  # What to deploy
-  local_dir: deploy
+  # Module Deployment
+  - provider: s3
+    on:
+      branch:
+        - master
+        - development
+      condition: "$ENGINE = lucee@45"
+    skip_cleanup: true
+    #AWS Credentials need to be set in Travis
+    access_key_id: $AWS_ACCESS_KEY
+    secret_access_key: $AWS_ACCESS_SECRET
+    # Destination
+    bucket: "downloads.ortussolutions.com"
+    local-dir: $TRAVIS_BUILD_DIR/.artifacts/$MODULE_ID
+    upload-dir: ortussolutions/coldbox-modules/$MODULE_ID
+    acl: public_read
+
+  # API Docs Deployment
+  - provider: s3
+    on:
+      branch:
+        - master
+        - development
+      condition: "$ENGINE = lucee@45"
+    skip_cleanup: true
+    #AWS Credentials need to be set in Travis
+    access_key_id: $AWS_ACCESS_KEY
+    secret_access_key: $AWS_ACCESS_SECRET
+    bucket: "apidocs.ortussolutions.com"
+    local-dir: $TRAVIS_BUILD_DIR/.tmp/apidocs
+    upload-dir: coldbox-modules/$MODULE_ID/$TARGET_VERSION
+    acl: public_read
 
 after_deploy:
-  - cd $TRAVIS_BUILD_DIR/build && box forgebox publish
-
-notifications:
-  slack:
-    secure: FIHlTn/YO7Wgumm1uIqmoEsqjQA7fV0AE94Rjc5yKzM3AquQa8HicgDVVk0d2GrKRnl0xt3j4ZJV//VJyIjlCd/QVKuj48R2ChjEY2im3+99HFPafCUI5/S2uyowKU6mJTFonH9v6p41eqxdbiAxJdDGOT0V2Gpt3UBSNuHz8ED9/aIHqv+P7M+VD6Xd2XYwctPniWlaSWx57sWcnG/VkFG45qFQAyha64uxOOe4M3ZmG/n5FfauZ8cBVLiRKEIr+CyNhh1ujfzi7+4uzMlSNL5t/BbZamAQuZzqGzGQ9RVvIlyPgUGNJtDEE/hWS09aagXF5T6EMj00szizErh4J1/x4qZwml5+TcBN31E0QmAhCtZe85sr3tYgic+hEz9XX1yymQzf/C7n4to2yNvq0r4g51xDk8IuP95WEh7zaqLlvFZvBFgxpHZBMYlRvhytjOYDeIFRMcGwHZcXosaG2ejqDwcGq/LC4oeG4sSwmg9sdRrtcmcanrNqrBka86WYO6LntI3JdZ86/1ACEUHzhCCwvrKELc9Ji1xxGAgS7QKH+s2/hnJuiMyv73gOVLKYC+wPMLt+fvOmPLSEl+PJiAIlToBq1KUBg03RSQLfPOLD7OrJ8VvDZsEPwejqlGDyc4wRglS9OTi7SnN5LYHSDNDdGdREegWqq9qDHEYEVLI=
+  # Move to build out artifact
+  - cd ${TRAVIS_BUILD_DIR}/.tmp/${MODULE_ID}
+  - cat box.json
+  # Only publish once
+  - if [ ${ENGINE} = 'lucee@45' ]; then box forgebox publish; fi

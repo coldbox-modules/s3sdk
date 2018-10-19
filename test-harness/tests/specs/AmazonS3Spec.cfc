@@ -1,15 +1,14 @@
-component extends="testbox.system.BaseSpec" {
+component extends="coldbox.system.testing.BaseTestCase" {
 
     variables.testBucket = "ortus-s3sdk-test-bucket";
 
     function beforeAll() {
-        var system = createObject( "java", "java.lang.System" );
-        variables.s3 = new S3SDK.AmazonS3(
-            system.getProperty( "S3_ACCESS_KEY" ),
-            system.getProperty( "S3_SECRET_KEY" )
+        variables.s3 = new s3sdk.models.AmazonS3(
+            getUtil().getSystemSetting( "AWS_ACCESS_KEY" ),
+            getUtil().getSystemSetting( "AWS_ACCESS_SECRET" )
         );
         prepareMock( s3 );
-        s3.$property( propertyName = "log", mock = createLogStub() );
+		s3.$property( propertyName = "log", mock = createLogStub() );
     }
 
     function afterAll() {
@@ -22,7 +21,7 @@ component extends="testbox.system.BaseSpec" {
         describe( "Amazon S3 SDK", function() {
             describe( "buckets", function() {
                 beforeEach( function() {
-                    if ( s3.hasBucket( testBucket ) ) {
+                    if( s3.hasBucket( testBucket ) ) {
                         s3.deleteBucket( bucketName = testBucket, force = true );
                     }
                 } );
@@ -30,9 +29,11 @@ component extends="testbox.system.BaseSpec" {
                 it( "can create a new bucket", function() {
                     expect( function() {
                         s3.getBucket( testBucket )
-                    } ).toThrow( regex = "Error making Amazon REST Call" );
+					} ).toThrow( regex = "Error making Amazon REST Call" );
+
                     s3.putBucket( testBucket );
-                    expect( function() {
+
+					expect( function() {
                         s3.getBucket( testBucket )
                     } ).notToThrow( regex = "Error making Amazon REST Call" );
                 } );
@@ -45,11 +46,10 @@ component extends="testbox.system.BaseSpec" {
 
                 it( "can delete a bucket", function() {
                     expect( s3.hasBucket( testBucket ) ).toBeFalse();
-                    expect( function() {
-                        s3.deleteBucket( testBucket );
-                    } ).toThrow( regex = "Error making Amazon REST Call" );
+
                     s3.putBucket( testBucket );
-                    expect( s3.hasBucket( testBucket ) ).toBeTrue();
+					expect( s3.hasBucket( testBucket ) ).toBeTrue();
+
                     s3.deleteBucket( testBucket );
                     expect( s3.hasBucket( testBucket ) ).toBeFalse();
                 } );
@@ -62,15 +62,15 @@ component extends="testbox.system.BaseSpec" {
 
             describe( "objects", function() {
                 beforeEach( function() {
-                    if ( s3.hasBucket( testBucket ) ) {
-                        s3.deleteBucket( testBucket, true );
-                    }
-                    s3.putBucket( testBucket );
+                    if( !s3.hasBucket( testBucket ) ) {
+						s3.putBucket( testBucket );
+					}
+					s3.deleteObject( testBucket, "example.txt" );
+					s3.deleteObject( testBucket, "example-2.txt" );
                 } );
 
                 it( "can store a new object", function() {
                     s3.putObject( testBucket, "example.txt", "Hello, world!" );
-                    // writeDump( var = s3.getObjectInfo( "example.txt" ), top = 2, abort = true );
                 } );
 
                 it( "can list all objects", function() {
@@ -102,17 +102,11 @@ component extends="testbox.system.BaseSpec" {
                     expect( bucketContents ).toBeArray();
                     expect( bucketContents ).toHaveLength( 2 );
                     expect( bucketContents[ 1 ].size ).toBe( 13 );
-                    expect( bucketContents[ 2 ].size ).toBe( 13 );
+					expect( bucketContents[ 2 ].size ).toBe( 13 );
                 } );
 
                 it( "can rename an object", function() {
                     s3.putObject( testBucket, "example.txt", "Hello, world!" );
-                    var bucketContents = s3.getBucket( testBucket );
-                    expect( bucketContents ).toBeArray();
-                    expect( bucketContents ).toHaveLength( 1 );
-                    expect( bucketContents[ 1 ].key ).toBe( "example.txt" );
-                    expect( bucketContents[ 1 ].size ).toBe( 13 );
-
                     s3.renameObject( testBucket, "example.txt", testBucket, "example-2.txt" );
 
                     var bucketContents = s3.getBucket( testBucket );
