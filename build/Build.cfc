@@ -94,7 +94,7 @@ component{
         // Check Exit Code?
         if( shell.getExitCode() ){
 			print.redLine(
-				fileRead( "results.json" );
+				fileRead( "results.json" )
 			);
             return error( "Cannot continue building, tests failed!" );
         }
