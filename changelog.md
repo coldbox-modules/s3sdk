@@ -2,11 +2,12 @@
 
 ## v4.0.0
 
-* AWS Region Updates
-* AWS Region Fixes
-* Migrated Module Layout to use Ortus Standards
+* AWS Region Support
+* Migrated Module Layout to use Ortus Standard Module Layout
+* Added testing for all ACF Engines
 * Rework as generic Box module (compatibility change), you must move your `s3sdk` top level settings in ColdBox Config to `moduleSettings.s3sdk`
-* deleteBucket() returns false if bucket doesn't exist instead of throwing an exception
+* `deleteBucket()` returns **false** if bucket doesn't exist instead of throwing an exception
+* Few optimizations and documentation of the API
 
 ## v3.0.1
 
