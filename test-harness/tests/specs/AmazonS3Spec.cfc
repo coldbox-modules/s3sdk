@@ -1,6 +1,6 @@
 component extends="coldbox.system.testing.BaseTestCase" {
 
-    variables.testBucket = "ortus-s3sdk-test-bucket";
+    variables.testBucket = "ortus-s3sdk-test-bucket-#getUtil().getSystemSetting( "ENGINE", "localhost" )#";
 
     function beforeAll() {
         variables.s3 = new s3sdk.models.AmazonS3(
