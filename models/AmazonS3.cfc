@@ -381,7 +381,7 @@ component accessors="true" singleton {
 			return  false;
 		}
 
-        return results.responseheader.status_code == 204;
+		return true;
     }
 
     /**

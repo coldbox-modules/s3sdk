@@ -13,18 +13,17 @@ component extends="coldbox.system.testing.BaseTestCase" {
     }
 
     function afterAll() {
-        if ( s3.hasBucket( testBucket ) ) {
-            s3.deleteBucket( bucketName = testBucket, force = true );
-        }
+		sleep( 2000 );
+        s3.deleteBucket( bucketName = testBucket, force = true );
     }
 
     function run() {
         describe( "Amazon S3 SDK", function() {
             describe( "buckets", function() {
                 beforeEach( function() {
-                    if( s3.hasBucket( testBucket ) ) {
-                        s3.deleteBucket( bucketName = testBucket, force = true );
-                    }
+					sleep( 2000 );
+					var deleted = s3.deleteBucket( bucketName = testBucket, force = true );
+					debug( "Deleted: #deleted#" );
                 } );
 
                 it( "can create a new bucket", function() {
@@ -51,8 +50,8 @@ component extends="coldbox.system.testing.BaseTestCase" {
                     s3.putBucket( testBucket );
 					expect( s3.hasBucket( testBucket ) ).toBeTrue();
 
-                    s3.deleteBucket( testBucket );
-                    expect( s3.hasBucket( testBucket ) ).toBeFalse();
+                    var results = s3.deleteBucket( testBucket );
+                    expect( results ).toBeTrue();
                 } );
 
                 it( "can list the buckets associated with the account", function() {
@@ -63,6 +62,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
             describe( "objects", function() {
                 beforeEach( function() {
+					sleep( 2000 );
                     if( !s3.hasBucket( testBucket ) ) {
 						s3.putBucket( testBucket );
 					}
