@@ -86,12 +86,16 @@ component{
         command( 'testbox run' )
             .params(
                 runner = variables.testRunner,
-                verbose = true
+				verbose = true,
+				outputFile = "results.json"
             )
             .run();
 
         // Check Exit Code?
         if( shell.getExitCode() ){
+			print.redLine(
+				fileRead( "results.json" )
+			);
             return error( "Cannot continue building, tests failed!" );
         }
     }
