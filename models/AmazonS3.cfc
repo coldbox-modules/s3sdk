@@ -768,8 +768,10 @@ component accessors="true" singleton {
             method = arguments.method,
             url = "#variables.URLEndPoint#/#arguments.resource#",
             charset = "utf-8",
-            result = "HTTPResults",
-            timeout = arguments.timeout
+			result = "HTTPResults",
+			redirect = true,
+			timeout = arguments.timeout,
+			useragent = "ColdFusion-S3SDK"
         ) {
             // Amazon Global Headers
             cfhttpparam(
@@ -805,7 +807,7 @@ component accessors="true" singleton {
             }
         }
 
-        log.debug( "Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#", HTTPResults );
+		log.debug( "Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#", HTTPResults );
 
         results.response = HTTPResults.fileContent;
         results.responseHeader = HTTPResults.responseHeader;
@@ -826,7 +828,12 @@ component accessors="true" singleton {
                     return "#node.XmlName#: #node.XmlText#";
                 } ), "\n" );
             }
-        }
+		}
+
+		if( results.error ){
+			//systemOutput( "Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#", true );
+			//systemOutput( HTTPResults, true );
+		}
 
         if( results.error && arguments.throwOnError ){
             throw(
