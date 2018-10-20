@@ -8,7 +8,7 @@ env:
   # Fill out these global variables for build process
   global:
     - MODULE_ID=s3sdk
-    - TARGET_VERSION=4.1.0
+    - TARGET_VERSION=4.0.0
   matrix:
     - ENGINE=lucee@5
     - ENGINE=adobe@11
@@ -55,6 +55,7 @@ script:
   - box task run taskfile=build/Build target=run :version=${TARGET_VERSION} :projectName=${MODULE_ID} :buildID=${TRAVIS_BUILD_NUMBER} :branch=${TRAVIS_BRANCH}
 
 after_failure:
+  - cat build/results.json
   - cd $TRAVIS_BUILD_DIR/test-harness
   # Display the contents of our root directory
   # Spit out our Commandbox log in case we need to debug

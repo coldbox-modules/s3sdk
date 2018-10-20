@@ -87,15 +87,12 @@ component{
             .params(
                 runner = variables.testRunner,
 				verbose = true,
-				outputFile = "results.json"
+				outputFile = "build/results.json"
             )
             .run();
 
         // Check Exit Code?
         if( shell.getExitCode() ){
-			print.redLine(
-				fileRead( "results.json" )
-			);
             return error( "Cannot continue building, tests failed!" );
         }
     }
