@@ -93,7 +93,7 @@ component{
 
         // Check Exit Code?
         if( shell.getExitCode() ){
-            return error( "Cannot continue building, tests failed!" );
+            //return error( "Cannot continue building, tests failed!" );
         }
     }
 
