@@ -36,7 +36,7 @@ component {
 	 */
 	function onLoad(){
 		binder.map( "AmazonS3@s3sdk" )
-			.to( "#moduleMapping#.AmazonS3" )
+			.to( "#moduleMapping#.models.AmazonS3" )
 			.initArg( name="accessKey", 			value=settings.accessKey )
 			.initArg( name="secretKey", 			value=settings.secretKey )
 			.initArg( name="encryption_charset", 	value=settings.encryption_charset )
@@ -44,7 +44,7 @@ component {
 			.initArg( name="awsRegion", 			value=settings.awsregion );
 
 		binder.map( "Sv4Util@s3sdk" )
-			.to( "#moduleMapping#.AmazonS3" )
+			.to( "#moduleMapping#.models.AmazonS3" )
 			.initArg( name="accessKeyId", 			value=settings.accessKey )
 			.initArg( name="secretAccessKey", 		value=settings.secretKey )
 			.initArg( name="defaultRegionName", 	value=settings.awsregion )

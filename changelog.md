@@ -1,5 +1,9 @@
 # Changelog
 
+## v4.0.1
+
+* Fixes to models location, oopsy!
+
 ## v4.0.0
 
 * AWS Region Support
