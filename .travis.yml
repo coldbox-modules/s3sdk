@@ -8,7 +8,7 @@ env:
   # Fill out these global variables for build process
   global:
     - MODULE_ID=s3sdk
-    - TARGET_VERSION=4.1.0
+    - TARGET_VERSION=4.0.1
   matrix:
     - ENGINE=lucee@5
     - ENGINE=adobe@11
