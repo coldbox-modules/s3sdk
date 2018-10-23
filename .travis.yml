@@ -8,7 +8,6 @@ env:
   # Fill out these global variables for build process
   global:
     - MODULE_ID=s3sdk
-    - TARGET_VERSION=4.0.1
   matrix:
     - ENGINE=lucee@5
     - ENGINE=adobe@11
@@ -39,6 +38,11 @@ install:
   - box config set endpoints.forgebox.APIToken=$FORGEBOX_API_TOKEN > /dev/null
 
 script:
+  # Set Current Version
+  - TARGET_VERSION=`cat $TRAVIS_BUILD_DIR/box.json | jq '.version' -r`
+  - echo "Starting build for: $MODULE_ID v$TARGET_VERSION"
+  # Replace version so builder can issue it
+  - box package set version=@build.version@+@build.number@
   # Startup the harness
   - cd test-harness
   # run our dependency install to ensure the workbench is in place
