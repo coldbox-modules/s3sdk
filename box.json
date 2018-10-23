@@ -35,6 +35,6 @@
         "*/.md"
 	],
     "scripts":{
-		"toMaster" : "!git checkout -f master && !git merge --no-ff development && !git tag v`box package show version` && !git push origin --all && !git push origin --tags && bump --minor"
+		"toMaster" : "!git checkout -f master && !git merge --no-ff development && !git tag v`box package show version` && !git push origin --all && !git push origin --tags && bump --minor && git commit -a -m 'version bump'"
     }
 }
