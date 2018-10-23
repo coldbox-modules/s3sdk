@@ -1,8 +1,8 @@
 {
     "name":"Amazon S3 SDK",
-    "version":"4.0.1",
+    "version":"4.1.0",
     "slug":"s3sdk",
-	"location":"https://downloads.ortussolutions.com/ortussolutions/coldbox-modules/s3sdk/@build.version@/s3sdk-@build.version@.zip",
+    "location":"https://downloads.ortussolutions.com/ortussolutions/coldbox-modules/s3sdk/@build.version@/s3sdk-@build.version@.zip",
     "author":"Ortus Solutions, Corp",
     "homepage":"https://github.com/coldbox-modules/s3sdk",
     "documentation":"https://github.com/coldbox-modules/s3sdk",
@@ -19,22 +19,16 @@
             "URL":"http://www.apache.org/licenses/LICENSE-2.0"
         }
     ],
-    "contributors":[
-
-    ],
-    "dependencies":{
-
-    },
-    "devDependencies":{
-    },
-    "installPaths":{
-    },
+    "contributors":[],
+    "dependencies":{},
+    "devDependencies":{},
+    "installPaths":{},
     "ignore":[
-		"**/.*",
+        "**/.*",
         "test-harness",
         "*/.md"
-	],
+    ],
     "scripts":{
-		"toMaster" : "!git checkout -f master && !git merge --no-ff development && !git tag v`box package show version` && !git push origin --all && !git push origin --tags && bump --minor && git commit -a -m 'version bump'"
+        "toMaster":"!git checkout -f master && !git merge --no-ff development && !git tag v`box package show version` && !git push origin --all && !git push origin --tags && bump --minor && git commit -a -m 'version bump'"
     }
 }
