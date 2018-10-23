@@ -40,7 +40,7 @@ install:
 script:
   # Set Current Version
   - TARGET_VERSION=`cat $TRAVIS_BUILD_DIR/box.json | jq '.version' -r`
-  - echo "Starting build for: $MODULE_ID v$TARGET_VERSION"
+  - echo "Starting build for ${MODULE_ID} v${TARGET_VERSION}"
   # Replace version so builder can issue it
   - box package set version=@build.version@+@build.number@
   # Startup the harness
