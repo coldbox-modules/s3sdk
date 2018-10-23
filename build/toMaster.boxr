@@ -15,4 +15,5 @@
 # Bump to prepare for a new release, do minor, change if needed and don't tag
 bump --minor --!tagVersion
 # Send it out
+!git commit -a -m "version bump"
 !git push origin development
