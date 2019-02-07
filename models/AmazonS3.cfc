@@ -61,15 +61,12 @@ component accessors="true" singleton {
 		string awsDomain = "amazonaws.com",
         string encryption_charset = "UTF-8",
         boolean ssl = true
-
     ) {
         variables.accessKey = arguments.accessKey;
         variables.secretKey = arguments.secretKey;
         variables.encryption_charset = arguments.encryption_charset;
 		variables.awsRegion = arguments.awsRegion;
 		variables.awsDomain = arguments.awsDomain;
-
-
         setSSL( ssl );
 
         variables.sv4Util = new Sv4Util(
