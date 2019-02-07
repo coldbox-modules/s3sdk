@@ -47,6 +47,8 @@ component accessors="true" singleton {
      *
      * @accessKey         The Amazon access key.
      * @secretKey         The Amazon secret key.
+	 * @awsRegion		  The Amazon region. Defaults to us-east-1
+	 * @awsDomain		  The Domain used S3 Service (amazonws.com, digitalocean.com). Defaults to amazonws.com
      * @encyption_charset The charset for the encryption. Defaults to UTF-8.
      * @ssl               True if the request should use SSL. Defaults to false.
      *
@@ -57,7 +59,6 @@ component accessors="true" singleton {
 		required string secretKey,
 		string awsRegion = "us-east-1",
 		string awsDomain = "amazonaws.com",
-		string awsServiceName = "s3",
         string encryption_charset = "UTF-8",
         boolean ssl = true
 
@@ -67,7 +68,6 @@ component accessors="true" singleton {
         variables.encryption_charset = arguments.encryption_charset;
 		variables.awsRegion = arguments.awsRegion;
 		variables.awsDomain = arguments.awsDomain;
-		variables.awsServiceName = arguments.awsServiceName;
 
 
         setSSL( ssl );
