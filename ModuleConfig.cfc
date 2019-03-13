@@ -42,15 +42,15 @@ component {
 			.initArg( name="secretKey", 			value=variables.settings.secretKey )
 			.initArg( name="encryption_charset", 	value=variables.settings.encryption_charset )
 			.initArg( name="ssl", 					value=variables.settings.ssl )
-			.initArg( name="awsRegion", 			value=variables.settings.awsregion );
-			.initArg( name="awsDomain", 			value=variables.settings.awsDomain )
+			.initArg( name="awsRegion", 			value=variables.settings.awsregion )
+			.initArg( name="awsDomain", 			value=variables.settings.awsDomain );
 
 		binder.map( "Sv4Util@s3sdk" )
 			.to( "#moduleMapping#.models.AmazonS3" )
 			.initArg( name="accessKeyId", 			value=variables.settings.accessKey )
 			.initArg( name="secretAccessKey", 		value=variables.settings.secretKey )
 			.initArg( name="defaultRegionName", 	value=variables.settings.awsregion )
-			.initArg( name="defaultServiceName",	value=( variables.settings.awsDomain.findNoCase( "amazonaws.com" ) ? "s3" : "do" ) );
+			.initArg( name="defaultServiceName",	value="s3" );
 	}
 
 	/**

@@ -78,7 +78,7 @@ component accessors="true" singleton {
             accessKeyId        = variables.accessKey,
             secretAccessKey    = variables.secretKey,
             defaultRegionName  = arguments.awsRegion,
-            defaultServiceName = ( arguments.awsDomain.findNoCase( "amazonaws.com" ) ? 's3' : 'do' )
+            defaultServiceName = "s3"
 		);
 
         return this;
@@ -112,7 +112,7 @@ component accessors="true" singleton {
 		var URLEndPointProtocol = ( arguments.useSSL ) ? "https://" : "http://";
 		variables.URLEndpoint	=  ( variables.awsDomain contains 'amazonaws.com' ) ?
 									'#URLEndPointProtocol#s3.#variables.awsRegion#.#variables.awsDomain#' :
-									'#URLEndPointProtocol##variables.awsRegion#.#variables.awsDomain#'
+									'#URLEndPointProtocol##variables.awsDomain#'
         return this;
     }
 
@@ -137,7 +137,9 @@ component accessors="true" singleton {
      * @return
      */
     public array function listBuckets() {
-        var results = S3Request();
+        var results = S3Request(
+			headers = { "content-type" = "text/plain" }
+		);
 
         var bucketsXML = xmlSearch( results.response, "//*[local-name()='Bucket']" );
 
@@ -740,7 +742,7 @@ component accessors="true" singleton {
      *
      * @return     The response information.
      */
-    private struct function S3Request(
+    private struct function s3Request(
         string method = "GET",
         string resource = "",
         any body = "",
@@ -763,7 +765,7 @@ component accessors="true" singleton {
 
         // Default Content Type
         if ( NOT structKeyExists( arguments.headers, "content-type" ) ) {
-            arguments.headers[ "content-type" ] = "";
+            arguments.headers[ "content-type" ] = "text/plain";
         }
 
         // Prepare amz headers in sorted order
@@ -774,17 +776,17 @@ component accessors="true" singleton {
             amz = amz & "\n" & sortedAMZ[ x ] & ":" & arguments.amzHeaders[ sortedAMZ[ x ] ];
         }
 
-        // Create Signature
+		// Create Signature
         var signatureData = sv4Util.generateSignatureData(
-            requestMethod  = arguments.method,
-            hostName       =  ( variables.awsDomain contains 'amazonaws.com' ) ? 's3.#variables.awsRegion#.#variables.awsDomain#' : '#variables.awsRegion#.#variables.awsDomain#',
-            requestURI     = arguments.resource,
-            requestBody    = arguments.body,
-            requestHeaders = arguments.headers,
-            requestParams  = arguments.parameters
+            requestMethod  	= arguments.method,
+			hostName 		= reReplaceNoCase( variables.URLEndpoint, "https?\:\/\/", "" ),
+            requestURI     	= arguments.resource,
+            requestBody    	= arguments.body,
+            requestHeaders 	= arguments.headers,
+            requestParams  	= arguments.parameters
 		);
 
-        cfhttp(
+		cfhttp(
             method = arguments.method,
             url = "#variables.URLEndPoint#/#arguments.resource#",
             charset = "utf-8",
@@ -859,6 +861,12 @@ component accessors="true" singleton {
 		}
 
         if( results.error && arguments.throwOnError ){
+
+			writeDump( var=httpresults );
+			writeDump( var=arguments );
+			writeDump( var=signatureData );
+			abort;
+
             throw(
                 type 	= "S3SDKError",
                 message = "Error making Amazon REST Call",

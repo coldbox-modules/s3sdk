@@ -7,8 +7,8 @@ component extends="coldbox.system.testing.BaseTestCase" {
         variables.s3 = new s3sdk.models.AmazonS3(
             getUtil().getSystemSetting( "AWS_ACCESS_KEY" ),
             getUtil().getSystemSetting( "AWS_ACCESS_SECRET" ),
-            getUtil().getSystemSetting( "AWS_REGION", "us-east-1" ),
-            getUtil().getSystemSetting( "AWS_DOMAIN", "amazonaws.com" )
+            getUtil().getSystemSetting( "AWS_REGION" ),
+            getUtil().getSystemSetting( "AWS_DOMAIN" )
         );
         prepareMock( s3 );
 		s3.$property( propertyName = "log", mock = createLogStub() );
@@ -91,8 +91,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
     }
 
     private function createLogStub() {
-        return createStub()
-            .$( "debug" );
+		return createStub()
+			.$( "canDebug", false )
+			.$( "debug" )
+			.$( "error" );
     }
 
 }
