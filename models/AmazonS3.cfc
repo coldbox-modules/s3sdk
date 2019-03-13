@@ -610,7 +610,9 @@ component accessors="true" singleton {
         var signature = urlEncodedFormat( createSignature( stringToSign ) );
         var securedLink = "#arguments.uri#?AWSAccessKeyId=#variables.accessKey#&Expires=#epochTime#&Signature=#signature#";
 
-        log.debug( "String to sign: #stringToSign# . Signature: #signature#" );
+		if( log.canDebug() ){
+			log.debug( "String to sign: #stringToSign# . Signature: #signature#" );
+		}
 
         if ( arguments.virtualHostStyle ) {
             if ( variables.awsDomain contains 'amazonaws.com' ) {
@@ -825,13 +827,17 @@ component accessors="true" singleton {
             }
         }
 
-		log.debug( "Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#", HTTPResults );
+		if( log.canDebug() ){
+			log.debug( "Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#", HTTPResults );
+		}
 
         results.response = HTTPResults.fileContent;
         results.responseHeader = HTTPResults.responseHeader;
 
         results.message = HTTPResults.errorDetail;
-        if ( len( HTTPResults.errorDetail ) ) { results.error = true; }
+		if ( len( HTTPResults.errorDetail ) && HTTPResults.errorDetail neq '302 Found' ) {
+			results.error = true;
+		}
 
         // Check XML Parsing?
         if ( structKeyExists( HTTPResults.responseHeader, "content-type" ) &&
@@ -849,8 +855,7 @@ component accessors="true" singleton {
 		}
 
 		if( results.error ){
-			//systemOutput( "Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#", true );
-			//systemOutput( HTTPResults, true );
+			log.error( "Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#", HTTPResults );
 		}
 
         if( results.error && arguments.throwOnError ){
