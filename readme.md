@@ -53,7 +53,7 @@ public AmazonS3 function init(
 
 This package also is a ColdBox module as well.  The module can be configured by creating an `s3sdk` configuration structure in your `moduleSettings` struct in the application configuration file: `config/Coldbox.cfc` with the following settings:
 
-```json
+```js
 moduleSettings = {
 	s3sdk = {
 		// Your amazon, digital ocean access key
