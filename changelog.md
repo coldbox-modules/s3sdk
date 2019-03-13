@@ -1,5 +1,13 @@
 # Changelog
 
+## v4.1.0
+
+* DigitalOcean Spaces compatiblity
+* Region naming support, you can now pass the `awsRegion` argument to the constructor to select the AWS or DO region
+* SSL is now the default for all operations
+* Addition of two new constructor params: `awsRegion` and `awsDomain` to support regions and multi-domains for AWS and Digital Ocean
+* Added log debugging to calls and signatures if LogBox is on `debug` level
+
 ## v4.0.1
 
 * Fixes to models location, oopsy!

@@ -1,8 +1,8 @@
 [![Build Status](https://travis-ci.org/coldbox-modules/s3sdk.svg?branch=master)](https://travis-ci.org/coldbox-modules/s3sdk)
 
-# Welcome to the Amazon S3 SDK
+# Welcome to the Amazon S3, DigitalOcean Spaces SDK
 
-This SDK allows you to add Amazon S3 capabilities to your ColdFusion (CFML) applications. It is also a ColdBox Module, so if you are using ColdBox, you get auto-registration and much more.
+This SDK allows you to add Amazon S3, Digital Ocean Spaces capabilities to your ColdFusion (CFML) applications. It is also a ColdBox Module, so if you are using ColdBox, you get auto-registration and much more.
 
 ## Resources
 
@@ -10,6 +10,7 @@ This SDK allows you to add Amazon S3 capabilities to your ColdFusion (CFML) appl
 * Issues: https://github.com/coldbox-modules/s3sdk/issues
 * [Changelog](changelog.md)
 * S3 API Reference: http://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html
+* Digital Oceans Spaces API Reference: https://developers.digitalocean.com/documentation/spaces/
 
 ## Installation 
 
@@ -25,12 +26,27 @@ Then follow either the standalone or module instructions below.
 
 This SDK will be installed into a directory called `s3sdk` and then the SDK can be instantiated via ` new s3sdk.models.AmazonS3()` with the following constructor arguments:
 
-```html
-<cfargument name="accessKey" 			required="true">
-<cfargument name="secretKey" 			required="true">
-<cfargument name="encryption_charset" 	required="false" default="utf-8">
-<cfargument name="ssl" 					required="false" default="false">
-<cfargument name="awsregion" 			required="false" default="us-east-1">
+```js
+/**
+ * Create a new S3SDK Instance
+ *
+ * @accessKey The Amazon access key.
+ * @secretKey The Amazon secret key.
+ * @awsRegion The Amazon region. Defaults to us-east-1
+ * @awsDomain The Domain used S3 Service (amazonws.com, digitalocean.com). Defaults to amazonws.com
+ * @encryption_charset The charset for the encryption. Defaults to UTF-8.
+ * @ssl True if the request should use SSL. Defaults to true.
+ *
+ * @return An AmazonS3 instance.
+ */
+public AmazonS3 function init(
+	required string accessKey,
+	required string secretKey,
+	string awsRegion = "us-east-1",
+	string awsDomain = "amazonaws.com",
+	string encryption_charset = "UTF-8",
+	boolean ssl = true
+)
 ```
 
 ### ColdBox Module
@@ -40,16 +56,18 @@ This package also is a ColdBox module as well.  The module can be configured by 
 ```json
 moduleSettings = {
 	s3sdk = {
-		// Your amazon access key
+		// Your amazon, digital ocean access key
 		accessKey = "",
-		// Your amazon secret key
+		// Your amazon, digital ocean secret key
 		secretKey = "",
-		// The default encryption character set
+		// The default encryption character set: defaults to utf-8
 		encryption_charset = "utf-8",
-		// SSL mode or not on cfhttp calls.
-		ssl = false,
-		// Your AWS Region.
-		awsregion = "us-east-1"
+		// SSL mode or not on cfhttp calls: Defaults to true
+		ssl = true,
+		// Your AWS/Digital Ocean Region: Defaults to us-east-1
+		awsregion = "us-east-1",
+		// Your AWS/Digital Ocean Domain Mapping: defaults to amazonaws.com
+		awsDomain = "amazonaws.com"
 	}
 };
 ```

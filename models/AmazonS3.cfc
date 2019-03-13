@@ -34,7 +34,9 @@ component accessors="true" singleton {
     property name="secretKey";
     property name="encryption_charset";
     property name="ssl";
-    property name="URLEndpoint";
+	property name="URLEndpoint";
+	property name="awsRegion";
+	property name="awsDomain";
 
     // STATIC Contsants
     this.ACL_PRIVATE 			= "private";
@@ -45,32 +47,39 @@ component accessors="true" singleton {
     /**
      * Create a new S3SDK Instance
      *
-     * @accessKey         The Amazon access key.
-     * @secretKey         The Amazon secret key.
-     * @encyption_charset The charset for the encryption. Defaults to UTF-8.
-     * @ssl               True if the request should use SSL. Defaults to false.
+     * @accessKey The Amazon access key.
+     * @secretKey The Amazon secret key.
+	 * @awsRegion The Amazon region. Defaults to us-east-1
+	 * @awsDomain The Domain used S3 Service (amazonws.com, digitalocean.com). Defaults to amazonws.com
+     * @encryption_charset The charset for the encryption. Defaults to UTF-8.
+     * @ssl True if the request should use SSL. Defaults to true.
      *
-     * @return            An AmazonS3 instance.
+     * @return An AmazonS3 instance.
      */
     public AmazonS3 function init(
         required string accessKey,
-        required string secretKey,
+		required string secretKey,
+		string awsRegion = "us-east-1",
+		string awsDomain = "amazonaws.com",
         string encryption_charset = "UTF-8",
-        boolean ssl = false,
-        string awsRegion = "us-east-1"
+        boolean ssl = true
     ) {
         variables.accessKey = arguments.accessKey;
         variables.secretKey = arguments.secretKey;
         variables.encryption_charset = arguments.encryption_charset;
-        variables.awsRegion = arguments.awsRegion;
-        setSSL( ssl );
+		variables.awsRegion = arguments.awsRegion;
+		variables.awsDomain = arguments.awsDomain;
 
+		// Construct the SSL Domain
+        setSSL( arguments.ssl );
+
+		// Build signature utility
         variables.sv4Util = new Sv4Util(
-            accessKeyId = variables.accessKey,
-            secretAccessKey = variables.secretKey,
-            defaultRegionName = arguments.awsRegion,
+            accessKeyId        = variables.accessKey,
+            secretAccessKey    = variables.secretKey,
+            defaultRegionName  = arguments.awsRegion,
             defaultServiceName = "s3"
-        );
+		);
 
         return this;
     }
@@ -98,10 +107,12 @@ component accessors="true" singleton {
      * @return The AmazonS3 instance.
      */
     public AmazonS3 function setSSL( boolean useSSL = true ) {
-        variables.ssl = arguments.useSSL;
-        variables.URLEndpoint = arguments.useSSL ?
-            "https://s3.#variables.awsRegion#.amazonaws.com" :
-            "http://s3.#variables.awsRegion#.amazonaws.com";
+		variables.ssl = arguments.useSSL;
+		// Build accordingly
+		var URLEndPointProtocol = ( arguments.useSSL ) ? "https://" : "http://";
+		variables.URLEndpoint	=  ( variables.awsDomain contains 'amazonaws.com' ) ?
+									'#URLEndPointProtocol#s3.#variables.awsRegion#.#variables.awsDomain#' :
+									'#URLEndPointProtocol##variables.awsDomain#';
         return this;
     }
 
@@ -126,7 +137,9 @@ component accessors="true" singleton {
      * @return
      */
     public array function listBuckets() {
-        var results = S3Request();
+        var results = S3Request(
+			headers = { "content-type" = "text/plain" }
+		);
 
         var bucketsXML = xmlSearch( results.response, "//*[local-name()='Bucket']" );
 
@@ -599,13 +612,22 @@ component accessors="true" singleton {
         var signature = urlEncodedFormat( createSignature( stringToSign ) );
         var securedLink = "#arguments.uri#?AWSAccessKeyId=#variables.accessKey#&Expires=#epochTime#&Signature=#signature#";
 
-        log.debug( "String to sign: #stringToSign# . Signature: #signature#" );
+		if( log.canDebug() ){
+			log.debug( "String to sign: #stringToSign# . Signature: #signature#" );
+		}
 
         if ( arguments.virtualHostStyle ) {
-            return "#HTTPPrefix##arguments.bucketName#.s3.amazonaws.com/#securedLink#";
+            if ( variables.awsDomain contains 'amazonaws.com' ) {
+                return "#HTTPPrefix##arguments.bucketName#.s3.amazonaws.com/#securedLink#";
+            } else{
+                return "#HTTPPrefix##arguments.bucketName#.#variables.awsRegion#.#variables.awsDomain#/#securedLink#";
+            }
         }
-
-        return "#HTTPPrefix#s3.amazonaws.com/#arguments.bucketName#/#securedLink#";
+        if ( variables.awsDomain contains 'amazonaws.com' ) {
+            return "#HTTPPrefix#s3.amazonaws.com/#arguments.bucketName#/#securedLink#";
+        } else{
+            return "#HTTPPrefix##variables.awsRegion#.#variables.awsDomain#/#arguments.bucketName#/#securedLink#";
+        }
     }
 
     /**
@@ -720,7 +742,7 @@ component accessors="true" singleton {
      *
      * @return     The response information.
      */
-    private struct function S3Request(
+    private struct function s3Request(
         string method = "GET",
         string resource = "",
         any body = "",
@@ -739,11 +761,11 @@ component accessors="true" singleton {
         var HTTPResults = "";
         var param       = "";
         var md5         = "";
-        var sortedAMZ   = listToArray( listSort( structKeyList( arguments.amzHeaders ), "textnocase" ) );
+		var sortedAMZ   = listToArray( listSort( structKeyList( arguments.amzHeaders ), "textnocase" ) );
 
         // Default Content Type
         if ( NOT structKeyExists( arguments.headers, "content-type" ) ) {
-            arguments.headers[ "content-type" ] = "";
+            arguments.headers[ "content-type" ] = "text/plain";
         }
 
         // Prepare amz headers in sorted order
@@ -754,17 +776,17 @@ component accessors="true" singleton {
             amz = amz & "\n" & sortedAMZ[ x ] & ":" & arguments.amzHeaders[ sortedAMZ[ x ] ];
         }
 
-        // Create Signature
+		// Create Signature
         var signatureData = sv4Util.generateSignatureData(
-            requestMethod  = arguments.method,
-            hostName       = "s3.#variables.awsRegion#.amazonaws.com",
-            requestURI     = arguments.resource,
-            requestBody    = arguments.body,
-            requestHeaders = arguments.headers,
-            requestParams  = arguments.parameters
-        );
+            requestMethod  	= arguments.method,
+			hostName 		= reReplaceNoCase( variables.URLEndpoint, "https?\:\/\/", "" ),
+            requestURI     	= arguments.resource,
+            requestBody    	= arguments.body,
+            requestHeaders 	= arguments.headers,
+            requestParams  	= arguments.parameters
+		);
 
-        cfhttp(
+		cfhttp(
             method = arguments.method,
             url = "#variables.URLEndPoint#/#arguments.resource#",
             charset = "utf-8",
@@ -807,13 +829,17 @@ component accessors="true" singleton {
             }
         }
 
-		log.debug( "Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#", HTTPResults );
+		if( log.canDebug() ){
+			log.debug( "Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#", HTTPResults );
+		}
 
         results.response = HTTPResults.fileContent;
         results.responseHeader = HTTPResults.responseHeader;
 
         results.message = HTTPResults.errorDetail;
-        if ( len( HTTPResults.errorDetail ) ) { results.error = true; }
+		if ( len( HTTPResults.errorDetail ) && HTTPResults.errorDetail neq '302 Found' ) {
+			results.error = true;
+		}
 
         // Check XML Parsing?
         if ( structKeyExists( HTTPResults.responseHeader, "content-type" ) &&
@@ -822,7 +848,7 @@ component accessors="true" singleton {
         ) {
             results.response = XMLParse( HTTPResults.fileContent );
             // Check for Errors
-            if ( NOT listFindNoCase( "200,204", HTTPResults.responseHeader.status_code ) ) {
+            if ( NOT listFindNoCase( "200,204,302", HTTPResults.responseHeader.status_code ) ) {
                 results.error = true;
                 results.message = arrayToList( arrayMap( results.response.error.XmlChildren, function( node ) {
                     return "#node.XmlName#: #node.XmlText#";
@@ -831,11 +857,16 @@ component accessors="true" singleton {
 		}
 
 		if( results.error ){
-			//systemOutput( "Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#", true );
-			//systemOutput( HTTPResults, true );
+			log.error( "Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#", HTTPResults );
 		}
 
         if( results.error && arguments.throwOnError ){
+
+			writeDump( var=httpresults );
+			writeDump( var=arguments );
+			writeDump( var=signatureData );
+			abort;
+
             throw(
                 type 	= "S3SDKError",
                 message = "Error making Amazon REST Call",
