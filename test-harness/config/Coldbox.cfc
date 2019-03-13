@@ -58,6 +58,9 @@
 		logBox = {
 			// Define Appenders
 			appenders = {
+				console={
+					class="coldbox.system.logging.appenders.ConsoleAppender"
+				},
 				files={class="coldbox.system.logging.appenders.RollingFileAppender",
 					properties = {
 						filename = "tester", filePath="/#appMapping#/logs"

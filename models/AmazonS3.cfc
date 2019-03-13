@@ -112,7 +112,7 @@ component accessors="true" singleton {
 		var URLEndPointProtocol = ( arguments.useSSL ) ? "https://" : "http://";
 		variables.URLEndpoint	=  ( variables.awsDomain contains 'amazonaws.com' ) ?
 									'#URLEndPointProtocol#s3.#variables.awsRegion#.#variables.awsDomain#' :
-									'#URLEndPointProtocol##variables.awsDomain#'
+									'#URLEndPointProtocol##variables.awsDomain#';
         return this;
     }
 
