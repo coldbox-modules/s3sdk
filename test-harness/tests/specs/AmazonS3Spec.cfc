@@ -6,7 +6,9 @@ component extends="coldbox.system.testing.BaseTestCase" {
     function beforeAll() {
         variables.s3 = new s3sdk.models.AmazonS3(
             getUtil().getSystemSetting( "AWS_ACCESS_KEY" ),
-            getUtil().getSystemSetting( "AWS_ACCESS_SECRET" )
+            getUtil().getSystemSetting( "AWS_ACCESS_SECRET" ),
+            getUtil().getSystemSetting( "AWS_REGION" ),
+            getUtil().getSystemSetting( "AWS_DOMAIN" )
         );
         prepareMock( s3 );
 		s3.$property( propertyName = "log", mock = createLogStub() );
@@ -44,7 +46,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
                 it( "can delete an object from a bucket", function() {
                     s3.putObject( testBucket, "example.txt", "Hello, world!" );
                     s3.deleteObject( testBucket, "example.txt" );
-                    var bucketContents = s3.getBucket( testBucket );
+					var bucketContents = s3.getBucket( testBucket );
                     expect( bucketContents ).toBeArray();
                     expect( bucketContents ).toHaveLength( 0 );
                 } );
