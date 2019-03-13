@@ -34,7 +34,9 @@ component accessors="true" singleton {
     property name="secretKey";
     property name="encryption_charset";
     property name="ssl";
-    property name="URLEndpoint";
+	property name="URLEndpoint";
+	property name="awsRegion";
+	property name="awsDomain";
 
     // STATIC Contsants
     this.ACL_PRIVATE 			= "private";
@@ -45,14 +47,14 @@ component accessors="true" singleton {
     /**
      * Create a new S3SDK Instance
      *
-     * @accessKey         The Amazon access key.
-     * @secretKey         The Amazon secret key.
-	 * @awsRegion		  The Amazon region. Defaults to us-east-1
-	 * @awsDomain		  The Domain used S3 Service (amazonws.com, digitalocean.com). Defaults to amazonws.com
-     * @encyption_charset The charset for the encryption. Defaults to UTF-8.
-     * @ssl               True if the request should use SSL. Defaults to false.
+     * @accessKey The Amazon access key.
+     * @secretKey The Amazon secret key.
+	 * @awsRegion The Amazon region. Defaults to us-east-1
+	 * @awsDomain The Domain used S3 Service (amazonws.com, digitalocean.com). Defaults to amazonws.com
+     * @encryption_charset The charset for the encryption. Defaults to UTF-8.
+     * @ssl True if the request should use SSL. Defaults to true.
      *
-     * @return            An AmazonS3 instance.
+     * @return An AmazonS3 instance.
      */
     public AmazonS3 function init(
         required string accessKey,
@@ -67,13 +69,16 @@ component accessors="true" singleton {
         variables.encryption_charset = arguments.encryption_charset;
 		variables.awsRegion = arguments.awsRegion;
 		variables.awsDomain = arguments.awsDomain;
-        setSSL( ssl );
 
+		// Construct the SSL Domain
+        setSSL( arguments.ssl );
+
+		// Build signature utility
         variables.sv4Util = new Sv4Util(
-            accessKeyId = variables.accessKey,
-            secretAccessKey = variables.secretKey,
-            defaultRegionName = arguments.awsRegion,
-            defaultServiceName = 's3'
+            accessKeyId        = variables.accessKey,
+            secretAccessKey    = variables.secretKey,
+            defaultRegionName  = arguments.awsRegion,
+            defaultServiceName = ( arguments.awsDomain.findNoCase( "amazonaws.com" ) ? 's3' : 'do' )
 		);
 
         return this;
@@ -103,9 +108,11 @@ component accessors="true" singleton {
      */
     public AmazonS3 function setSSL( boolean useSSL = true ) {
 		variables.ssl = arguments.useSSL;
-		// variables.URLEndpoint = variables.URLEndpoint;
+		// Build accordingly
 		var URLEndPointProtocol = ( arguments.useSSL ) ? "https://" : "http://";
-		variables.URLEndpoint =  ( variables.awsDomain contains 'amazonaws.com' ) ? '#URLEndPointProtocol#s3.#variables.awsRegion#.#variables.awsDomain#' : '#URLEndPointProtocol##variables.awsRegion#.#variables.awsDomain#'
+		variables.URLEndpoint	=  ( variables.awsDomain contains 'amazonaws.com' ) ?
+									'#URLEndPointProtocol#s3.#variables.awsRegion#.#variables.awsDomain#' :
+									'#URLEndPointProtocol##variables.awsRegion#.#variables.awsDomain#'
         return this;
     }
 

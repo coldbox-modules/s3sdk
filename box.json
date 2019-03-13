@@ -19,7 +19,9 @@
             "URL":"http://www.apache.org/licenses/LICENSE-2.0"
         }
     ],
-    "contributors":[],
+    "contributors":[
+		"Andrew Davis"
+	],
     "dependencies":{},
     "devDependencies":{},
     "installPaths":{},

@@ -22,12 +22,13 @@ component {
 	 */
 	function configure(){
 		// Settings
-		settings = {
-			accessKey          : "",
-			secretKey          : "",
-			encryption_charset : "utf-8",
-			ssl                : false,
-			awsregion          : "us-east-1"
+		variables.settings = {
+			accessKey           : "",
+			secretKey           : "",
+			encryption_charset  : "utf-8",
+			ssl                 : true,
+			awsregion           : "us-east-1",
+			awsDomain 			: "amazonaws.com"
 		};
 	}
 
@@ -37,18 +38,19 @@ component {
 	function onLoad(){
 		binder.map( "AmazonS3@s3sdk" )
 			.to( "#moduleMapping#.models.AmazonS3" )
-			.initArg( name="accessKey", 			value=settings.accessKey )
-			.initArg( name="secretKey", 			value=settings.secretKey )
-			.initArg( name="encryption_charset", 	value=settings.encryption_charset )
-			.initArg( name="ssl", 					value=settings.ssl )
-			.initArg( name="awsRegion", 			value=settings.awsregion );
+			.initArg( name="accessKey", 			value=variables.settings.accessKey )
+			.initArg( name="secretKey", 			value=variables.settings.secretKey )
+			.initArg( name="encryption_charset", 	value=variables.settings.encryption_charset )
+			.initArg( name="ssl", 					value=variables.settings.ssl )
+			.initArg( name="awsRegion", 			value=variables.settings.awsregion );
+			.initArg( name="awsDomain", 			value=variables.settings.awsDomain )
 
 		binder.map( "Sv4Util@s3sdk" )
 			.to( "#moduleMapping#.models.AmazonS3" )
-			.initArg( name="accessKeyId", 			value=settings.accessKey )
-			.initArg( name="secretAccessKey", 		value=settings.secretKey )
-			.initArg( name="defaultRegionName", 	value=settings.awsregion )
-			.initArg( name="defaultServiceName",	value="s3" );
+			.initArg( name="accessKeyId", 			value=variables.settings.accessKey )
+			.initArg( name="secretAccessKey", 		value=variables.settings.secretKey )
+			.initArg( name="defaultRegionName", 	value=variables.settings.awsregion )
+			.initArg( name="defaultServiceName",	value=( variables.settings.awsDomain.findNoCase( "amazonaws.com" ) ? "s3" : "do" ) );
 	}
 
 	/**

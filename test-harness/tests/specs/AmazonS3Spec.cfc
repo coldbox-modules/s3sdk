@@ -1,14 +1,14 @@
 component extends="coldbox.system.testing.BaseTestCase" {
 
 	variables.targetEngine = getUtil().getSystemSetting( "ENGINE", "localhost" );
-    variables.testBucket = "ortus-s3sdk-bdd-bucket-#replace( variables.targetEngine, "@", "-" )#";
+	variables.testBucket = "ortus-s3sdk-bdd-#replace( variables.targetEngine, "@", "-" )#";
 
     function beforeAll() {
         variables.s3 = new s3sdk.models.AmazonS3(
             getUtil().getSystemSetting( "AWS_ACCESS_KEY" ),
             getUtil().getSystemSetting( "AWS_ACCESS_SECRET" ),
-            getUtil().getSystemSetting( "AWS_REGION" ),
-            getUtil().getSystemSetting( "AWS_DOMAIN" )
+            getUtil().getSystemSetting( "AWS_REGION", "us-east-1" ),
+            getUtil().getSystemSetting( "AWS_DOMAIN", "amazonaws.com" )
         );
         prepareMock( s3 );
 		s3.$property( propertyName = "log", mock = createLogStub() );
