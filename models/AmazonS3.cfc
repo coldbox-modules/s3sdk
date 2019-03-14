@@ -914,7 +914,7 @@ component accessors="true" singleton {
     /**
      * Helper function to catch missing bucket name
      */
-    private binary function requireBucketName( bucketName ) {
+    private function requireBucketName( bucketName ) {
         if( isNull( arguments.bucketName ) || !len( arguments.bucketName )  ) {
             throw( 'bucketName is required.  Please provide the name of the bucket to access or set a default bucket name in the SDk.' );
         }
