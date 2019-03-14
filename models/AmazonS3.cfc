@@ -37,6 +37,8 @@ component accessors="true" singleton {
 	property name="URLEndpoint";
 	property name="awsRegion";
 	property name="awsDomain";
+	property name="defaultDelimiter";
+	property name="defaultBucketName";
 
     // STATIC Contsants
     this.ACL_PRIVATE 			= "private";
@@ -53,6 +55,8 @@ component accessors="true" singleton {
 	 * @awsDomain The Domain used S3 Service (amazonws.com, digitalocean.com). Defaults to amazonws.com
      * @encryption_charset The charset for the encryption. Defaults to UTF-8.
      * @ssl True if the request should use SSL. Defaults to true.
+     * @defaultDelimiter Delimter to use for getBucket calls. "/"is standard to treat keys as file paths
+     * @defaultBucketName Bucket name to use by default
      *
      * @return An AmazonS3 instance.
      */
@@ -62,13 +66,17 @@ component accessors="true" singleton {
 		string awsRegion = "us-east-1",
 		string awsDomain = "amazonaws.com",
         string encryption_charset = "UTF-8",
-        boolean ssl = true
+        boolean ssl = true,
+        string defaultDelimiter='/',
+	    string defaultBucketName=''
     ) {
         variables.accessKey = arguments.accessKey;
         variables.secretKey = arguments.secretKey;
         variables.encryption_charset = arguments.encryption_charset;
 		variables.awsRegion = arguments.awsRegion;
 		variables.awsDomain = arguments.awsDomain;
+		variables.defaultDelimiter = arguments.defaultDelimiter;
+		variables.defaultBucketName = arguments.defaultBucketName;
 
 		// Construct the SSL Domain
         setSSL( arguments.ssl );
@@ -158,7 +166,8 @@ component accessors="true" singleton {
      *
      * @return     The region code for the bucket.
      */
-    public string function getBucketLocation( required string bucketName ) {
+    public string function getBucketLocation( required string bucketName=variables.defaultBucketName ) {
+        requireBucketName( arguments.bucketName );
         var results = S3Request( resource = arguments.bucketname & "?location" );
 
         if ( results.error ) {
@@ -179,7 +188,8 @@ component accessors="true" singleton {
      *
      * @return     The bucket version status or an empty string if there is none.
      */
-    public string function getBucketVersionStatus( required string bucketName ) {
+    public string function getBucketVersionStatus( required string bucketName=variables.defaultBucketName ) {
+        requireBucketName( arguments.bucketName );
         var results = S3Request( resource = arguments.bucketname & "?versioning" );
 
         var status = xmlSearch( results.response, "//*[local-name()='VersioningConfiguration']//*[local-name()='Status']/*[1]" );
@@ -199,7 +209,8 @@ component accessors="true" singleton {
      *
      * @return     True if the request was successful.
      */
-    public boolean function setBucketVersionStatus( required string bucketName, boolean version = true ) {
+    public boolean function setBucketVersionStatus( required string bucketName=variables.defaultBucketName, boolean version = true ) {
+        requireBucketName( arguments.bucketName );
         var constraintXML 	= "";
         var headers = { "content-type" = "text/plain" };
 
@@ -227,7 +238,8 @@ component accessors="true" singleton {
      *
      * @return     An array containing the ACL for the given resource.
      */
-    public array function getAccessControlPolicy( required string bucketName, string uri = "" ) {
+    public array function getAccessControlPolicy( required string bucketName=variables.defaultBucketName, string uri = "" ) {
+        requireBucketName( arguments.bucketName );
         var resource = arguments.bucketName;
 
         if ( len( arguments.uri ) ) {
@@ -259,12 +271,13 @@ component accessors="true" singleton {
      * @return     The bucket contents.
      */
     public array function getBucket(
-        required string bucketName,
+        required string bucketName=variables.defaultBucketName,
         string prefix = "",
         string marker = "",
         string maxKeys = "",
-        string delimiter = ""
+        string delimiter = variables.defaultDelimiter
     ) {
+        requireBucketName( arguments.bucketName );
         var parameters = {};
 
         if ( len( arguments.prefix ) ) {
@@ -297,7 +310,7 @@ component accessors="true" singleton {
                 "lastModified"  = trim( node.lastModified.xmlText ),
                 "size"          = trim( node.Size.xmlText ),
                 "eTag"          = trim( node.etag.xmlText ),
-                "isDirectory"   = ( findNoCase( "_$folder$", node.key.xmlText ) ? true : false )
+                "isDirectory"   = ( ( findNoCase( "_$folder$", node.key.xmlText ) || ( len( delimiter ) && node.key.xmlText.endsWith( delimiter ) ) ) ? true : false )
             };
         } );
 
@@ -325,10 +338,11 @@ component accessors="true" singleton {
      * @return     True if the bucket was created successfully.
      */
     public boolean function putBucket(
-        required string bucketName,
+        required string bucketName=variables.defaultBucketName,
         string acl = this.ACL_PUBLIC_READ,
         string location = "USA"
     ) {
+        requireBucketName( arguments.bucketName );
         var constraintXML = arguments.location == "EU" ?
             "<CreateBucketConfiguration><LocationConstraint>EU</LocationConstraint></CreateBucketConfiguration>" :
             "";
@@ -351,7 +365,8 @@ component accessors="true" singleton {
      *
      * @return     True if the bucket exists.
      */
-    public boolean function hasBucket( required string bucketName ) {
+    public boolean function hasBucket( required string bucketName=variables.defaultBucketName ) {
+        requireBucketName( arguments.bucketName );
         return ! arrayIsEmpty( arrayFilter( listBuckets(), function( bucket ) {
             return bucket.name == bucketName;
         } ) );
@@ -366,9 +381,10 @@ component accessors="true" singleton {
      * @return     True, if the bucket was deleted successfully.
      */
 	public boolean function deleteBucket(
-        required string bucketName,
+        required string bucketName=variables.defaultBucketName,
         boolean force = false
     ) {
+        requireBucketName( arguments.bucketName );
         if ( arguments.force && hasBucket( arguments.bucketName ) ){
             var bucketContents = getBucket( arguments.bucketName );
             for ( var item in bucketContents ) {
@@ -418,7 +434,7 @@ component accessors="true" singleton {
      * @return       The file's eTag
      */
     public string function putObjectFile(
-        required string bucketName,
+        required string bucketName=variables.defaultBucketName,
         required string filepath,
         string uri = "",
         string contentType = "binary/octet-stream",
@@ -428,6 +444,7 @@ component accessors="true" singleton {
         string acl = this.ACL_PUBLIC_READ,
         struct metaHeaders = {}
     ) {
+        requireBucketName( arguments.bucketName );
         arguments.data = fileReadBinary( arguments.filepath );
 
         if ( NOT len( arguments.uri ) ) {
@@ -463,7 +480,7 @@ component accessors="true" singleton {
      * @return       The folder's eTag
      */
     public string function putObjectFolder(
-        required string bucketName,
+        required string bucketName=variables.defaultBucketName,
         string uri = "",
         string contentType = "binary/octet-stream",
         numeric HTTPTimeout = 300,
@@ -472,6 +489,7 @@ component accessors="true" singleton {
         string acl = this.ACL_PUBLIC_READ,
         struct metaHeaders = {}
     ) {
+        requireBucketName( arguments.bucketName );
         arguments.data = "";
         return putObject( argumentCollection = arguments );
     }
@@ -513,7 +531,7 @@ component accessors="true" singleton {
      * @return             The object's eTag.
      */
     public string function putObject(
-        required string bucketName,
+        required string bucketName=variables.defaultBucketName,
         string uri = "",
         any data = "",
         string contentDisposition = "",
@@ -524,6 +542,7 @@ component accessors="true" singleton {
         string acl = this.ACL_PUBLIC_READ,
         struct metaHeaders = {}
     ) {
+        requireBucketName( arguments.bucketName );
         var amzHeaders = createMetaHeaders( arguments.metaHeaders );
         amzHeaders[ "x-amz-acl" ] = arguments.acl;
 
@@ -565,9 +584,10 @@ component accessors="true" singleton {
      * @return     The object's metadata information.
      */
     public struct function getObjectInfo(
-        required string bucketName,
+        required string bucketName=variables.defaultBucketName,
         required string uri
     ) {
+        requireBucketName( arguments.bucketName );
         var results = S3Request(
             method = "HEAD",
             resource = arguments.bucketName & "/" & arguments.uri
@@ -593,12 +613,13 @@ component accessors="true" singleton {
      * @return           An authenticated url to the resource.
      */
     public string function getAuthenticatedURL(
-        required string bucketName,
+        required string bucketName=variables.defaultBucketName,
         required string uri,
         string minutesValid = 60,
         boolean virtualHostStyle = false,
         boolean useSSL = false
     ) {
+        requireBucketName( arguments.bucketName );
         var epochTime = DateDiff( "s", DateConvert( "utc2Local", "January 1 1970 00:00" ), now()) + ( arguments.minutesValid * 60 );
         var HTTPPrefix = arguments.useSSL ? "https://" : "http://";
 
@@ -639,9 +660,10 @@ component accessors="true" singleton {
      * @return     Returns true if the object is deleted successfully.
      */
 	public boolean function deleteObject(
-        required string bucketName,
+        required string bucketName=variables.defaultBucketName,
         required string uri
     ) {
+        requireBucketName( arguments.bucketName );
         arguments.uri = urlEncodedFormat( urlDecode( arguments.uri ) );
         arguments.uri = replaceNoCase( arguments.uri, "%2F", "/", "all" );
         arguments.uri = replaceNoCase( arguments.uri, "%2E", ".", "all" );
@@ -887,6 +909,15 @@ component accessors="true" singleton {
         mac.update( jMsg );
 
         return mac.doFinal();
+    }
+
+    /**
+     * Helper function to catch missing bucket name
+     */
+    private binary function requireBucketName( bucketName ) {
+        if( isNull( arguments.bucketName ) || !len( arguments.bucketName )  ) {
+            throw( 'bucketName is required.  Please provide the name of the bucket to access or set a default bucket name in the SDk.' );
+        }
     }
 
 }
