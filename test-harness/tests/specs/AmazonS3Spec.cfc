@@ -17,7 +17,9 @@ component extends="coldbox.system.testing.BaseTestCase" {
     }
 
     function afterAll() {
-		s3.deleteBucket( bucketName = testBucket, force = true );
+        try{
+            s3.deleteBucket( bucketName = testBucket, force = true );
+        } catch( any e ) {}
 	}
 
     function run() {
