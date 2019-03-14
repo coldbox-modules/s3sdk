@@ -1,5 +1,9 @@
 # Changelog
 
+## v4.1.1
+
+* Left some dump/aborts
+
 ## v4.1.0
 
 * DigitalOcean Spaces compatiblity
