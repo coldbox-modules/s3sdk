@@ -861,12 +861,6 @@ component accessors="true" singleton {
 		}
 
         if( results.error && arguments.throwOnError ){
-
-			writeDump( var=httpresults );
-			writeDump( var=arguments );
-			writeDump( var=signatureData );
-			abort;
-
             throw(
                 type 	= "S3SDKError",
                 message = "Error making Amazon REST Call",
