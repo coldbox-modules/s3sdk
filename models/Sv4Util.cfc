@@ -120,6 +120,7 @@
         props.hostName      = arguments.hostName;
         props.requestMethod     = arguments.requestMethod;
         props.canonicalURI  = buildCanonicalURI( requestURI = arguments.requestURI );
+
         // For signed requests, the payload is a checksum
         props.requestPayload    = arguments.signedPayload ? hash256( arguments.requestBody ) : arguments.requestBody ;
         props.credentialScope   = buildCredentialScope( dateStamp=props.dateStamp, serviceName=props.serviceName, regionName=props.regionName );

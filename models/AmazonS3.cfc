@@ -145,9 +145,7 @@ component accessors="true" singleton {
      * @return
      */
     public array function listBuckets() {
-        var results = S3Request(
-			headers = { "content-type" = "text/plain" }
-		);
+        var results = S3Request();
 
         var bucketsXML = xmlSearch( results.response, "//*[local-name()='Bucket']" );
 
@@ -787,15 +785,13 @@ component accessors="true" singleton {
 
         // Default Content Type
         if ( NOT structKeyExists( arguments.headers, "content-type" ) ) {
-            arguments.headers[ "content-type" ] = "text/plain";
+        //    arguments.headers[ "Content-Type" ] = "text/plain";
         }
 
         // Prepare amz headers in sorted order
-        var amz = "";
         for( var x = 1; x <= arrayLen( sortedAMZ ); x++ ) {
             // Create amz signature string
             arguments.headers[ sortedAMZ[ x ] ] = arguments.amzHeaders[ sortedAMZ[ x ] ];
-            amz = amz & "\n" & sortedAMZ[ x ] & ":" & arguments.amzHeaders[ sortedAMZ[ x ] ];
         }
 
 		// Create Signature
