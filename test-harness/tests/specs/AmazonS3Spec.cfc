@@ -107,6 +107,25 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
                 } );
 
+                it( "can check if an object exists", function() {
+                    s3.putObject( testBucket, "example.txt", "Hello, world!" );
+					s3.putObject( testBucket, "emptyFolder/", "" );
+                    s3.putObject( testBucket, "testFolder/example.txt", "Hello, world!" );
+
+                    var existsCheck = s3.objectExists( testBucket, 'example.txt' );
+                    expect( existsCheck ).toBeTrue();
+
+                    var existsCheck = s3.objectExists( testBucket, 'notHere.txt' );
+                    expect( existsCheck ).toBeFalse();
+
+                    var existsCheck = s3.objectExists( testBucket, 'emptyFolder/' );
+                    expect( existsCheck ).toBeTrue();
+
+                    var existsCheck = s3.objectExists( testBucket, 'testFolder/example.txt' );
+                    expect( existsCheck ).toBeTrue();
+
+                } );
+
                 it( "can delete an object from a bucket", function() {
                     s3.putObject( testBucket, "example.txt", "Hello, world!" );
                     s3.deleteObject( testBucket, "example.txt" );

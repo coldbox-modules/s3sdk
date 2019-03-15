@@ -599,6 +599,36 @@ component accessors="true" singleton {
     }
 
     /**
+     * Check if an object exists in the bucket
+     *
+     * @bucketName The bucket the object resides in.
+     * @uri        The object URI to check on.
+     *
+     * @return     True/false whether the object exists
+     */
+    public boolean function objectExists(
+        required string bucketName=variables.defaultBucketName,
+        required string uri
+    ) {
+        requireBucketName( arguments.bucketName );
+        var results = S3Request(
+            method = "HEAD",
+            resource = arguments.bucketName & "/" & arguments.uri,
+            throwOnError=false
+        );
+        var status_code = results.responseHeader.status_code ?: 0;
+
+        if( results.error == false && status_code >= 200 && status_code < 300 ) {
+            return true;
+        } else if( status_code == 404 ) {
+            return false;
+        } else {
+            throw( message='Error checking for the existence of [#uri#].', detail=results.message );
+        }
+
+    }
+
+    /**
      * Returns a query string authenticated URL to an object in S3.
      *
      * @bucketName       The bucket the object resides in.
