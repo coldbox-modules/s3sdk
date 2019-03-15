@@ -19,7 +19,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
- component {
+component {
 
     /**
      * Creates a new instance of the utility for generating signatures using the supplied settings
@@ -365,7 +365,6 @@
      * @returns URL encoded path
      */
     private string function buildCanonicalURI(required string requestURI) {
-
         var path = arguments.requestURI;
         // Return "/" for empty path
         if (!len(trim(path))) {
@@ -376,7 +375,7 @@
             path = "/"& path;
         }
 
-        return path;
+        return  urlEncodePath( path );
     }
 
 
@@ -514,7 +513,7 @@
         // First encode parameter names and values
         var encodedParams = {};
         structEach( arguments.queryParams, function(string key, string value) {
-            encodedParams[ urlEncode(arguments.key) ] = urlEncode( arguments.value );
+            encodedParams[ urlEncodeForAWS(arguments.key) ] = urlEncodeForAWS( arguments.value );
         });
         return encodedParams;
     }
@@ -590,7 +589,7 @@
      * @value string to encode
      * @returns URI encoded string
      */
-    private string function urlEncode( string value ) {
+    private string function urlEncodeForAWS( string value ) {
         var encodedValue = encodeForURL(arguments.value);
         // Reverse encoding of tilde "~"
         encodedValue = replace( encodedValue, encodeForURL("~"), "~", "all" );
@@ -598,6 +597,30 @@
         encodedValue = replace( encodedValue, "+", "%20", "all" );
         // Asterisk "*" should be encoded
         encodedValue = replace( encodedValue, "*", "%2A", "all" );
+
+        return encodedValue;
+    }
+
+
+    /**
+     * URL encodes the supplied string per RFC 3986, which defines the following as
+     * unreserved characters that should NOT be encoded:
+     *
+     * A-Z, a-z, 0-9, hyphen ( - ), underscore ( _ ), period ( . ), and tilde ( ~ ).
+     *
+     * @value string to encode
+     * @returns URI encoded string
+     */
+    private string function urlEncodePath( string value ) {
+        var encodedValue = encodeForURL(arguments.value);
+        // Reverse encoding of tilde "~"
+        encodedValue = replace( encodedValue, encodeForURL("~"), "~", "all" );
+        // Fix encoding of spaces, ie replace '+' into "%20"
+        encodedValue = replace( encodedValue, "+", "%20", "all" );
+        // Asterisk "*" should be encoded
+        encodedValue = replace( encodedValue, "*", "%2A", "all" );
+        // Asterisk "*" should be encoded
+        encodedValue = replace( encodedValue, "%2F", "/", "all" );
 
         return encodedValue;
     }
