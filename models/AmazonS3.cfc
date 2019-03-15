@@ -55,7 +55,7 @@ component accessors="true" singleton {
 	 * @awsDomain The Domain used S3 Service (amazonws.com, digitalocean.com). Defaults to amazonws.com
      * @encryption_charset The charset for the encryption. Defaults to UTF-8.
      * @ssl True if the request should use SSL. Defaults to true.
-     * @defaultDelimiter Delimter to use for getBucket calls. "/"is standard to treat keys as file paths
+     * @defaultDelimiter Delimter to use for getBucket calls. "/" is standard to treat keys as file paths
      * @defaultBucketName Bucket name to use by default
      *
      * @return An AmazonS3 instance.
@@ -70,13 +70,13 @@ component accessors="true" singleton {
         string defaultDelimiter='/',
 	    string defaultBucketName=''
     ) {
-        variables.accessKey = arguments.accessKey;
-        variables.secretKey = arguments.secretKey;
+        variables.accessKey          = arguments.accessKey;
+        variables.secretKey          = arguments.secretKey;
         variables.encryption_charset = arguments.encryption_charset;
-		variables.awsRegion = arguments.awsRegion;
-		variables.awsDomain = arguments.awsDomain;
-		variables.defaultDelimiter = arguments.defaultDelimiter;
-		variables.defaultBucketName = arguments.defaultBucketName;
+		variables.awsRegion          = arguments.awsRegion;
+		variables.awsDomain          = arguments.awsDomain;
+		variables.defaultDelimiter   = arguments.defaultDelimiter;
+		variables.defaultBucketName  = arguments.defaultBucketName;
 
 		// Construct the SSL Domain
         setSSL( arguments.ssl );

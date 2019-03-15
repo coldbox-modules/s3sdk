@@ -12,7 +12,7 @@ This SDK allows you to add Amazon S3, Digital Ocean Spaces capabilities to your 
 * S3 API Reference: http://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html
 * Digital Oceans Spaces API Reference: https://developers.digitalocean.com/documentation/spaces/
 
-## Installation 
+## Installation
 
 This SDK can be installed as standalone or as a ColdBox Module.  Either approach requires a simple CommandBox command:
 
@@ -36,6 +36,8 @@ This SDK will be installed into a directory called `s3sdk` and then the SDK can 
  * @awsDomain The Domain used S3 Service (amazonws.com, digitalocean.com). Defaults to amazonws.com
  * @encryption_charset The charset for the encryption. Defaults to UTF-8.
  * @ssl True if the request should use SSL. Defaults to true.
+ * @defaultDelimiter Delimter to use for getBucket calls. "/" is standard to treat keys as file paths
+ * @defaultBucketName Bucket name to use by default
  *
  * @return An AmazonS3 instance.
  */
@@ -45,7 +47,9 @@ public AmazonS3 function init(
 	string awsRegion = "us-east-1",
 	string awsDomain = "amazonaws.com",
 	string encryption_charset = "UTF-8",
-	boolean ssl = true
+	boolean ssl = true,
+	string defaultDelimiter='/',
+	string defaultBucketName=''
 )
 ```
 
@@ -67,7 +71,11 @@ moduleSettings = {
 		// Your AWS/Digital Ocean Region: Defaults to us-east-1
 		awsregion = "us-east-1",
 		// Your AWS/Digital Ocean Domain Mapping: defaults to amazonaws.com
-		awsDomain = "amazonaws.com"
+		awsDomain = "amazonaws.com",
+		// The default delimiter for folder operations
+		defaultDelimiter	= "/",
+		// The default bucket name to root the operations on.
+		defaultBucketName	= ""
 	}
 };
 ```

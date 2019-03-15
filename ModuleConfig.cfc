@@ -28,7 +28,9 @@ component {
 			encryption_charset  : "utf-8",
 			ssl                 : true,
 			awsregion           : "us-east-1",
-			awsDomain 			: "amazonaws.com"
+			awsDomain 			: "amazonaws.com",
+			defaultDelimiter	: "/",
+			defaultBucketName	: ""
 		};
 	}
 
@@ -43,7 +45,9 @@ component {
 			.initArg( name="encryption_charset", 	value=variables.settings.encryption_charset )
 			.initArg( name="ssl", 					value=variables.settings.ssl )
 			.initArg( name="awsRegion", 			value=variables.settings.awsregion )
-			.initArg( name="awsDomain", 			value=variables.settings.awsDomain );
+			.initArg( name="awsDomain", 			value=variables.settings.awsDomain )
+			.initArg( name="defaultDelimiter", 		value=variables.settings.defaultDelimiter )
+			.initArg( name="defaultBucketName", 	value=variables.settings.defaultBucketName );
 
 		binder.map( "Sv4Util@s3sdk" )
 			.to( "#moduleMapping#.models.AmazonS3" )
