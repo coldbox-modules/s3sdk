@@ -1,5 +1,14 @@
 # Changelog
 
+## v4.2.0
+
+* ACF compatiblities
+* Fixes for auth on folder commands
+* New constructor args: `defaultDelimiter` for folder operations, `defaultBucketname` so you can set a default bucket for all bucket related operations.
+* Avoid nasty error on bucket deletion
+* Add new method `objectExists()` boolean check for objects
+* Fix URI encoding on signatures for headers and query params
+
 ## v4.1.1
 
 * Left some dump/aborts

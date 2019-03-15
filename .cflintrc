@@ -137,9 +137,6 @@
 			"code": "QUERYPARAM_REQ"
 		},
 		{
-			"code": "UNUSED_LOCAL_VARIABLE"
-		},
-		{
 			"code": "UNUSED_METHOD_ARGUMENT"
 		},
 		{
