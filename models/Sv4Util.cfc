@@ -375,7 +375,7 @@ component {
             path = "/"& path;
         }
 
-        return  urlEncodePath( path );
+		return path;
     }
 
 
