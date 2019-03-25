@@ -29,7 +29,7 @@ component {
 			ssl                 : true,
 			awsregion           : "us-east-1",
 			awsDomain 			: "amazonaws.com",
-			defaultDelimiter	: "",
+			defaultDelimiter	: "/",
 			defaultBucketName	: ""
 		};
 	}

@@ -1,10 +1,5 @@
 # Changelog
 
-## v4.2.1
-
-* Removed encoded path, conflicting with signature
-* Reverted default delimiter to empty to have backwards compatiblity.
-
 ## v4.2.0
 
 * ACF compatiblities

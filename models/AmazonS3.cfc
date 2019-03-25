@@ -67,7 +67,7 @@ component accessors="true" singleton {
 		string awsDomain = "amazonaws.com",
         string encryption_charset = "UTF-8",
         boolean ssl = true,
-        string defaultDelimiter='',
+        string defaultDelimiter='/',
 	    string defaultBucketName=''
     ) {
         variables.accessKey          = arguments.accessKey;
