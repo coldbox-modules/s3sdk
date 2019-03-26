@@ -151,7 +151,7 @@
             // When passing all parameters in query string, canonical query string must also
             // include the parameters used as part of the signing process, ie hashing algorithm,
             // credential scope, date, and signed headers parameters.
-			if ( !props.requestMethod=='DELETE'){
+			if ( !props.requestMethod == 'DELETE' ){
 				props.requestParams["X-Amz-Algorithm"] = variables.signatureAlgorithm;
 				props.requestParams["X-Amz-Credential"] = variables.accessKeyId &"/"& props.credentialScope;
 				props.requestParams["X-Amz-SignedHeaders"] = props.signedHeaders;
