@@ -1,5 +1,10 @@
 # Changelog
 
+## v4.2.1
+
+* Avoid double encoding on `copy`, `putObjectFile`, and `delete()` operations
+* Consolidate ssl to use `variables` instead of `arguments`
+
 ## v4.2.0
 
 * ACF compatiblities
