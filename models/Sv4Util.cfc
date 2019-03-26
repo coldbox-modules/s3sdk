@@ -361,21 +361,23 @@ component {
      * Generates canonical URI. Encoded, absolute path component of the URI,
      * which is everything in the URI from the HTTP host to the question mark character ("?")
      * that begins the query string parameters (if any)
+	 *
      * @uriPath URI or path. If empty, "/" will be used
      * @returns URL encoded path
      */
-    private string function buildCanonicalURI(required string requestURI) {
+    private string function buildCanonicalURI( required string requestURI ){
         var path = arguments.requestURI;
         // Return "/" for empty path
-        if (!len(trim(path))) {
+        if( !len( trim( path ) ) ){
             path = "/";
-        }
+		}
+
         // Convert to absolute path (if needed)
-        if (left(path, 1) != "/") {
-            path = "/"& path;
+        if( left( path, 1 ) != "/" ){
+            path = "/" & path;
         }
 
-        return  urlEncodePath( path );
+		return  urlEncodePath( path );
     }
 
 

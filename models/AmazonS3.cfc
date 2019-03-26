@@ -135,7 +135,7 @@ component accessors="true" singleton {
     public string function createSignature( required string stringToSign ) {
         return toBase64( HMAC_SHA1(
             variables.secretKey,
-            replace( arguments.stringToSign, "\n", "#chr(10)#", "all" )
+            replace( arguments.stringToSign, "\n", "#chr( 10 )#", "all" )
         ) );
     }
 
@@ -300,7 +300,7 @@ component accessors="true" singleton {
         );
 
         var contentsXML = xmlSearch( results.response, "//*[local-name()='Contents']" );
-        var foldersXML 	= xmlSearch( results.response, "//*[local-name()='CommonPrefixes']" );
+		var foldersXML 	= xmlSearch( results.response, "//*[local-name()='CommonPrefixes']" );
 
         var objectContents = arrayMap( contentsXML, function( node ) {
             return {
@@ -449,11 +449,11 @@ component accessors="true" singleton {
             arguments.uri = getFileFromPath( arguments.filePath );
         }
 
-        arguments.uri = urlEncodedFormat( arguments.uri );
-        arguments.uri = replaceNoCase( arguments.uri, "%2F", "/", "all" );
-        arguments.uri = replaceNoCase( arguments.uri, "%2E", ".", "all" );
-        arguments.uri = replaceNoCase( arguments.uri, "%2D", "-", "all" );
-        arguments.uri = replaceNoCase( arguments.uri, "%5F", "_", "all" );
+        //arguments.uri = urlEncodedFormat( arguments.uri );
+        //arguments.uri = replaceNoCase( arguments.uri, "%2F", "/", "all" );
+        //arguments.uri = replaceNoCase( arguments.uri, "%2E", ".", "all" );
+        //arguments.uri = replaceNoCase( arguments.uri, "%2D", "-", "all" );
+        //arguments.uri = replaceNoCase( arguments.uri, "%5F", "_", "all" );
 
         return putObject( argumentCollection = arguments );
     }
@@ -645,21 +645,25 @@ component accessors="true" singleton {
         required string uri,
         string minutesValid = 60,
         boolean virtualHostStyle = false,
-        boolean useSSL = false
+        boolean useSSL = variables.ssl
     ) {
-        requireBucketName( arguments.bucketName );
-        var epochTime = DateDiff( "s", DateConvert( "utc2Local", "January 1 1970 00:00" ), now()) + ( arguments.minutesValid * 60 );
+		requireBucketName( arguments.bucketName );
+
+        var epochTime = DateDiff( "s", DateConvert( "utc2Local", "January 1 1970 00:00" ), now() ) + ( arguments.minutesValid * 60 );
         var HTTPPrefix = arguments.useSSL ? "https://" : "http://";
 
-        arguments.uri = urlEncodedFormat( arguments.uri );
+		// Encode incoming URI
+		arguments.uri = urlEncodedFormat( arguments.uri );
+		// Replace back specific delimiters as required by AWS
         arguments.uri = replaceNoCase( arguments.uri, "%2F", "/", "all" );
         arguments.uri = replaceNoCase( arguments.uri, "%2E", ".", "all" );
         arguments.uri = replaceNoCase( arguments.uri, "%2D", "-", "all" );
         arguments.uri = replaceNoCase( arguments.uri, "%5F", "_", "all" );
 
-        var stringToSign = "GET\n\n\n#epochTime#\n/#arguments.bucketName#/#arguments.uri#";
-        var signature = urlEncodedFormat( createSignature( stringToSign ) );
-        var securedLink = "#arguments.uri#?AWSAccessKeyId=#variables.accessKey#&Expires=#epochTime#&Signature=#signature#";
+		// Sign URL
+        var stringToSign 	= "GET\n\n\n#epochTime#\n/#arguments.bucketName#/#arguments.uri#";
+        var signature 		= urlEncodedFormat( createSignature( stringToSign ) );
+        var securedLink 	= "#arguments.uri#?AWSAccessKeyId=#variables.accessKey#&Expires=#epochTime#&Signature=#signature#";
 
 		if( log.canDebug() ){
 			log.debug( "String to sign: #stringToSign# . Signature: #signature#" );
@@ -671,7 +675,8 @@ component accessors="true" singleton {
             } else{
                 return "#HTTPPrefix##arguments.bucketName#.#variables.awsRegion#.#variables.awsDomain#/#securedLink#";
             }
-        }
+		}
+
         if ( variables.awsDomain contains 'amazonaws.com' ) {
             return "#HTTPPrefix#s3.amazonaws.com/#arguments.bucketName#/#securedLink#";
         } else{
@@ -692,16 +697,17 @@ component accessors="true" singleton {
         required string uri
     ) {
         requireBucketName( arguments.bucketName );
-        arguments.uri = urlEncodedFormat( urlDecode( arguments.uri ) );
-        arguments.uri = replaceNoCase( arguments.uri, "%2F", "/", "all" );
-        arguments.uri = replaceNoCase( arguments.uri, "%2E", ".", "all" );
-        arguments.uri = replaceNoCase( arguments.uri, "%2D", "-", "all" );
-        arguments.uri = replaceNoCase( arguments.uri, "%5F", "_", "all" );
+
+		//arguments.uri = urlEncodedFormat( urlDecode( arguments.uri ) );
+        //arguments.uri = replaceNoCase( arguments.uri, "%2F", "/", "all" );
+        //arguments.uri = replaceNoCase( arguments.uri, "%2E", ".", "all" );
+        //arguments.uri = replaceNoCase( arguments.uri, "%2D", "-", "all" );
+        //arguments.uri = replaceNoCase( arguments.uri, "%5F", "_", "all" );
 
         var results = S3Request(
             method = "DELETE",
             resource = arguments.bucketName & "/" & arguments.uri
-        );
+		);
 
         return results.responseheader.status_code == 204;
     }
@@ -736,11 +742,11 @@ component accessors="true" singleton {
         amzHeaders[ "x-amz-copy-source" ] 	= "/#arguments.fromBucket#/#arguments.fromURI#";
         amzHeaders[ "x-amz-acl" ] 			= arguments.acl;
 
-        arguments.toURI = urlEncodedFormat( arguments.toURI );
-        arguments.toURI = replaceNoCase( arguments.toURI, "%2F", "/", "all" );
-        arguments.toURI = replaceNoCase( arguments.toURI, "%2E", ".", "all" );
-        arguments.toURI = replaceNoCase( arguments.toURI, "%2D", "-", "all" );
-        arguments.toURI = replaceNoCase( arguments.toURI, "%5F", "_", "all" );
+        //arguments.toURI = urlEncodedFormat( arguments.toURI );
+        //arguments.toURI = replaceNoCase( arguments.toURI, "%2F", "/", "all" );
+        //arguments.toURI = replaceNoCase( arguments.toURI, "%2E", ".", "all" );
+        //arguments.toURI = replaceNoCase( arguments.toURI, "%2D", "-", "all" );
+        //arguments.toURI = replaceNoCase( arguments.toURI, "%5F", "_", "all" );
 
         var results = S3Request(
             method 		= "PUT",
@@ -815,7 +821,7 @@ component accessors="true" singleton {
 
         // Default Content Type
         if ( NOT structKeyExists( arguments.headers, "content-type" ) ) {
-        //    arguments.headers[ "Content-Type" ] = "text/plain";
+        	arguments.headers[ "Content-Type" ] = "";
         }
 
         // Prepare amz headers in sorted order
@@ -909,6 +915,11 @@ component accessors="true" singleton {
 		}
 
         if( results.error && arguments.throwOnError ){
+			writeDump( var=results );
+			writeDump( var=signatureData );
+			writeDump( var=arguments );
+			writeDump( var=callStackGet() );
+			abort;
             throw(
                 type 	= "S3SDKError",
                 message = "Error making Amazon REST Call",
