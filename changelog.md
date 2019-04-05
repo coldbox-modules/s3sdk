@@ -1,5 +1,9 @@
 # Changelog
 
+## v4.2.2
+
+* Removal of debugging code
+
 ## v4.2.1
 
 * Avoid double encoding on `copy`, `putObjectFile`, and `delete()` operations

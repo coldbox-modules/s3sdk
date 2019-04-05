@@ -915,11 +915,6 @@ component accessors="true" singleton {
 		}
 
         if( results.error && arguments.throwOnError ){
-			writeDump( var=results );
-			writeDump( var=signatureData );
-			writeDump( var=arguments );
-			writeDump( var=callStackGet() );
-			abort;
             throw(
                 type 	= "S3SDKError",
                 message = "Error making Amazon REST Call",

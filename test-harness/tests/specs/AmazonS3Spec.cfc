@@ -32,15 +32,23 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					s3.deleteObject( testBucket, "example-2.txt" );
 					s3.deleteObject( testBucket, "testFolder/example.txt" );
 					s3.deleteObject( testBucket, "emptyFolder/" );
+					s3.deleteObject( testBucket, "Word Doc Tests.txt" );
                     s3.setDefaultBucketName( '' );
 				});
 
                 it( "can store a new object", function() {
 					s3.putObject( testBucket, "example.txt", "Hello, world!" );
 					var md = s3.getObjectInfo( testBucket, "example.txt" );
-					//debug( md );
+					debug( md );
 					expect( md ).notToBeEmpty();
-                } );
+				} );
+
+				it( "can store a new object with spaces in the name", function() {
+					s3.putObject( testBucket, "Word Doc Tests.txt", "Hello, space world!" );
+					var md = s3.getObjectInfo( testBucket, "Word Doc Tests.txt" );
+					debug( md );
+					expect( md ).notToBeEmpty();
+				} );
 
                 it( "can list all objects", function() {
                     s3.putObject( testBucket, "example.txt", "Hello, world!" );
@@ -122,7 +130,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
                     expect( existsCheck ).toBeTrue();
 
                     var existsCheck = s3.objectExists( testBucket, 'testFolder/example.txt' );
-                    expect( existsCheck ).toBeTrue();
+					expect( existsCheck ).toBeTrue();
+
+					var existsCheck = s3.objectExists( testBucket, 'Word Doc Tests.docx' );
+                    expect( existsCheck ).toBeFalse();
 
                 } );
 
