@@ -1,5 +1,9 @@
 # Changelog
 
+## v4.2.3
+
+* Reworked SSL setup to allow for dynamic creation of the URL entry point
+
 ## v4.2.2
 
 * Removal of debugging code
