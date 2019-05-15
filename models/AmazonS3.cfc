@@ -842,7 +842,8 @@ component accessors="true" singleton {
 
 		// Create Signature
         var signatureData = sv4Util.generateSignatureData(
-            requestMethod  	= arguments.method,
+			requestMethod  	= arguments.method,
+			//hostName 		= variables.URLEndpoint,
 			hostName 		= reReplaceNoCase( variables.URLEndpoint, "https?\:\/\/", "" ),
             requestURI     	= arguments.resource,
             requestBody    	= arguments.body,
@@ -925,6 +926,15 @@ component accessors="true" singleton {
 		}
 
         if( results.error && arguments.throwOnError ){
+
+			/**
+			writeDump( var=results );
+			writeDump( var=signatureData );
+			writeDump( var=arguments );
+			writeDump( var=callStackGet() );
+			abort;
+			**/
+
             throw(
                 type 	= "S3SDKError",
                 message = "Error making Amazon REST Call",

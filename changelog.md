@@ -1,10 +1,11 @@
 # Changelog
 
-## v4.2.3
+## v4.4.0
 
 * Reworked SSL setup to allow for dynamic creation of the URL entry point
+* Removed ACF11 officially, it is impossible to deal with their cfhttp junk! It works, but at your own risk.
 
-## v4.2.2
+## v4.3.0
 
 * Removal of debugging code
 
