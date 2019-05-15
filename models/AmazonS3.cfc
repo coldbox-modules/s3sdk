@@ -60,7 +60,7 @@ component accessors="true" singleton {
      *
      * @return An AmazonS3 instance.
      */
-    public AmazonS3 function init(
+    AmazonS3 function init(
         required string accessKey,
 		required string secretKey,
 		string awsRegion = "us-east-1",
@@ -79,7 +79,10 @@ component accessors="true" singleton {
 		variables.defaultBucketName  = arguments.defaultBucketName;
 
 		// Construct the SSL Domain
-        setSSL( arguments.ssl );
+		setSSL( arguments.ssl );
+
+		// Build out the endpoint URL
+		buildUrlEndpoint();
 
 		// Build signature utility
         variables.sv4Util = new Sv4Util(
@@ -100,11 +103,23 @@ component accessors="true" singleton {
      *
      * @return    The AmazonS3 Instance.
      */
-    public AmazonS3 function setAuth( required string accessKey, required string secretKey ) {
+    AmazonS3 function setAuth( required string accessKey, required string secretKey ) {
         variables.accessKey = arguments.accessKey;
         variables.secretKey = arguments.secretKey;
         return this;
-    }
+	}
+
+	/**
+	 * This function builds the variables.UrlEndpoint according to credentials and ssl configuration, usually called after init() for you automatically.
+	 */
+	AmazonS3 function buildUrlEndpoint(){
+		// Build accordingly
+		var URLEndPointProtocol = ( variables.ssl ) ? "https://" : "http://";
+		variables.URLEndpoint	=  ( variables.awsDomain contains 'amazonaws.com' ) ?
+									'#URLEndPointProtocol#s3.#variables.awsRegion#.#variables.awsDomain#' :
+									'#URLEndPointProtocol##variables.awsDomain#';
+		return this;
+	}
 
     /**
      * Set the ssl flag.
@@ -114,13 +129,8 @@ component accessors="true" singleton {
      *
      * @return The AmazonS3 instance.
      */
-    public AmazonS3 function setSSL( boolean useSSL = true ) {
+    AmazonS3 function setSSL( boolean useSSL = true ) {
 		variables.ssl = arguments.useSSL;
-		// Build accordingly
-		var URLEndPointProtocol = ( arguments.useSSL ) ? "https://" : "http://";
-		variables.URLEndpoint	=  ( variables.awsDomain contains 'amazonaws.com' ) ?
-									'#URLEndPointProtocol#s3.#variables.awsRegion#.#variables.awsDomain#' :
-									'#URLEndPointProtocol##variables.awsDomain#';
         return this;
     }
 
@@ -132,7 +142,7 @@ component accessors="true" singleton {
      *
      * @return A signed string to send with the request.
      */
-    public string function createSignature( required string stringToSign ) {
+    string function createSignature( required string stringToSign ) {
         return toBase64( HMAC_SHA1(
             variables.secretKey,
             replace( arguments.stringToSign, "\n", "#chr( 10 )#", "all" )
@@ -144,7 +154,7 @@ component accessors="true" singleton {
      *
      * @return
      */
-    public array function listBuckets() {
+    array function listBuckets() {
         var results = S3Request();
 
         var bucketsXML = xmlSearch( results.response, "//*[local-name()='Bucket']" );
@@ -164,7 +174,7 @@ component accessors="true" singleton {
      *
      * @return     The region code for the bucket.
      */
-    public string function getBucketLocation( required string bucketName=variables.defaultBucketName ) {
+    string function getBucketLocation( required string bucketName=variables.defaultBucketName ) {
         requireBucketName( arguments.bucketName );
         var results = S3Request( resource = arguments.bucketname & "?location" );
 
@@ -186,7 +196,7 @@ component accessors="true" singleton {
      *
      * @return     The bucket version status or an empty string if there is none.
      */
-    public string function getBucketVersionStatus( required string bucketName=variables.defaultBucketName ) {
+    string function getBucketVersionStatus( required string bucketName=variables.defaultBucketName ) {
         requireBucketName( arguments.bucketName );
         var results = S3Request( resource = arguments.bucketname & "?versioning" );
 
@@ -207,7 +217,7 @@ component accessors="true" singleton {
      *
      * @return     True if the request was successful.
      */
-    public boolean function setBucketVersionStatus( required string bucketName=variables.defaultBucketName, boolean version = true ) {
+    boolean function setBucketVersionStatus( required string bucketName=variables.defaultBucketName, boolean version = true ) {
         requireBucketName( arguments.bucketName );
         var constraintXML 	= "";
         var headers = { "content-type" = "text/plain" };
@@ -236,7 +246,7 @@ component accessors="true" singleton {
      *
      * @return     An array containing the ACL for the given resource.
      */
-    public array function getAccessControlPolicy( required string bucketName=variables.defaultBucketName, string uri = "" ) {
+    array function getAccessControlPolicy( required string bucketName=variables.defaultBucketName, string uri = "" ) {
         requireBucketName( arguments.bucketName );
         var resource = arguments.bucketName;
 
@@ -268,7 +278,7 @@ component accessors="true" singleton {
      *
      * @return     The bucket contents.
      */
-    public array function getBucket(
+    array function getBucket(
         required string bucketName=variables.defaultBucketName,
         string prefix = "",
         string marker = "",
@@ -335,7 +345,7 @@ component accessors="true" singleton {
      *
      * @return     True if the bucket was created successfully.
      */
-    public boolean function putBucket(
+    boolean function putBucket(
         required string bucketName=variables.defaultBucketName,
         string acl = this.ACL_PUBLIC_READ,
         string location = "USA"
@@ -363,7 +373,7 @@ component accessors="true" singleton {
      *
      * @return     True if the bucket exists.
      */
-    public boolean function hasBucket( required string bucketName=variables.defaultBucketName ) {
+    boolean function hasBucket( required string bucketName=variables.defaultBucketName ) {
         requireBucketName( arguments.bucketName );
         return ! arrayIsEmpty( arrayFilter( listBuckets(), function( bucket ) {
             return bucket.name == bucketName;
@@ -378,7 +388,7 @@ component accessors="true" singleton {
      *
      * @return     True, if the bucket was deleted successfully.
      */
-	public boolean function deleteBucket(
+	boolean function deleteBucket(
         required string bucketName=variables.defaultBucketName,
         boolean force = false
     ) {
@@ -431,7 +441,7 @@ component accessors="true" singleton {
      *
      * @return       The file's eTag
      */
-    public string function putObjectFile(
+    string function putObjectFile(
         required string bucketName=variables.defaultBucketName,
         required string filepath,
         string uri = "",
@@ -477,7 +487,7 @@ component accessors="true" singleton {
      *
      * @return       The folder's eTag
      */
-    public string function putObjectFolder(
+    string function putObjectFolder(
         required string bucketName=variables.defaultBucketName,
         string uri = "",
         string contentType = "binary/octet-stream",
@@ -499,7 +509,7 @@ component accessors="true" singleton {
      *
      * @return      A struct of Amazon-enabled metadata headers.
      */
-    public struct function createMetaHeaders( struct metaHeaders = {} ) {
+    struct function createMetaHeaders( struct metaHeaders = {} ) {
         var md = {};
         for ( var key in arguments.metaHeaders ) {
             md[ "x-amz-meta-" & key ] = arguments.metaHeaders[ key ];
@@ -528,7 +538,7 @@ component accessors="true" singleton {
      *
      * @return             The object's eTag.
      */
-    public string function putObject(
+    string function putObject(
         required string bucketName=variables.defaultBucketName,
         string uri = "",
         any data = "",
@@ -581,7 +591,7 @@ component accessors="true" singleton {
      *
      * @return     The object's metadata information.
      */
-    public struct function getObjectInfo(
+    struct function getObjectInfo(
         required string bucketName=variables.defaultBucketName,
         required string uri
     ) {
@@ -606,7 +616,7 @@ component accessors="true" singleton {
      *
      * @return     True/false whether the object exists
      */
-    public boolean function objectExists(
+    boolean function objectExists(
         required string bucketName=variables.defaultBucketName,
         required string uri
     ) {
@@ -640,7 +650,7 @@ component accessors="true" singleton {
      *
      * @return           An authenticated url to the resource.
      */
-    public string function getAuthenticatedURL(
+    string function getAuthenticatedURL(
         required string bucketName=variables.defaultBucketName,
         required string uri,
         string minutesValid = 60,
@@ -692,7 +702,7 @@ component accessors="true" singleton {
      *
      * @return     Returns true if the object is deleted successfully.
      */
-	public boolean function deleteObject(
+	boolean function deleteObject(
         required string bucketName=variables.defaultBucketName,
         required string uri
     ) {
@@ -724,7 +734,7 @@ component accessors="true" singleton {
      *
      * @return      True if the object was copied correctly.
      */
-    public boolean function copyObject(
+    boolean function copyObject(
         required string fromBucket,
         required string fromURI,
         required string toBucket,
@@ -769,7 +779,7 @@ component accessors="true" singleton {
      *
      * @return        True if the rename operation is successful.
      */
-    public boolean function renameObject(
+    boolean function renameObject(
         required string oldBucketName,
         required string oldFileKey,
         required string newBucketName,
@@ -832,7 +842,8 @@ component accessors="true" singleton {
 
 		// Create Signature
         var signatureData = sv4Util.generateSignatureData(
-            requestMethod  	= arguments.method,
+			requestMethod  	= arguments.method,
+			//hostName 		= variables.URLEndpoint,
 			hostName 		= reReplaceNoCase( variables.URLEndpoint, "https?\:\/\/", "" ),
             requestURI     	= arguments.resource,
             requestBody    	= arguments.body,
@@ -915,6 +926,15 @@ component accessors="true" singleton {
 		}
 
         if( results.error && arguments.throwOnError ){
+
+			/**
+			writeDump( var=results );
+			writeDump( var=signatureData );
+			writeDump( var=arguments );
+			writeDump( var=callStackGet() );
+			abort;
+			**/
+
             throw(
                 type 	= "S3SDKError",
                 message = "Error making Amazon REST Call",
