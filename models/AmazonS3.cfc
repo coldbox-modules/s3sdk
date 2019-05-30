@@ -37,8 +37,15 @@ component accessors="true" singleton {
 	property name="URLEndpoint";
 	property name="awsRegion";
 	property name="awsDomain";
+	property name="defaultTimeOut";
 	property name="defaultDelimiter";
 	property name="defaultBucketName";
+	property name="defaultCacheControl";
+	property name="defaultStorageClass";
+	property name="defaultACL";
+	property name="autoContentType";
+	property name="autoMD5";
+	property name="mimeTypes";
 
     // STATIC Contsants
     this.ACL_PRIVATE 			= "private";
@@ -46,37 +53,77 @@ component accessors="true" singleton {
     this.ACL_PUBLIC_READ_WRITE 	= "public-read-write";
     this.ACL_AUTH_READ 			= "authenticated-read";
 
+    this.S3_STANDARD			= "STANDARD";
+    this.S3_IA 					= "STANDARD_IA";
+    this.S3_TIERING 			= "INTELLIGENT_TIERING";
+    this.S3_ONEZONE				= "ONEZONE_IA";
+    this.S3_GLACIER				= "GLACIER";
+    this.S3_ARCHIVE				= "DEEP_ARCHIVE";
+    this.S3_RRS  				= "REDUCED_REDUNDANCY"; // deprecated 
+
+	// Google Cloud storage classes
+    this.GS_STANDARD 			= "regional";
+    this.GS_MULTI				= "multi_regional";
+    this.GS_NEARLINE			= "nearline";
+    this.GS_COLDLINE			= "coldline";
+
     /**
      * Create a new S3SDK Instance
      *
      * @accessKey The Amazon access key.
      * @secretKey The Amazon secret key.
-	 * @awsRegion The Amazon region. Defaults to us-east-1
-	 * @awsDomain The Domain used S3 Service (amazonws.com, digitalocean.com). Defaults to amazonws.com
+	 * @awsDomain The Domain used S3 Service (amazonws.com, digitalocean.com, storage.googleapis.com). Defaults to amazonws.com
+	 * @awsRegion The Amazon region. Defaults to us-east-1 for amazonaws.com
      * @encryption_charset The charset for the encryption. Defaults to UTF-8.
+	 * @signature The signature version to calculate, "V2" is deprecated but more compatible with other endpoints. "V4" requires Sv4Util.cfc & ESAPI on Lucee. Defaults to V4
      * @ssl True if the request should use SSL. Defaults to true.
+	 * @defaultTimeOut Default HTTP timeout for all requests. Defaults to 300.
      * @defaultDelimiter Delimter to use for getBucket calls. "/" is standard to treat keys as file paths
      * @defaultBucketName Bucket name to use by default
+	 * @defaultCacheControl Default caching policy for objects. Defaults to: no-store, no-cache, must-revalidate
+	 * @defaultStorageClass Default storage class for objects that affects cost, access speed and durability. Defaults to STANDARD.
+	 * @defaultACL Default access control policy for objects and buckets. Defaults to public-read.
+	 * @throwOnRequestError If an exception should be thrown for request errors. Defaults to true.
+	 * @autoContentType Tries to determine content type of file by file extension. Defaults to false.
+	 * @autoMD5 Calculates MD5 hash of content automatically. Defaults to false.
+	 * @debug Used to turn debugging on or off outside of logbox. Defaults to false.
      *
      * @return An AmazonS3 instance.
      */
     AmazonS3 function init(
         required string accessKey,
 		required string secretKey,
-		string awsRegion = "us-east-1",
 		string awsDomain = "amazonaws.com",
-        string encryption_charset = "UTF-8",
+		string awsRegion = ( arguments.awsDomain == "amazonaws.com" ? "us-east-1" : "" ),
+		string encryption_charset = "UTF-8",
+		string signature = "V4",
         boolean ssl = true,
+        string defaultTimeOut= 300,
         string defaultDelimiter='/',
-	    string defaultBucketName=''
+		string defaultBucketName='',
+		string defaultCacheControl= "no-store, no-cache, must-revalidate",
+		string defaultStorageClass= this.S3_STANDARD,
+		string defaultACL= this.ACL_PUBLIC_READ,
+		string throwOnRequestError= true,
+		boolean autoContentType= false,
+		boolean autoMD5= false,
+		boolean debug= ( request.debug ?: false )
     ) {
-        variables.accessKey          = arguments.accessKey;
-        variables.secretKey          = arguments.secretKey;
-        variables.encryption_charset = arguments.encryption_charset;
-		variables.awsRegion          = arguments.awsRegion;
-		variables.awsDomain          = arguments.awsDomain;
-		variables.defaultDelimiter   = arguments.defaultDelimiter;
-		variables.defaultBucketName  = arguments.defaultBucketName;
+        variables.accessKey           = arguments.accessKey;
+        variables.secretKey           = arguments.secretKey;
+        variables.encryption_charset  = arguments.encryption_charset;
+        variables.signature           = arguments.signature;
+		variables.awsDomain           = arguments.awsDomain;
+		variables.awsRegion           = arguments.awsRegion;
+		variables.defaultTimeOut      = arguments.defaultTimeOut;
+		variables.defaultDelimiter    = arguments.defaultDelimiter;
+		variables.defaultBucketName   = arguments.defaultBucketName;
+		variables.defaultCacheControl = arguments.defaultCacheControl;
+		variables.defaultStorageClass = arguments.defaultStorageClass;
+		variables.defaultACL          = arguments.defaultACL;
+		variables.throwOnRequestError = arguments.throwOnRequestError;
+		variables.autoContentType     = arguments.autoContentType;
+		variables.autoMD5             = ( arguments.autoMD5 ? "auto" : "" );
 
 		// Construct the SSL Domain
 		setSSL( arguments.ssl );
@@ -85,13 +132,73 @@ component accessors="true" singleton {
 		buildUrlEndpoint();
 
 		// Build signature utility
-        variables.sv4Util = new Sv4Util(
-            accessKeyId        = variables.accessKey,
-            secretAccessKey    = variables.secretKey,
-            defaultRegionName  = arguments.awsRegion,
-            defaultServiceName = "s3"
-		);
+		if( variables.signature == "V4" ) {
+			variables.sv4Util = new Sv4Util(
+				accessKeyId        = variables.accessKey,
+				secretAccessKey    = variables.secretKey,
+				defaultRegionName  = arguments.awsRegion,
+				defaultServiceName = "s3"
+			);
+		} else if( variables.signature == "V2" ) {
+			variables.autoMD5 = "auto";
+		}
 
+		// manual debugging replacement for logbox
+		if( NOT structKeyExists( variables, "log" ) ) {
+			var d = arguments.debug;
+			variables.logs = [];
+			variables.log = {
+				canDebug= function() {
+					return d;
+				},
+				debug= function( msg, data ) {
+					arrayAppend( variables.logs, arguments.msg );
+					if( structKeyExists( arguments, "data" ) ) {
+						arrayAppend( variables.logs, arguments.data );
+					}
+				},
+				error= function( msg, data ) {
+					arrayAppend( variables.logs, "Error: " & arguments.msg );
+					if( structKeyExists( arguments, "data" ) ) {
+						arrayAppend( variables.logs, arguments.data );
+					}
+				}
+			};
+			this.getLogs = function() {
+				return variables.logs;
+			}
+		}
+		
+		// detect mimetypes from file extension
+		variables.mimeTypes = {
+			htm = "text/html"
+		,	html = "text/html"
+		,	js = "application/x-javascript"
+		,	txt = "text/plain"
+		,	xml = "text/xml"
+		,	rss = "application/rss+xml"
+		,	css = "text/css"
+		,	gz = "application/x-gzip"
+		,	gif = "image/gif"
+		,	jpe = "image/jpeg"
+		,	jpeg = "image/jpeg"
+		,	jpg = "image/jpeg"
+		,	png = "image/png"
+		,	swf = "application/x-shockwave-flash"
+		,	ico = "image/x-icon"
+		,	flv = "video/x-flv"
+		,	doc = "application/msword"
+		,	xls = "application/vnd.ms-excel"
+		,	pdf = "application/pdf"
+		,	htc = "text/x-component"
+		,	svg = "image/svg+xml"
+		,	eot = "application/vnd.ms-fontobject"
+		,	ttf = "font/ttf"
+		,	otf = "font/opentype"
+		,	woff = "application/font-woff"
+		,	woff2 = "font/woff2"
+		};
+		
         return this;
     }
 
@@ -145,9 +252,9 @@ component accessors="true" singleton {
     string function createSignature( required string stringToSign ) {
         return toBase64( HMAC_SHA1(
             variables.secretKey,
-            replace( arguments.stringToSign, "\n", "#chr( 10 )#", "all" )
+            replace( arguments.stringToSign, "\n", "#chr(10)#", "all" )
         ) );
-    }
+	}
 
     /**
      * List all the buckets associated with the Amazon credentials.
@@ -347,7 +454,7 @@ component accessors="true" singleton {
      */
     boolean function putBucket(
         required string bucketName=variables.defaultBucketName,
-        string acl = this.ACL_PUBLIC_READ,
+        string acl = variables.defaultACL,
         string location = "USA"
     ) {
         requireBucketName( arguments.bucketName );
@@ -424,33 +531,42 @@ component accessors="true" singleton {
     /**
      * Puts an object from a local file in to a bucket.
      *
-     * @bucketName   The bucket in which to store the object.
-     * @filepath     The absolute file path to read in the binary.
-     * @uri          The destination uri key to use when saving the object.
-     *               If not provided, the name of the file will be used.
-     * @contentType  The file content type. Defaults to binary/octet-stream.
-     * @HTTPTimeout  The HTTP timeout to use
-     * @cacheControl The caching header to send. Defaults to no caching.
-     *               Example: public,max-age=864000  ( 10 days ).
-     *               For more info look here:
-     *               http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html##sec14.9
-     * @expires      Sets the expiration header of the object in days.
-     * @acl          The Amazon security access policy to use.
-     *               Defaults to public-read.
-     * @metaHeaders  Additonal metadata headers to add.
-     *
-     * @return       The file's eTag
+     * @bucketName      The bucket in which to store the object.
+     * @filepath        The absolute file path to read in the binary.
+     * @uri             The destination uri key to use when saving the object.
+     *                  If not provided, the name of the file will be used.
+     * @contentType     The file content type. Defaults to binary/octet-stream.
+     * @contentEncoding The file content encoding, useful to gzip data.
+     * @HTTPTimeout     The HTTP timeout to use
+     * @cacheControl    The caching header to send. Defaults to no caching.
+     *                  Example: public,max-age=864000  ( 10 days ).
+     *                  For more info look here:
+     *                  http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html##sec14.9
+     * @expires         Sets the expiration header of the object in days.
+     * @acl             The Amazon security access policy to use.
+     *                  Defaults to public-read.
+     * @metaHeaders     Additonal metadata headers to add.
+	 * @md5             Set the MD5 hash which allows aws to checksum the object
+	 *                  was sent correctly.
+	 *                  Set to "auto" to calculate the md5 in the client.
+	 * @storageClass    Sets the S3 storage class which affects cost, access speed and durability.
+	 *                  Defaults to STANDARD.
+	 * 
+     * @return          The file's eTag
      */
     string function putObjectFile(
         required string bucketName=variables.defaultBucketName,
         required string filepath,
         string uri = "",
-        string contentType = "binary/octet-stream",
-        numeric HTTPTimeout = 300,
-        string cacheControl = "no-store, no-cache, must-revalidate",
+        string contentType = ( variables.autoContentType ? "auto" : "binary/octet-stream" ),
+        string contentEncoding = "",
+        numeric HTTPTimeout = variables.defaultTimeout,
+        string cacheControl = variables.defaultCacheControl,
         string expires = "",
-        string acl = this.ACL_PUBLIC_READ,
-        struct metaHeaders = {}
+        string acl = variables.defaultACL,
+		struct metaHeaders = {},
+		string md5 = variables.autoMD5,
+		string storageClass = variables.defaultStorageClass
     ) {
         requireBucketName( arguments.bucketName );
         arguments.data = fileReadBinary( arguments.filepath );
@@ -458,6 +574,10 @@ component accessors="true" singleton {
         if ( NOT len( arguments.uri ) ) {
             arguments.uri = getFileFromPath( arguments.filePath );
         }
+
+		if( arguments.contentType == "auto" ) {
+			arguments.contentType= getFileMimeType( arguments.filepath );
+		}
 
         //arguments.uri = urlEncodedFormat( arguments.uri );
         //arguments.uri = replaceNoCase( arguments.uri, "%2F", "/", "all" );
@@ -491,10 +611,10 @@ component accessors="true" singleton {
         required string bucketName=variables.defaultBucketName,
         string uri = "",
         string contentType = "binary/octet-stream",
-        numeric HTTPTimeout = 300,
-        string cacheControl = "no-store, no-cache, must-revalidate",
+        numeric HTTPTimeout = variables.defaultTimeOut,
+        string cacheControl = variables.defaultCacheControl,
         string expires = "",
-        string acl = this.ACL_PUBLIC_READ,
+        string acl = variables.defaultACL,
         struct metaHeaders = {}
     ) {
         requireBucketName( arguments.bucketName );
@@ -526,6 +646,7 @@ component accessors="true" singleton {
      *                     This can be binary, string, or anything you'd like.
      * @contentDisposition The content-disposition header to use when downloading the file.
      * @contentType        The file/data content type. Defaults to text/plain.
+     * @contentEncoding    The file content encoding, useful to gzip data.
      * @HTTPTimeout        The HTTP timeout to use.
      * @cacheControl       The caching header to send. Defaults to no caching.
      *                     Example: public,max-age=864000  ( 10 days ).
@@ -535,29 +656,54 @@ component accessors="true" singleton {
      * @acl                The Amazon security access policy to use.
      *                     Defaults to public-read.
      * @metaHeaders        Additonal metadata headers to add.
-     *
-     * @return             The object's eTag.
+	 * @md5                Set the MD5 hash which allows aws to checksum the object
+	 *                     was sent correctly.
+	 *                     Set to "auto" to calculate the md5 in the client.
+     * @storageClass       Sets the S3 storage class which affects cost, access speed and durability.
+	 *                     Defaults to STANDARD.
+	 * 
+	 * @return             The object's eTag.
      */
     string function putObject(
         required string bucketName=variables.defaultBucketName,
-        string uri = "",
+        required string uri,
         any data = "",
         string contentDisposition = "",
-        string contentType = "text/plain",
-        numeric HTTPTimeout = 300,
-        string cacheControl = "no-store, no-cache, must-revalidate",
+		string contentType = ( variables.autoContentType ? "auto" : "text/plain" ),
+		string contentEncoding = "",
+        numeric HTTPTimeout = variables.defaultTimeOut,
+        string cacheControl = variables.defaultCacheControl,
         string expires = "",
-        string acl = this.ACL_PUBLIC_READ,
-        struct metaHeaders = {}
+		string acl = variables.defaultACL,
+        struct metaHeaders = {},
+		string md5 = variables.autoMD5,
+		string storageClass = variables.defaultStorageClass
     ) {
         requireBucketName( arguments.bucketName );
         var amzHeaders = createMetaHeaders( arguments.metaHeaders );
-        amzHeaders[ "x-amz-acl" ] = arguments.acl;
+		amzHeaders[ "x-amz-acl" ] = arguments.acl;
 
+		if( len( arguments.storageClass ) ) {
+			amzHeaders[ "x-amz-storage-class" ] = arguments.storageClass;
+		}
+		
         var headers = {
-            "content-type" = arguments.contentType,
-            "cache-control" = arguments.cacheControl
-        };
+			"content-type" = arguments.contentType
+		};
+
+		if( len( arguments.cacheControl ) ) {
+            headers[ "cache-control" ] = arguments.cacheControl;
+		};
+		
+		if( arguments.md5 == "auto" ) {
+			headers[ "content-md5" ] = MD5inBase64( arguments.content );
+		} else if( len( arguments.md5 ) ) {
+            headers[ "content-md5" ] = arguments.md5;
+		}
+
+		if( len( arguments.contentEncoding ) ) {
+            headers[ "content-encoding" ] = arguments.contentEncoding;
+		}
 
         if ( len( arguments.contentDisposition ) ) {
             headers[ "content-disposition" ] = arguments.contentDisposition;
@@ -583,6 +729,73 @@ component accessors="true" singleton {
         return "";
     }
 
+    /**
+     * Gets an object from a bucket.
+     *
+     * @bucketName         The bucket in which to store the object.
+     * @uri                The destination uri key to use when saving the object.
+     * @HTTPTimeout        The HTTP timeout to use.
+	 * 
+	 * @return             The object's eTag.
+     */
+    struct function getObject(
+        required string bucketName=variables.defaultBucketName,
+        required string uri,
+        numeric HTTPTimeout = variables.defaultTimeOut
+    ) {
+        requireBucketName( arguments.bucketName );
+        var results = S3Request(
+            method 	   = "GET",
+            resource   = arguments.bucketName & "/" & arguments.uri,
+            timeout    = arguments.HTTPTimeout
+		);
+		
+        return results;
+	}
+
+    /**
+     * Gets an object from a bucket.
+     *
+     * @bucketName         The bucket in which to store the object.
+     * @uri                The destination uri key to use when saving the object.
+     * @filepath           The file path write the object to, if no filename given filename from uri is used
+     * @charset            The file charset, defaults to UTF-8
+     * @HTTPTimeout        The HTTP timeout to use.
+	 * 
+	 * @return             The object's eTag.
+     */
+    struct function downloadObject(
+        required string bucketName=variables.defaultBucketName,
+        required string uri,
+        required string filepath,
+        required string charset = "utf-8",
+        numeric HTTPTimeout = variables.defaultTimeOut
+    ) {
+		requireBucketName( arguments.bucketName );
+		
+		// if filepath is a directory, append filename
+		if( right( arguments.filepath, 1 ) IS "/" || right( arguments.filepath, 1 ) IS "\" ) {
+			arguments.filepath &= listLast( arguments.uri, "/\" );
+		}
+
+        var results = S3Request(
+            method 	      = "GET",
+            resource      = arguments.bucketName & "/" & arguments.uri,
+			timeout       = arguments.HTTPTimeout,
+			filename      = arguments.filepath,
+			parseResponse = false
+		);
+
+		results.filename = arguments.filepath;
+
+		if( !fileExists( arguments.filepath ) ) {
+			results.error = true;
+			results.message = "Downloaded file doesn't exist";
+		}
+		
+        return results;
+	}
+	
     /**
      * Get an object's metadata information.
      *
@@ -682,15 +895,19 @@ component accessors="true" singleton {
         if ( arguments.virtualHostStyle ) {
             if ( variables.awsDomain contains 'amazonaws.com' ) {
                 return "#HTTPPrefix##arguments.bucketName#.s3.amazonaws.com/#securedLink#";
-            } else{
+            } else if ( len( variables.awsRegion ) ) {
                 return "#HTTPPrefix##arguments.bucketName#.#variables.awsRegion#.#variables.awsDomain#/#securedLink#";
+            } else {
+                return "#HTTPPrefix##arguments.bucketName#.#variables.awsDomain#/#securedLink#";
             }
 		}
 
         if ( variables.awsDomain contains 'amazonaws.com' ) {
             return "#HTTPPrefix#s3.amazonaws.com/#arguments.bucketName#/#securedLink#";
-        } else{
+        } else if( len( variables.awsRegion ) ) {
             return "#HTTPPrefix##variables.awsRegion#.#variables.awsDomain#/#arguments.bucketName#/#securedLink#";
+        } else {
+            return "#HTTPPrefix##variables.awsDomain#/#arguments.bucketName#/#securedLink#";
         }
     }
 
@@ -725,12 +942,14 @@ component accessors="true" singleton {
     /**
      * Copies an object.
      *
-     * @fromBucket  The source bucket
-     * @fromURI     The source URI
-     * @toBucket    The destination bucket
-     * @toURI       The destination URI
-     * @acl         The Amazon security access policy to use. Defaults to private.
-     * @metaHeaders Additonal metadata headers to add.
+     * @fromBucket   The source bucket
+     * @fromURI      The source URI
+     * @toBucket     The destination bucket
+     * @toURI        The destination URI
+     * @acl          The Amazon security access policy to use. Defaults to public.
+	 * @storageClass Sets the S3 storage class which affects cost, access speed and durability.
+	 *               Defaults to STANDARD.
+     * @metaHeaders  Additonal metadata headers to add.
      *
      * @return      True if the object was copied correctly.
      */
@@ -739,8 +958,9 @@ component accessors="true" singleton {
         required string fromURI,
         required string toBucket,
         required string toURI,
-        string acl = this.ACL_PRIVATE,
-        struct metaHeaders = {}
+        string acl = variables.defaultACL,
+        struct metaHeaders = {},
+		string storageClass = variables.defaultStorageClass
     ) {
         var headers 	= { "content-length" = 0 };
         var amzHeaders 	= createMetaHeaders( arguments.metaHeaders );
@@ -750,7 +970,11 @@ component accessors="true" singleton {
         }
 
         amzHeaders[ "x-amz-copy-source" ] 	= "/#arguments.fromBucket#/#arguments.fromURI#";
-        amzHeaders[ "x-amz-acl" ] 			= arguments.acl;
+		amzHeaders[ "x-amz-acl" ] 			= arguments.acl;
+		
+		if( len( arguments.storageClass ) ) {
+			amzHeaders[ "x-amz-storage-class" ] = arguments.storageClass;
+		}
 
         //arguments.toURI = urlEncodedFormat( arguments.toURI );
         //arguments.toURI = replaceNoCase( arguments.toURI, "%2F", "/", "all" );
@@ -814,9 +1038,11 @@ component accessors="true" singleton {
         any body = "",
         struct headers = {},
         struct amzHeaders = {},
-        struct parameters = {},
-		numeric timeout = 20,
-		boolean throwOnError = true
+		struct parameters = {},
+		string filename = "",
+		numeric timeout = variables.defaultTimeOut,
+		boolean parseResponse = true,
+		boolean throwOnError = variables.throwOnRequestError
     ) {
         var results = {
             "error"          = false,
@@ -841,15 +1067,25 @@ component accessors="true" singleton {
         }
 
 		// Create Signature
-        var signatureData = sv4Util.generateSignatureData(
-			requestMethod  	= arguments.method,
-			//hostName 		= variables.URLEndpoint,
-			hostName 		= reReplaceNoCase( variables.URLEndpoint, "https?\:\/\/", "" ),
-            requestURI     	= arguments.resource,
-            requestBody    	= arguments.body,
-            requestHeaders 	= arguments.headers,
-            requestParams  	= arguments.parameters
-		);
+		if( variables.signature == "V4" ) {
+			var signatureData = sv4Util.generateSignatureData(
+				requestMethod  	= arguments.method,
+				//hostName 		= variables.URLEndpoint,
+				hostName 		= reReplaceNoCase( variables.URLEndpoint, "https?\:\/\/", "" ),
+				requestURI     	= arguments.resource,
+				requestBody    	= arguments.body,
+				requestHeaders 	= arguments.headers,
+				requestParams  	= arguments.parameters
+			);
+		} else if( variables.signature == "V2" ) {
+			var signatureData = generateBasicSignatureData(
+				requestMethod  	= arguments.method,
+				requestURI     	= arguments.resource,
+				requestHeaders 	= arguments.headers,
+				requestParams  	= arguments.parameters,
+				amzHeaders      = arguments.amzHeaders
+			);
+		}
 
 		cfhttp(
             method = arguments.method,
@@ -858,7 +1094,9 @@ component accessors="true" singleton {
 			result = "HTTPResults",
 			redirect = true,
 			timeout = arguments.timeout,
-			useragent = "ColdFusion-S3SDK"
+			useragent = "ColdFusion-S3SDK",
+			path= getDirectoryFromPath( arguments.filename ),
+			file= getFileFromPath( arguments.filename )
         ) {
             // Amazon Global Headers
             cfhttpparam(
@@ -895,7 +1133,7 @@ component accessors="true" singleton {
         }
 
 		if( log.canDebug() ){
-			log.debug( "Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#", HTTPResults );
+			log.debug( "Amazon Rest Call ->URL: #variables.URLEndPoint#/#arguments.resource# ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#", HTTPResults );
 		}
 
         results.response = HTTPResults.fileContent;
@@ -907,7 +1145,8 @@ component accessors="true" singleton {
 		}
 
         // Check XML Parsing?
-        if ( structKeyExists( HTTPResults.responseHeader, "content-type" ) &&
+		if ( arguments.parseResponse &&
+			structKeyExists( HTTPResults.responseHeader, "content-type" ) &&
             HTTPResults.responseHeader[ "content-type" ] == "application/xml" &&
             isXML( HTTPResults.fileContent )
         ) {
@@ -961,7 +1200,69 @@ component accessors="true" singleton {
         mac.update( jMsg );
 
         return mac.doFinal();
-    }
+	}
+
+	/**
+	 * @description Generate RSA MD5 hash
+	 */
+	string function MD5inBase64( required content ) {
+		var result = 0;
+		var digest = createObject( "java", "java.security.MessageDigest" );
+		digest = digest.getInstance( "MD5" );
+		if ( isSimpleValue( arguments.content ) ) {
+			result = digest.digest( arguments.content.getBytes() );
+		} else {
+			result = digest.digest( arguments.content );
+		}
+		return toBase64( result );
+	}
+	
+	/**
+	 * Generates a version 2 signature and returns headers for the request
+	 * 
+     *  @requestMethod   - Request operation, ie PUT, GET, POST, etcetera.
+     *  @requestURI      - Absolute path of the URI. Portion of the URL after the host, to the "?" beginning the query string
+     *  @requestHeaders  - Structure of http headers for used the request.
+     *  @requestParams   - Structure containing any url parameters for the request.
+     *  @amzHeaders      - Structure containing any amazon headers used to build the signature.
+	 */
+	struct function generateBasicSignatureData(
+		required string requestMethod
+	,	required string requestURI
+	,	required struct requestHeaders
+	,	required struct requestParams
+	,	required struct amzHeaders
+	) {
+		var out = {
+			amzDate = getHTTPTimeString( now() )
+		,	requestHeaders= arguments.requestHeaders
+		,	requestParams= arguments.requestParams
+		,	canonical= ""
+		};
+
+		for( header in structSort( arguments.amzHeaders, "text", "asc" ) ) {
+			out.canonical &= lCase( trim( header ) ) & ":" & arguments.amzHeaders[ header ] & chr(10);
+		};
+		
+		out.cs = arguments.requestMethod & chr(10)
+			& ( arguments.requestHeaders[ "content-md5" ] ?: "" ) & chr(10)
+			& ( arguments.requestHeaders[ "content-type" ] ?: "" ) & chr(10)
+			& out.amzDate & chr(10)
+			& out.canonical
+			& "/" & arguments.requestURI;
+
+		//  Calculate the hash of the information 
+		out.digest = HMAC_SHA1( variables.secretKey, out.cs );
+		//  fix the returned data to be a proper signature 
+		out.signature = toBase64( out.digest );
+		out.authorizationHeader = "AWS #variables.accessKey#:#out.signature#";
+
+		if( log.canDebug() ){
+			log.debug( "Created basic v2 signature", out );
+		}
+
+		return out;
+	}
 
     /**
      * Helper function to catch missing bucket name
@@ -971,5 +1272,26 @@ component accessors="true" singleton {
             throw( 'bucketName is required.  Please provide the name of the bucket to access or set a default bucket name in the SDk.' );
         }
     }
+
+	/**
+	 * Determine mime type from the file extension
+	 * */
+	string function getFileMimeType( required string filePath ) {
+		var contentType = "binary/octet-stream";
+		if ( len( arguments.filePath ) ) {
+			var ext = listLast( arguments.filePath, "." );
+			if ( structKeyExists( variables.mimeTypes, ext ) ) {
+				contentType = variables.mimeTypes[ ext ];
+			} else {
+				try {
+					contentType = getPageContext().getServletContext().getMimeType( arguments.filePath );
+				} catch (any cfcatch) {}
+				if ( !isDefined( "contentType" ) ) {
+					contentType = "binary/octet-stream";
+				}
+			}
+		}
+		return contentType;
+	}
 
 }

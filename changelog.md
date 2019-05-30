@@ -1,5 +1,24 @@
 # Changelog
 
+## v4.5.0
+
+* Added configurable defaults, all defaults should keep functionality exactly the same as previous verions
+* Added constructor `defaultTimeout` defaults to 300
+* Added constructor `defaultCacheControl` defaults to "no-store, no-cache, must-revalidate"
+* Added constructor `defaultStorageClass` defaults to "STANDARD"
+* Added constructor `defaultACL` defaults to "public-read"
+* Added cosntructor `throwOnRequestError` defaults to "true"
+* Added constructor `signature` for V2 support, defaults to V4
+* Added constructor `debug` for turning debugging on/off when logbox isn't available, defaults to false
+* Added constructor `autoContentType` and `contentType="auto"` to detection mime-type from filename
+* Added constructor `autoMD5` and `md5="auto"` to calculation hash
+* Added simple internal logger object `variables.log` when `logbox` isn't available/injected in standalone mode
+* Added v2 signature hashing `generateBasicSignatureData()` this is deprecated in S3 but more compatible with other s3 compatible endpoints
+* Added storage classes `S3_STANDARD`, `S3_IA`, `S3_TIERING`, `S3_ONEZONE`, `S3_GLACIER`, `S3_ARCHIVE`, `S3_RRS`, `GS_STANDARD`, `GS_MULTI`, `GS_NEARLINE`, `GS_COLDLINE`
+* Added `getObject()` & `downloadObject()` methods
+* Changed `copyObject()` default ACL from private to `deafultACL`
+
+
 ## v4.4.0
 
 * Reworked SSL setup to allow for dynamic creation of the URL entry point
