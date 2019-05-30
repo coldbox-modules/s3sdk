@@ -1,6 +1,6 @@
 # Changelog
 
-## v4.5.0
+## v4.6.0
 
 * Added configurable defaults, all defaults should keep functionality exactly the same as previous verions
 * Added constructor `defaultTimeout` defaults to 300
