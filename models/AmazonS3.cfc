@@ -424,7 +424,7 @@ component accessors="true" singleton {
                 "key"           = trim( node.key.xmlText ),
                 "lastModified"  = trim( node.lastModified.xmlText ),
                 "size"          = trim( node.Size.xmlText ),
-                "eTag"          = trim( node.etag.xmlText ),
+                "eTag"          = replace( trim( node.etag.xmlText ), '"', '', 'all' ),
                 "isDirectory"   = ( ( findNoCase( "_$folder$", node.key.xmlText ) || ( len( delimiter ) && node.key.xmlText.endsWith( delimiter ) ) ) ? true : false )
             };
         } );
