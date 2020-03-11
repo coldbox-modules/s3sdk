@@ -19,7 +19,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-component {
+component singleton {
 
     /**
      * Creates a new instance of the utility for generating signatures using the supplied settings
@@ -30,19 +30,7 @@ component {
      * @defaultServiceName (Optional) Sets a default service name for all requests made through this instance. This setting can be overriden at the request level in generateSignatureData()
      * @returns new instance initalized with specified settings
      */
-    Sv4Util function init(
-        required string accessKeyId
-        , required string secretAccessKey
-        , string defaultRegionName = ""
-        , string defaultServiceName = ""
-    ){
-
-        // Store AWS keys and settings
-        variables.accessKeyId = arguments.accessKeyId;
-        variables.secretAccessKey = arguments.secretAccessKey;
-        variables.defaultRegionName = arguments.defaultRegionName;
-        variables.defaultServiceName = arguments.defaultServiceName;
-
+    Sv4Util function init() {
         // Algorithms used in calculating the signature
         variables.signatureAlgorithm    = "AWS4-HMAC-SHA256";
         variables.hashAlorithm          = "SHA256";
@@ -76,10 +64,12 @@ component {
         , required any requestBody
         , required struct requestHeaders
         , required struct requestParams
+        , required string accessKey
+        , required string secretKey
+        , required string regionName
+        , required string serviceName
         , boolean signedPayload = true
         , array excludeHeaders = []
-        , string regionName
-        , string serviceName
         , string amzDate
         , string dateStamp
     ) {
@@ -101,17 +91,10 @@ component {
             props.amzDate = arguments.amzDate;
         }
 
-        // Apply instance level region/service name settings
-        props.regionName = variables.defaultRegionName;
-        props.serviceName = variables.defaultServiceName;
-
-        // Override instance level region/service names
-        if (structKeyExists(arguments, "regionName")) {
-            props.regionName = arguments.regionName;
-        }
-        if (structKeyExists(arguments, "serviceName")) {
-            props.serviceName = arguments.serviceName;
-        }
+        props.accessKey   = arguments.accessKey;
+        props.secretKey   = arguments.secretKey;
+        props.regionName  = arguments.regionName;
+        props.serviceName = arguments.serviceName;
 
         /////////////////////////////////////
         //  Basic request properties
@@ -396,10 +379,11 @@ component {
         required string dateStamp
         , required string regionName
         , required string serviceName
+        , required string secretKey
         , string algorithm = "HMACSHA256"
     ){
 
-        var kSecret = charsetDecode("AWS4" & variables.secretAccessKey, "UTF-8");
+        var kSecret = charsetDecode("AWS4" & arguments.secretKey, "UTF-8");
         var kDate = hmacBinary( arguments.dateStamp, kSecret  );
         // Region information as a lowercase alphanumeric string
         var kRegion = hmacBinary( lcase(arguments.regionName), kDate  );
@@ -449,30 +433,15 @@ component {
         , required string signedHeaders
         , required string credentialScope
         , required string signature
+        , required string accessKey
     ) {
         var authHeader = variables.signatureAlgorithm &" "
-                            & "Credential=" & variables.accessKeyId &"/"& arguments.credentialScope & ","
+                            & "Credential=" & arguments.accessKey &"/"& arguments.credentialScope & ","
                             & "SignedHeaders=" & arguments.signedHeaders & ","
                             & "Signature="& arguments.signature;
 
 
         return authHeader;
-    }
-
-    /**
-    *  Generates string indicating the scope for which the signature is valid
-    *
-    *  @dateStamp   - Current date in UTC (must be same as X-Amz-Date date). Format yyyyMMdd
-    *  @regionName  - Name of the target region, UTF-8 encoded. Example "us-east-1"
-    *  @serviceName - Name of the target service, UTF-8 encoded. Example "s3"
-    *  @returns     - Credential header string. Example:  20150830/us-east-1/iam/aws4_request
-    */
-    private string function buildCredentialString(
-        required string dateStamp
-        , required string regionName
-        , required string serviceName
-    ){
-        return variables.accessKeyId &"/"& buildCredentialScope( argumentCollection=arguments );
     }
 
 

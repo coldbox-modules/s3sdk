@@ -39,6 +39,7 @@ component accessors="true" singleton {
 	property name="awsDomain";
 	property name="defaultDelimiter";
 	property name="defaultBucketName";
+	property name="serviceName";
 
     // STATIC Contsants
     this.ACL_PRIVATE 			= "private";
@@ -68,7 +69,8 @@ component accessors="true" singleton {
         string encryption_charset = "UTF-8",
         boolean ssl = true,
         string defaultDelimiter='/',
-	    string defaultBucketName=''
+        string defaultBucketName='',
+        string serviceName = "s3"
     ) {
         variables.accessKey          = arguments.accessKey;
         variables.secretKey          = arguments.secretKey;
@@ -77,6 +79,7 @@ component accessors="true" singleton {
 		variables.awsDomain          = arguments.awsDomain;
 		variables.defaultDelimiter   = arguments.defaultDelimiter;
 		variables.defaultBucketName  = arguments.defaultBucketName;
+		variables.serviceName        = arguments.serviceName;
 
 		// Construct the SSL Domain
 		setSSL( arguments.ssl );
@@ -85,12 +88,7 @@ component accessors="true" singleton {
 		buildUrlEndpoint();
 
 		// Build signature utility
-        variables.sv4Util = new Sv4Util(
-            accessKeyId        = variables.accessKey,
-            secretAccessKey    = variables.secretKey,
-            defaultRegionName  = arguments.awsRegion,
-            defaultServiceName = "s3"
-		);
+        variables.sv4Util = new Sv4Util();
 
         return this;
     }
@@ -107,7 +105,19 @@ component accessors="true" singleton {
         variables.accessKey = arguments.accessKey;
         variables.secretKey = arguments.secretKey;
         return this;
-	}
+    }
+
+    AmazonS3 function setAWSDomain( required string domain ) {
+        variables.awsDomain = arguments.domain;
+        buildUrlEndpoint();
+        return this;
+    }
+
+    AmazonS3 function setAWSRegion( required string region ) {
+        variables.awsRegion = arguments.region;
+        buildUrlEndpoint();
+        return this;
+    }
 
 	/**
 	 * This function builds the variables.UrlEndpoint according to credentials and ssl configuration, usually called after init() for you automatically.
@@ -130,7 +140,8 @@ component accessors="true" singleton {
      * @return The AmazonS3 instance.
      */
     AmazonS3 function setSSL( boolean useSSL = true ) {
-		variables.ssl = arguments.useSSL;
+        variables.ssl = arguments.useSSL;
+        buildUrlEndpoint();
         return this;
     }
 
@@ -411,8 +422,8 @@ component accessors="true" singleton {
 		if( results.error && !bucketDoesntExist ){
 			throw(
                 type 	= "S3SDKError",
-                message = "Error making Amazon REST Call",
-                detail 	= results.message
+                message = "Error making Amazon REST Call: #results.message#",
+                detail 	= serializeJSON( results.response )
             );
 		} else if( bucketDoesntExist ){
 			return  false;
@@ -841,14 +852,18 @@ component accessors="true" singleton {
         }
 
 		// Create Signature
-        var signatureData = sv4Util.generateSignatureData(
+        var signatureData = variables.sv4Util.generateSignatureData(
 			requestMethod  	= arguments.method,
 			//hostName 		= variables.URLEndpoint,
 			hostName 		= reReplaceNoCase( variables.URLEndpoint, "https?\:\/\/", "" ),
             requestURI     	= arguments.resource,
             requestBody    	= arguments.body,
             requestHeaders 	= arguments.headers,
-            requestParams  	= arguments.parameters
+            requestParams  	= arguments.parameters,
+            accessKey       = variables.accessKey,
+            secretKey       = variables.secretKey,
+            regionName      = variables.awsRegion,
+            serviceName     = variables.serviceName
 		);
 
 		cfhttp(
@@ -885,6 +900,7 @@ component accessors="true" singleton {
                 cfhttpparam(
                     type = "URL",
                     name = paramName,
+                    encoded = false,
                     value = signatureData.requestParams[ paramName ]
                 );
             }
@@ -937,8 +953,8 @@ component accessors="true" singleton {
 
             throw(
                 type 	= "S3SDKError",
-                message = "Error making Amazon REST Call",
-                detail 	= results.message
+                message = "Error making Amazon REST Call: #results.message#",
+                detail 	= serializeJSON( results.response )
             );
         }
 
