@@ -1,5 +1,11 @@
 # Changelog
 
+## v4.5.0
+
+* `Feature` : `SV4Util` is now a singleton for added performance and more configuration expansion by adding the sdk reference
+* `Improvement` : Better error messages when s3 goes :boom:
+* `Bug` : Fix for ACF double encoding
+
 ## v4.4.0
 
 * Reworked SSL setup to allow for dynamic creation of the URL entry point

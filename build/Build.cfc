@@ -57,6 +57,9 @@ component{
         branch="development"
     ){
 
+		// Create project mapping
+		fileSystemUtil.createMapping( arguments.projectName, variables.cwd );
+
         // Run the tests
         runTests();
 
