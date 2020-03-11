@@ -900,6 +900,7 @@ component accessors="true" singleton {
                 cfhttpparam(
                     type = "URL",
                     name = paramName,
+                    encoded = false,
                     value = signatureData.requestParams[ paramName ]
                 );
             }
