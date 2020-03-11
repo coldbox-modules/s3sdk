@@ -422,8 +422,8 @@ component accessors="true" singleton {
 		if( results.error && !bucketDoesntExist ){
 			throw(
                 type 	= "S3SDKError",
-                message = "Error making Amazon REST Call",
-                detail 	= results.message
+                message = "Error making Amazon REST Call: #results.message#",
+                detail 	= serializeJSON( results.response )
             );
 		} else if( bucketDoesntExist ){
 			return  false;
@@ -952,8 +952,8 @@ component accessors="true" singleton {
 
             throw(
                 type 	= "S3SDKError",
-                message = "Error making Amazon REST Call",
-                detail 	= results.message
+                message = "Error making Amazon REST Call: #results.message#",
+                detail 	= serializeJSON( results.response )
             );
         }
 
