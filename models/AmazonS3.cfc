@@ -694,14 +694,14 @@ component accessors="true" singleton {
             if ( variables.awsDomain contains 'amazonaws.com' ) {
                 return "#HTTPPrefix##arguments.bucketName#.s3.amazonaws.com/#securedLink#";
             } else{
-                return "#HTTPPrefix##arguments.bucketName#.#variables.awsRegion#.#variables.awsDomain#/#securedLink#";
+                return "#HTTPPrefix##arguments.bucketName#." & ( len( variables.awsRegion ) ? '#variables.awsRegion#.' : '' ) & "#variables.awsDomain#/#securedLink#";
             }
 		}
 
         if ( variables.awsDomain contains 'amazonaws.com' ) {
             return "#HTTPPrefix#s3.amazonaws.com/#arguments.bucketName#/#securedLink#";
         } else{
-            return "#HTTPPrefix##variables.awsRegion#.#variables.awsDomain#/#arguments.bucketName#/#securedLink#";
+            return "#HTTPPrefix#" & ( len( variables.awsRegion ) ? "#variables.awsRegion#." : '' ) & "#variables.awsDomain#/#arguments.bucketName#/#securedLink#";
         }
     }
 
