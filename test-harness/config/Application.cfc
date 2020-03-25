@@ -3,5 +3,5 @@
 * need to modify this file
 */
 component{
-    abort;
+  abort;
 }

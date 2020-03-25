@@ -1,7 +1,7 @@
 ﻿component{
 
-    function index( event, rc, prc ){
-        return "s3sdk";
-    }
+  function index( event, rc, prc ){
+    return "s3sdk";
+  }
 
 }
