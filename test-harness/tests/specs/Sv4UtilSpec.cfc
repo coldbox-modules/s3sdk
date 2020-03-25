@@ -10,6 +10,49 @@ component extends="coldbox.system.testing.BaseTestCase" {
   function run() {
     describe( "SigV4 utilities", function() {
 
+      describe( "get-vanilla-query-unreserved" , function() {
+
+        it( "generateSignatureData", function() {
+          // The following four are derived from the "credential scope" listed in the
+          // SigV4 Test Suite docs at
+          // https://docs.aws.amazon.com/general/latest/gr/signature-v4-test-suite.html
+          variables.accessKey = "AKIDEXAMPLE";
+          variables.dateStamp = "20150830";
+          variables.regionName = "us-east-1";
+          variables.serviceName = "service";
+
+          // This is derived from the files in the SigV4 Test Suite.
+          variables.amzDate = "#variables.dateStamp#T123600Z";
+
+          // This comes straight from the SigV4 Test Suite docs.
+          variables.secretKey = "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY";
+
+          var testData = fixtureData( "get-vanilla-query-unreserved-s3" );
+
+          var sigData = sv4.generateSignatureData(
+            requestMethod = testData.method,
+            hostName = testData.host,
+            requestURI = testData.uri,
+            requestBody = "",
+            requestHeaders = testData.headers,
+            requestParams = testData.urlParams,
+            accessKey = variables.accessKey,
+            secretKey = variables.secretKey,
+            regionName = variables.regionName,
+            serviceName = variables.serviceName,
+            amzDate = variables.amzDate,
+            dateStamp = variables.dateStamp
+          );
+
+          expect( sigData.canonicalRequest ).toBe( testData.canonicalRequest );
+          expect( sigData.stringToSign ).toBe( testData.stringToSign );
+          expect( sigData.authorizationHeader ).toBe( testData.authHeader );
+        } );
+
+      } );
+
+
+
       describe( "post-vanilla-query" , function() {
 
         it( "generateSignatureData", function() {
@@ -60,8 +103,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
       request = FileRead( "#folderPath#/#folderName#.req" ),
       canonicalRequest = FileRead( "#folderPath#/#folderName#.creq" ),
       stringToSign = FileRead( "#folderPath#/#folderName#.sts" ),
-      authHeader = FileRead( "#folderPath#/#folderName#.authz" ),
-      signedRequest = FileRead( "#folderPath#/#folderName#.sreq" )
+      authHeader = FileRead( "#folderPath#/#folderName#.authz" )
     };
     data.method = data.request.listToArray(' ')[1];
     data.host = data.request.listToArray(chr(10))[2].listToArray(':')[2];

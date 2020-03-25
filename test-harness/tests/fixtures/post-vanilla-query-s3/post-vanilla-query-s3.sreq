@@ -1,4 +1,0 @@
-POST /?Param1=value1 HTTP/1.1
-Host:example.amazonaws.com
-X-Amz-Date:20150830T123600Z
-Authorization: AWS4-HMAC-SHA256 Credential=AKIDEXAMPLE/20150830/us-east-1/service/aws4_request, SignedHeaders=host;x-amz-content-sha256;x-amz-date, Signature=d43fd95e1dfefe02247ce8858649e1a063f9dd10f25f170f7ebda6ee3e9b6fbc
