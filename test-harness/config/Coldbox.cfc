@@ -1,100 +1,100 @@
 ﻿component{
 
-	// Configure ColdBox Application
-	function configure(){
+    // Configure ColdBox Application
+    function configure(){
 
-		// coldbox directives
-		coldbox = {
-			//Application Setup
-			appName 				= "Module Tester",
+        // coldbox directives
+        coldbox = {
+            //Application Setup
+            appName                 = "Module Tester",
 
-			//Development Settings
-			reinitPassword			= "",
-			handlersIndexAutoReload = true,
-			modulesExternalLocation = [],
+            //Development Settings
+            reinitPassword          = "",
+            handlersIndexAutoReload = true,
+            modulesExternalLocation = [],
 
-			//Implicit Events
-			defaultEvent			= "",
-			requestStartHandler		= "",
-			requestEndHandler		= "",
-			applicationStartHandler = "",
-			applicationEndHandler	= "",
-			sessionStartHandler 	= "",
-			sessionEndHandler		= "",
-			missingTemplateHandler	= "",
+            //Implicit Events
+            defaultEvent            = "",
+            requestStartHandler     = "",
+            requestEndHandler       = "",
+            applicationStartHandler = "",
+            applicationEndHandler   = "",
+            sessionStartHandler     = "",
+            sessionEndHandler       = "",
+            missingTemplateHandler  = "",
 
-			//Error/Exception Handling
-			exceptionHandler		= "",
-			onInvalidEvent			= "",
-			customErrorTemplate 	= "/coldbox/system/includes/BugReport.cfm",
+            //Error/Exception Handling
+            exceptionHandler        = "",
+            onInvalidEvent          = "",
+            customErrorTemplate     = "/coldbox/system/includes/BugReport.cfm",
 
-			//Application Aspects
-			handlerCaching 			= false,
-			eventCaching			= false
-		};
+            //Application Aspects
+            handlerCaching          = false,
+            eventCaching            = false
+        };
 
-		// environment settings, create a detectEnvironment() method to detect it yourself.
-		// create a function with the name of the environment so it can be executed if that environment is detected
-		// the value of the environment is a list of regex patterns to match the cgi.http_host.
-		environments = {
-			development = "localhost,127\.0\.0\.1"
-		};
+        // environment settings, create a detectEnvironment() method to detect it yourself.
+        // create a function with the name of the environment so it can be executed if that environment is detected
+        // the value of the environment is a list of regex patterns to match the cgi.http_host.
+        environments = {
+            development = "localhost,127\.0\.0\.1"
+        };
 
-		// Module Directives
-		modules = {
-			// An array of modules names to load, empty means all of them
-			include = [],
-			// An array of modules names to NOT load, empty means none
-			exclude = []
-		};
+        // Module Directives
+        modules = {
+            // An array of modules names to load, empty means all of them
+            include = [],
+            // An array of modules names to NOT load, empty means none
+            exclude = []
+        };
 
-		//Register interceptors as an array, we need order
-		interceptors = [
-			 //SES
-			 { class="coldbox.system.interceptors.SES" }
-		];
+        //Register interceptors as an array, we need order
+        interceptors = [
+             //SES
+             { class="coldbox.system.interceptors.SES" }
+        ];
 
-		//LogBox DSL
-		logBox = {
-			// Define Appenders
-			appenders = {
-				console={
-					class="coldbox.system.logging.appenders.ConsoleAppender"
-				},
-				files={class="coldbox.system.logging.appenders.RollingFileAppender",
-					properties = {
-						filename = "tester", filePath="/#appMapping#/logs"
-					}
-				}
-			},
-			// Root Logger
-			root = { levelmax="DEBUG", appenders="*" },
-			// Implicit Level Categories
-			info = [ "coldbox.system" ]
-		};
+        //LogBox DSL
+        logBox = {
+            // Define Appenders
+            appenders = {
+                console={
+                    class="coldbox.system.logging.appenders.ConsoleAppender"
+                },
+                files={class="coldbox.system.logging.appenders.RollingFileAppender",
+                    properties = {
+                        filename = "tester", filePath="/#appMapping#/logs"
+                    }
+                }
+            },
+            // Root Logger
+            root = { levelmax="DEBUG", appenders="*" },
+            // Implicit Level Categories
+            info = [ "coldbox.system" ]
+        };
 
-		moduleSettings = {
-			s3sdk = {
-				// Settings
-				accessKey          : getSystemSetting( "AWS_ACCESS_KEY", "" ),
-				secretKey          : getSystemSetting( "AWS_ACCESS_SECRET", "" ),
-				encryption_charset : "utf-8",
-				ssl                : false,
-				awsregion          : "us-east-1"
-				}
-		};
+        moduleSettings = {
+            s3sdk = {
+                // Settings
+                accessKey          : getSystemSetting( "AWS_ACCESS_KEY", "" ),
+                secretKey          : getSystemSetting( "AWS_ACCESS_SECRET", "" ),
+                encryption_charset : "utf-8",
+                ssl                : false,
+                awsregion          : "us-east-1"
+                }
+        };
 
-	}
+    }
 
-	/**
-	 * Load the Module you are testing
-	 */
-	function afterAspectsLoad( event, interceptData, rc, prc ){
-		controller.getModuleService()
-			.registerAndActivateModule(
-				moduleName 		= request.MODULE_NAME,
-				invocationPath 	= "moduleroot"
-			);
-	}
+    /**
+     * Load the Module you are testing
+     */
+    function afterAspectsLoad( event, interceptData, rc, prc ){
+        controller.getModuleService()
+            .registerAndActivateModule(
+                moduleName      = request.MODULE_NAME,
+                invocationPath  = "moduleroot"
+            );
+    }
 
 }

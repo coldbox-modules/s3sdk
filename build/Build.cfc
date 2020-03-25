@@ -34,10 +34,10 @@ component{
             }
             // Create directories
             directoryCreate( item, true, true );
-		} );
+        } );
 
-		// Create Mappings
-		fileSystemUtil.createMapping( "coldbox", variables.cwd & "test-harness/coldbox" );
+        // Create Mappings
+        fileSystemUtil.createMapping( "coldbox", variables.cwd & "test-harness/coldbox" );
 
         return this;
     }
@@ -57,8 +57,8 @@ component{
         branch="development"
     ){
 
-		// Create project mapping
-		fileSystemUtil.createMapping( arguments.projectName, variables.cwd );
+        // Create project mapping
+        fileSystemUtil.createMapping( arguments.projectName, variables.cwd );
 
         // Run the tests
         runTests();
@@ -89,8 +89,8 @@ component{
         command( 'testbox run' )
             .params(
                 runner = variables.testRunner,
-				verbose = true,
-				outputFile = "build/results.json"
+                verbose = true,
+                outputFile = "build/results.json"
             )
             .run();
 
@@ -102,8 +102,8 @@ component{
 
     /**
      * Build the source
-	 *
-	 * @projectName The project name used for resources and slugs
+     *
+     * @projectName The project name used for resources and slugs
      * @version The version you are building
      * @buldID The build identifier
      * @branch The branch you are building
@@ -239,11 +239,11 @@ component{
     }
 
     /**
-	 * Gets the last Exit code to be used
-	 **/
-	private function getExitCode() {
-		return (createObject( 'java', 'java.lang.System' ).getProperty( 'cfml.cli.exitCode' ) ?: 0);
+     * Gets the last Exit code to be used
+     **/
+    private function getExitCode() {
+        return (createObject( 'java', 'java.lang.System' ).getProperty( 'cfml.cli.exitCode' ) ?: 0);
 
-	}
+    }
 
 }

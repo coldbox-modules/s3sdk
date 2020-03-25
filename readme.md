@@ -42,14 +42,14 @@ This SDK will be installed into a directory called `s3sdk` and then the SDK can 
  * @return An AmazonS3 instance.
  */
 public AmazonS3 function init(
-	required string accessKey,
-	required string secretKey,
-	string awsRegion = "us-east-1",
-	string awsDomain = "amazonaws.com",
-	string encryption_charset = "UTF-8",
-	boolean ssl = true,
-	string defaultDelimiter='/',
-	string defaultBucketName=''
+  required string accessKey,
+  required string secretKey,
+  string awsRegion = "us-east-1",
+  string awsDomain = "amazonaws.com",
+  string encryption_charset = "UTF-8",
+  boolean ssl = true,
+  string defaultDelimiter='/',
+  string defaultBucketName=''
 )
 ```
 
@@ -59,24 +59,24 @@ This package also is a ColdBox module as well.  The module can be configured by 
 
 ```js
 moduleSettings = {
-	s3sdk = {
-		// Your amazon, digital ocean access key
-		accessKey = "",
-		// Your amazon, digital ocean secret key
-		secretKey = "",
-		// The default encryption character set: defaults to utf-8
-		encryption_charset = "utf-8",
-		// SSL mode or not on cfhttp calls: Defaults to true
-		ssl = true,
-		// Your AWS/Digital Ocean Region: Defaults to us-east-1
-		awsregion = "us-east-1",
-		// Your AWS/Digital Ocean Domain Mapping: defaults to amazonaws.com
-		awsDomain = "amazonaws.com",
-		// The default delimiter for folder operations
-		defaultDelimiter	= "/",
-		// The default bucket name to root the operations on.
-		defaultBucketName	= ""
-	}
+  s3sdk = {
+    // Your amazon, digital ocean access key
+    accessKey = "",
+    // Your amazon, digital ocean secret key
+    secretKey = "",
+    // The default encryption character set: defaults to utf-8
+    encryption_charset = "utf-8",
+    // SSL mode or not on cfhttp calls: Defaults to true
+    ssl = true,
+    // Your AWS/Digital Ocean Region: Defaults to us-east-1
+    awsregion = "us-east-1",
+    // Your AWS/Digital Ocean Domain Mapping: defaults to amazonaws.com
+    awsDomain = "amazonaws.com",
+    // The default delimiter for folder operations
+    defaultDelimiter  = "/",
+    // The default bucket name to root the operations on.
+    defaultBucketName = ""
+  }
 };
 ```
 
