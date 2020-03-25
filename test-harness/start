@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+
+# TODO: allow for different serverConfigFile's
+
+# Start server, passing in environment variables from .env file
+cat .env | xargs -J % env % box server start serverConfigFile="server-lucee@5.json"
