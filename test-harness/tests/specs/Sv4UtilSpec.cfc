@@ -5,28 +5,30 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
   function beforeAll() {
     variables.sv4 = new s3sdk.models.Sv4Util();
+
+    variables.awsSigV4TestSuiteConfig = {
+      // The following four are derived from the "credential scope" listed in the
+      // SigV4 Test Suite docs at
+      // https://docs.aws.amazon.com/general/latest/gr/signature-v4-test-suite.html
+      accessKey = "AKIDEXAMPLE",
+      dateStamp = "20150830",
+      regionName = "us-east-1",
+      serviceName = "service",
+
+      // This is derived from the files in the SigV4 Test Suite.
+      amzDate = "20150830T123600Z",
+
+      // This comes straight from the SigV4 Test Suite docs.
+      secretKey = "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY"
+    };
   }
 
   function run() {
     describe( "SigV4 utilities", function() {
 
-      describe( "get-vanilla-query-unreserved" , function() {
-
-        it( "generateSignatureData", function() {
-          // The following four are derived from the "credential scope" listed in the
-          // SigV4 Test Suite docs at
-          // https://docs.aws.amazon.com/general/latest/gr/signature-v4-test-suite.html
-          variables.accessKey = "AKIDEXAMPLE";
-          variables.dateStamp = "20150830";
-          variables.regionName = "us-east-1";
-          variables.serviceName = "service";
-
-          // This is derived from the files in the SigV4 Test Suite.
-          variables.amzDate = "#variables.dateStamp#T123600Z";
-
-          // This comes straight from the SigV4 Test Suite docs.
-          variables.secretKey = "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY";
-
+      describe( "adapted AWS SigV4 test suite tests", function() {
+        it( "signs get-vanilla-query-unreserved", function() {
+          var config = variables.awsSigV4TestSuiteConfig;
           var testData = fixtureData( "get-vanilla-query-unreserved-s3" );
 
           var sigData = sv4.generateSignatureData(
@@ -36,12 +38,12 @@ component extends="coldbox.system.testing.BaseTestCase" {
             requestBody = "",
             requestHeaders = testData.headers,
             requestParams = testData.urlParams,
-            accessKey = variables.accessKey,
-            secretKey = variables.secretKey,
-            regionName = variables.regionName,
-            serviceName = variables.serviceName,
-            amzDate = variables.amzDate,
-            dateStamp = variables.dateStamp
+            accessKey = config.accessKey,
+            secretKey = config.secretKey,
+            regionName = config.regionName,
+            serviceName = config.serviceName,
+            amzDate = config.amzDate,
+            dateStamp = config.dateStamp
           );
 
           expect( sigData.canonicalRequest ).toBe( testData.canonicalRequest );
@@ -49,27 +51,9 @@ component extends="coldbox.system.testing.BaseTestCase" {
           expect( sigData.authorizationHeader ).toBe( testData.authHeader );
         } );
 
-      } );
 
-
-
-      describe( "post-vanilla-query" , function() {
-
-        it( "generateSignatureData", function() {
-          // The following four are derived from the "credential scope" listed in the
-          // SigV4 Test Suite docs at
-          // https://docs.aws.amazon.com/general/latest/gr/signature-v4-test-suite.html
-          variables.accessKey = "AKIDEXAMPLE";
-          variables.dateStamp = "20150830";
-          variables.regionName = "us-east-1";
-          variables.serviceName = "service";
-
-          // This is derived from the files in the SigV4 Test Suite.
-          variables.amzDate = "#variables.dateStamp#T123600Z";
-
-          // This comes straight from the SigV4 Test Suite docs.
-          variables.secretKey = "wJalrXUtnFEMI/K7MDENG+bPxRfiCYEXAMPLEKEY";
-
+        it( "signs post-vanilla-query" , function() {
+          var config = variables.awsSigV4TestSuiteConfig;
           var testData = fixtureData( "post-vanilla-query-s3" );
 
           var sigData = sv4.generateSignatureData(
@@ -79,12 +63,12 @@ component extends="coldbox.system.testing.BaseTestCase" {
             requestBody = "",
             requestHeaders = testData.headers,
             requestParams = testData.urlParams,
-            accessKey = variables.accessKey,
-            secretKey = variables.secretKey,
-            regionName = variables.regionName,
-            serviceName = variables.serviceName,
-            amzDate = variables.amzDate,
-            dateStamp = variables.dateStamp
+            accessKey = config.accessKey,
+            secretKey = config.secretKey,
+            regionName = config.regionName,
+            serviceName = config.serviceName,
+            amzDate = config.amzDate,
+            dateStamp = config.dateStamp
           );
 
           expect( sigData.canonicalRequest ).toBe( testData.canonicalRequest );
