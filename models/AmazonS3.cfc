@@ -237,28 +237,6 @@ component accessors="true" singleton {
 	}
 
 	/**
-	 * @deprecated
-	 * Create a v2 signature to sign the request.
-	 *
-	 * @stringToSign The string to sign for the request.
-	 *
-	 * @return A signed string to send with the request.
-	 */
-	string function createSignature( required string stringToSign ) {
-		return toBase64(
-			hMAC_SHA1(
-				variables.secretKey,
-				replace(
-					arguments.stringToSign,
-					"\n",
-					chr( 10 ),
-					"all"
-				)
-			)
-		);
-	}
-
-	/**
 	 * List all the buckets associated with the Amazon credentials.
 	 *
 	 * @return
@@ -803,8 +781,6 @@ component accessors="true" singleton {
 	 * @bucketName       The bucket the object resides in.
 	 * @uri              The uri to the object to create a link for.
 	 * @minutesValid     The minutes the link is valid for. Defaults to 60 minutes.
-	 * @virtualHostStyle Whether to use virtual bucket style or path style.
-	 *                   Defaults to true.
 	 * @useSSL           Use SSL for the returned url.
 	 *
 	 * @return           An authenticated url to the resource.
@@ -813,52 +789,34 @@ component accessors="true" singleton {
 		required string bucketName = variables.defaultBucketName,
 		required string uri,
 		string minutesValid      = 60,
-		boolean virtualHostStyle = false,
 		boolean useSSL           = variables.ssl
 	) {
 		requireBucketName( arguments.bucketName );
 
-		var epochTime = dateDiff(
-			"s",
-			dateConvert( "utc2Local", "January 1 1970 00:00" ),
-			now()
-		) + ( arguments.minutesValid * 60 );
+		var hostnameSuffix = variables.awsDomain.contains( "amazonaws.com" )
+			? "s3.#variables.awsRegion#.amazonaws.com"
+			: "#variables.awsRegion#.#variables.awsDomain#";
+
+		var hostname = "#bucketName#.#hostnameSuffix#";
+
+		var sigData = variables.signatureUtil.generateSignatureData(
+			requestMethod = "GET",
+			hostName = hostname,
+			requestURI = arguments.uri,
+			requestBody = "",
+			requestHeaders = {},
+			requestParams = {
+				"X-Amz-Expires" = arguments.minutesValid * 60
+			},
+			accessKey = variables.accessKey,
+			secretKey = variables.secretKey,
+			regionName = variables.awsRegion,
+			serviceName = variables.serviceName,
+			presignDownloadURL = true
+		);
+
 		var HTTPPrefix = arguments.useSSL ? "https://" : "http://";
-
-		// Encode incoming URI
-		arguments.uri = urlEncodedFormat( arguments.uri );
-		// Replace back specific delimiters as required by AWS
-		arguments.uri = replaceNoCase( arguments.uri, "%2F", "/", "all" );
-		arguments.uri = replaceNoCase( arguments.uri, "%2E", ".", "all" );
-		arguments.uri = replaceNoCase( arguments.uri, "%2D", "-", "all" );
-		arguments.uri = replaceNoCase( arguments.uri, "%5F", "_", "all" );
-
-		// Sign URL
-		var stringToSign = "GET\n\n\n#epochTime#\n/#arguments.bucketName#/#arguments.uri#";
-		var signature    = urlEncodedFormat( createSignature( stringToSign ) );
-		var securedLink  = "#arguments.uri#?AWSAccessKeyId=#variables.accessKey#&Expires=#epochTime#&Signature=#signature#";
-
-		if ( log.canDebug() ) {
-			log.debug( "String to sign: #stringToSign# . Signature: #signature#" );
-		}
-
-		if ( arguments.virtualHostStyle ) {
-			if ( variables.awsDomain contains "amazonaws.com" ) {
-				return "#HTTPPrefix##arguments.bucketName#.s3.amazonaws.com/#securedLink#";
-			} else if ( len( variables.awsRegion ) ) {
-				return "#HTTPPrefix##arguments.bucketName#.#variables.awsRegion#.#variables.awsDomain#/#securedLink#";
-			} else {
-				return "#HTTPPrefix##arguments.bucketName#.#variables.awsDomain#/#securedLink#";
-			}
-		}
-
-		if ( variables.awsDomain contains "amazonaws.com" ) {
-			return "#HTTPPrefix#s3.amazonaws.com/#arguments.bucketName#/#securedLink#";
-		} else if ( len( variables.awsRegion ) ) {
-			return "#HTTPPrefix##variables.awsRegion#.#variables.awsDomain#/#arguments.bucketName#/#securedLink#";
-		} else {
-			return "#HTTPPrefix##variables.awsDomain#/#arguments.bucketName#/#securedLink#";
-		}
+		return "#HTTPPrefix##hostname#/#arguments.uri#?#sigData.canonicalQueryString#&X-Amz-Signature=#sigData.signature#";
 	}
 
 	/**

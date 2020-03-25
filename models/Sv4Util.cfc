@@ -43,13 +43,13 @@ component singleton {
 	 *  @requestBody     - Body of the request. Either a string or binary value.
 	 *  @requestHeaders  - Structure of http headers for used the request. Mandatory host and date headers are automatically generated.
 	 *  @requestParams   - Structure containing any url parameters for the request. Mandatory parameters are automatically generated.
-	 *  @signedPayload   - If true, include hash of requestPayload in signature calculations. Otherwise, literal "UNSIGNED-PAYLOAD". Default is true.
 	 *  @excludeHeaders  - (Optional) List of header names AWS can exclude from the signing process. Default is an empty array, which means all headers should be "signed"
 	 *  @amzDate         - (Optional) Override the automatic X-Amz-Date calculation with this value. Current UTC date. If supplied, @dateStamp is required.  Format: yyyyMMddTHHnnssZ
 	 *  @regionName      - (Optional) Override the instance region name with this value. Example "us-east-1"
 	 *  @serviceName     - (Optional) Override the instance service name with this value. Example "s3"
 	 *  @dateStamp       - (Optional) Override the automatic dateStamp calculation with this value. Current UTC date (only). If supplied, @amzDate is required. Format: yyyyMMdd
-	 *  @returns  Signature value, authorization header and all properties part of the signature calculation: ALGORITHM,AMZDATE,AUTHORIZATIONHEADER,CANONICALHEADERS,CANONICALQUERYSTRING,CANONICALREQUEST,CANONICALURI,CREDENTIALSCOPE,DATESTAMP,EXCLUDEHEADERS,HOSTNAME,REGIONNAME,REQUESTHEADERS,REQUESTMETHOD,REQUESTPARAMS,REQUESTPAYLOAD,SERVICENAME,IGNATURE,SIGNEDHEADERS,SIGNKEYBYTES,STRINGTOSIGN
+	 *  @presigningDownloadURL - (Optional) Generates a signed request with all required parameters in the query string, and no headers except for Host.
+	 *  @returns  Signature value, authorization header and all properties part of the signature calculation: ALGORITHM,AMZDATE,AUTHORIZATIONHEADER,CANONICALHEADERS,CANONICALQUERYSTRING,CANONICALREQUEST,CANONICALURI,CREDENTIALSCOPE,DATESTAMP,EXCLUDEHEADERS,HOSTNAME,REGIONNAME,REQUESTHEADERS,REQUESTMETHOD,REQUESTPARAMS,REQUESTPAYLOAD,SERVICENAME,SIGNATURE,SIGNEDHEADERS,SIGNKEYBYTES,STRINGTOSIGN
 	 *
 	 */
 	public struct function generateSignatureData(
@@ -63,10 +63,10 @@ component singleton {
 		required string secretKey,
 		required string regionName,
 		required string serviceName,
-		boolean signedPayload = true,
 		array excludeHeaders  = [],
 		string amzDate,
-		string dateStamp
+		string dateStamp,
+		boolean presignDownloadURL = false
 	) {
 		// Initialize properties
 		var props          = {};
@@ -97,7 +97,7 @@ component singleton {
 		props.canonicalURI  = buildCanonicalURI( requestURI = arguments.requestURI );
 
 		// For signed requests, the payload is a checksum
-		props.requestPayload  = arguments.signedPayload ? hash256( arguments.requestBody ) : arguments.requestBody;
+		props.requestPayload  = hash256( arguments.requestBody );
 		props.credentialScope = buildCredentialScope(
 			dateStamp   = props.dateStamp,
 			serviceName = props.serviceName,
@@ -114,44 +114,42 @@ component singleton {
 		// Host header is mandatory for ALL requests
 		props.requestHeaders[ "Host" ] = arguments.hostName;
 
-		// Signed requests must include a checksum, ie hash of payload
-		if ( arguments.signedPayload ) {
-			props.requestHeaders[ "X-Amz-Content-Sha256" ] = props.requestPayload;
-		}
-
 		// Apply mandatory headers and parameters
-		if ( hasQueryParams ) {
+		if ( presignDownloadURL ) {
 			// First, normalize request headers
 			props.requestHeaders = cleanHeaders( props.requestHeaders );
 			props.excludeHeaders = cleanHeaderNames( arguments.excludeHeaders );
+
+			// Signed requests must include a checksum, ie hash of payload
+			// props.requestParams["X-Amz-Content-Sha256"] = props.requestPayload;
+			props.requestPayload = "UNSIGNED-PAYLOAD";
+
 			// Identify which headers will be included in the signing process
 			props.signedHeaders  = buildSignedHeaders(
 				requestHeaders = props.requestHeaders,
 				excludeNames   = props.excludeHeaders
 			);
 
-			// When passing all parameters in query string, canonical query string must also
+			// When presigning a download URL, canonical query string must also
 			// include the parameters used as part of the signing process, ie hashing algorithm,
 			// credential scope, date, and signed headers parameters.
-			//   props.requestParams["X-Amz-Algorithm"] = variables.signatureAlgorithm;
-			//   props.requestParams["X-Amz-Credential"] = variables.accessKeyId &"/"& props.credentialScope;
-			//   props.requestParams["X-Amz-SignedHeaders"] = props.signedHeaders;
-			//   props.requestParams["X-Amz-Date"] = props.amzDate;
+			props.requestParams["X-Amz-Algorithm"] = variables.signatureAlgorithm;
+			props.requestParams["X-Amz-Credential"] = "#props.accessKey#/#props.credentialScope#";
+			props.requestParams["X-Amz-SignedHeaders"] = props.signedHeaders;
+			props.requestParams["X-Amz-Date"] = props.amzDate;
 
 			// Finally, normalize url parameters
 			props.requestParams = encodeQueryParams( queryParams = props.requestParams );
 		}
 		// All other request types (PUT, DELETE, POST, ....)
 		else {
+			// Signed requests must include a checksum, ie hash of payload
+			props.requestHeaders["X-Amz-Content-Sha256"] = props.requestPayload;
+
 			// Host header is mandatory for ALL requests
 			props.requestHeaders[ "Host" ]       = arguments.hostName;
 			// Date header is mandatory when not passing values in url
 			props.requestHeaders[ "X-Amz-Date" ] = props.amzDate;
-
-			// For signed requests, include a checksum header, ie hash of payload
-			if ( arguments.signedPayload ) {
-				props.requestHeaders[ "X-Amz-Content-Sha256" ] = props.requestPayload;
-			}
 
 			// Normalize headers and url parameters
 			props.requestHeaders = cleanHeaders( props.requestHeaders );
