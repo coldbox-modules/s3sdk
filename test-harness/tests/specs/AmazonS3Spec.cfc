@@ -306,6 +306,19 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					expect( bucketContents ).toHaveLength( 1 );
 					expect( bucketContents[ 1 ].isDirectory ).toBeFalse();
 				} );
+
+				it( "generates a valid authenticated URL", function() {
+					var testFileContents = "Hello, world!";
+					s3.putObject( testBucket, "example.txt", testFileContents );
+
+					var authedURL = s3.getAuthenticatedURL( bucketName=testBucket, uri="example.txt" );
+
+					var httpSvc = new http();
+					httpSvc.setMethod("get");
+					httpSvc.setUrl(authedURL);
+					var response = httpSvc.send().getPrefix();
+					expect( response.fileContent ).toBe( testFileContents );
+				} );
 			} );
 
 			describe( "buckets", function() {
