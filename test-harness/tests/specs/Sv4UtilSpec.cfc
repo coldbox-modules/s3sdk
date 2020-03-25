@@ -26,43 +26,6 @@ component extends="coldbox.system.testing.BaseTestCase" {
   function run() {
     describe( "SigV4 utilities", function() {
 
-      // describe( "get-presigned-url" , function() {
-
-      //   it( "generateSignatureData", function() {
-      //     // The following are example data from
-      //     // https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
-      //     variables.accessKey = "AKIAIOSFODNN7EXAMPLE";
-      //     variables.dateStamp = "20130524";
-      //     variables.regionName = "us-east-1";
-      //     variables.serviceName = "s3";
-      //     variables.amzDate = "#variables.dateStamp#T000000Z";
-      //     variables.secretKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY";
-
-      //     var testData = fixtureData( "get-presigned-url" );
-
-      //     var sigData = sv4.generateSignatureData(
-      //       requestMethod = testData.method,
-      //       hostName = testData.host,
-      //       requestURI = testData.uri,
-      //       requestBody = "",
-      //       requestHeaders = testData.headers,
-      //       requestParams = testData.urlParams,
-      //       accessKey = variables.accessKey,
-      //       secretKey = variables.secretKey,
-      //       regionName = variables.regionName,
-      //       serviceName = variables.serviceName,
-      //       amzDate = variables.amzDate,
-      //       dateStamp = variables.dateStamp,
-      //       presigningDownloadURL = true
-      //     );
-
-      //     expect( sigData.canonicalRequest ).toBe( testData.canonicalRequest );
-      //     expect( sigData.stringToSign ).toBe( testData.stringToSign );
-      //     expect( sigData.authorizationHeader ).toBe( testData.authHeader );
-      //   } );
-
-      // } );
-
       describe( "adapted AWS SigV4 test suite tests", function() {
         it( "signs get-vanilla-query-unreserved", function() {
           var config = variables.awsSigV4TestSuiteConfig;
@@ -70,6 +33,11 @@ component extends="coldbox.system.testing.BaseTestCase" {
           expectCorrectSignature( config, testData );
         } );
 
+        it( "signs post-header-key-sort" , function() {
+          var config = variables.awsSigV4TestSuiteConfig;
+          var testData = fixtureData( "post-header-key-sort-s3" );
+          expectCorrectSignature( config, testData );
+        } );
 
         it( "signs post-vanilla-query" , function() {
           var config = variables.awsSigV4TestSuiteConfig;
