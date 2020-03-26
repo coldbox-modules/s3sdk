@@ -213,12 +213,23 @@ component accessors="true" singleton {
 	}
 
 	/**
-	 * This function builds the variables.UrlEndpoint according to credentials and ssl configuration, usually called after init() for you automatically.
+	 * This function builds variables.UrlEndpoint and variables.URLEndpointHostname according to credentials and ssl configuration, usually called after init() for you automatically.
 	 */
 	AmazonS3 function buildUrlEndpoint() {
 		// Build accordingly
 		var URLEndPointProtocol = ( variables.ssl ) ? "https://" : "http://";
-		variables.URLEndpoint   = ( variables.awsDomain contains "amazonaws.com" ) ? "#URLEndPointProtocol#s3.#variables.awsRegion#.#variables.awsDomain#" : "#URLEndPointProtocol##variables.awsDomain#";
+
+		var hostnameComponents = [];
+		if( variables.awsDomain contains "amazonaws.com" ) {
+			hostnameComponents.append( "s3" );
+		}
+		if( Len( variables.awsRegion ) ) {
+			hostnameComponents.append( variables.awsRegion );
+		}
+		hostnameComponents.append( variables.awsDomain );
+		variables.URLEndpointHostname = ArrayToList( hostnameComponents, "." );
+		variables.URLEndpoint = URLEndpointProtocol & variables.URLEndpointHostname;
+
 		return this;
 	}
 
@@ -793,11 +804,7 @@ component accessors="true" singleton {
 	) {
 		requireBucketName( arguments.bucketName );
 
-		var hostnameSuffix = variables.awsDomain.contains( "amazonaws.com" )
-			? "s3.#variables.awsRegion#.amazonaws.com"
-			: "#variables.awsRegion#.#variables.awsDomain#";
-
-		var hostname = "#bucketName#.#hostnameSuffix#";
+		var hostname = "#bucketName#.#variables.URLEndpointHostname#";
 
 		var sigData = variables.signatureUtil.generateSignatureData(
 			requestMethod = "GET",
@@ -1030,11 +1037,7 @@ component accessors="true" singleton {
 		// Create Signature
 		var signatureData = signatureUtil.generateSignatureData(
 			requestMethod = arguments.method,
-			hostName      = reReplaceNoCase(
-				variables.URLEndpoint,
-				"https?\:\/\/",
-				""
-			),
+			hostName       = variables.URLEndpointHostname,
 			requestURI     = arguments.resource,
 			requestBody    = arguments.body,
 			requestHeaders = arguments.headers,
