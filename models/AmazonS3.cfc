@@ -46,6 +46,7 @@ component accessors="true" singleton {
 	property name="autoContentType";
 	property name="autoMD5";
 	property name="mimeTypes";
+	property name="serviceName";
 
 	// STATIC Contsants
 	this.ACL_PRIVATE           = "private";
@@ -107,7 +108,7 @@ component accessors="true" singleton {
 		string throwOnRequestError = true,
 		boolean autoContentType    = false,
 		boolean autoMD5            = false,
-		boolean debug              = ( request.debug ?: false )
+		boolean debug              = false
 	) {
 		variables.accessKey           = arguments.accessKey;
 		variables.secretKey           = arguments.secretKey;
@@ -124,6 +125,7 @@ component accessors="true" singleton {
 		variables.throwOnRequestError = arguments.throwOnRequestError;
 		variables.autoContentType     = arguments.autoContentType;
 		variables.autoMD5             = ( arguments.autoMD5 ? "auto" : "" );
+		variables.serviceName        = arguments.serviceName;
 
 		// Construct the SSL Domain
 		setSSL( arguments.ssl );
@@ -216,6 +218,17 @@ component accessors="true" singleton {
 		return this;
 	}
 
+	AmazonS3 function setAWSDomain( required string domain ) {
+		variables.awsDomain = arguments.domain;
+		buildUrlEndpoint();
+		return this;
+	}
+
+	AmazonS3 function setAWSRegion( required string region ) {
+		variables.awsRegion = arguments.region;
+		buildUrlEndpoint();
+	}
+	
 	/**
 	 * This function builds the variables.UrlEndpoint according to credentials and ssl configuration, usually called after init() for you automatically.
 	 */
@@ -236,6 +249,7 @@ component accessors="true" singleton {
 	 */
 	AmazonS3 function setSSL( boolean useSSL = true ) {
 		variables.ssl = arguments.useSSL;
+		buildUrlEndpoint();
 		return this;
 	}
 
@@ -538,8 +552,8 @@ component accessors="true" singleton {
 		if ( results.error && !bucketDoesntExist ) {
 			throw(
 				type    = "S3SDKError",
-				message = "Error making Amazon REST Call",
-				detail  = results.message
+				message = "Error making Amazon REST Call: #results.message#",
+				detail  = serializeJSON( results.response )
 			);
 		} else if ( bucketDoesntExist ) {
 			return false;
@@ -748,73 +762,6 @@ component accessors="true" singleton {
 	}
 
 	/**
-	 * Gets an object from a bucket.
-	 *
-	 * @bucketName         The bucket in which to store the object.
-	 * @uri                The destination uri key to use when saving the object.
-	 * @HTTPTimeout        The HTTP timeout to use.
-	 *
-	 * @return             The object's eTag.
-	 */
-	struct function getObject(
-		required string bucketName = variables.defaultBucketName,
-		required string uri,
-		numeric HTTPTimeout = variables.defaultTimeOut
-	) {
-		requireBucketName( arguments.bucketName );
-		var results = s3Request(
-			method   = "GET",
-			resource = arguments.bucketName & "/" & arguments.uri,
-			timeout  = arguments.HTTPTimeout
-		);
-
-		return results;
-	}
-
-	/**
-	 * Gets an object from a bucket.
-	 *
-	 * @bucketName         The bucket in which to store the object.
-	 * @uri                The destination uri key to use when saving the object.
-	 * @filepath           The file path write the object to, if no filename given filename from uri is used
-	 * @charset            The file charset, defaults to UTF-8
-	 * @HTTPTimeout        The HTTP timeout to use.
-	 *
-	 * @return             The object's eTag.
-	 */
-	struct function downloadObject(
-		required string bucketName = variables.defaultBucketName,
-		required string uri,
-		required string filepath,
-		required string charset = "utf-8",
-		numeric HTTPTimeout     = variables.defaultTimeOut
-	) {
-		requireBucketName( arguments.bucketName );
-
-		// if filepath is a directory, append filename
-		if ( right( arguments.filepath, 1 ) IS "/" || right( arguments.filepath, 1 ) IS "\" ) {
-			arguments.filepath &= listLast( arguments.uri, "/\" );
-		}
-
-		var results = s3Request(
-			method        = "GET",
-			resource      = arguments.bucketName & "/" & arguments.uri,
-			timeout       = arguments.HTTPTimeout,
-			filename      = arguments.filepath,
-			parseResponse = false
-		);
-
-		results.filename = arguments.filepath;
-
-		if ( !fileExists( arguments.filepath ) ) {
-			results.error   = true;
-			results.message = "Downloaded file doesn't exist";
-		}
-
-		return results;
-	}
-
-	/**
 	 * Get an object's metadata information.
 	 *
 	 * @bucketName The bucket the object resides in.
@@ -923,6 +870,54 @@ component accessors="true" singleton {
 		}
 	}
 
+
+	
+
+
+
+	/**
+	 * Gets an object from a bucket.
+	 *
+	 * @bucketName         The bucket in which to store the object.
+	 * @uri                The destination uri key to use when saving the object.
+	 * @filepath           The file path write the object to, if no filename given filename from uri is used
+	 * @charset            The file charset, defaults to UTF-8
+	 * @HTTPTimeout        The HTTP timeout to use.
+	 *
+	 * @return             The object's eTag.
+	 */
+	struct function downloadObject(
+		required string bucketName = variables.defaultBucketName,
+		required string uri,
+		required string filepath,
+		required string charset = "utf-8",
+		numeric HTTPTimeout     = variables.defaultTimeOut
+	) {
+		requireBucketName( arguments.bucketName );
+
+		// if filepath is a directory, append filename
+		if ( right( arguments.filepath, 1 ) IS "/" || right( arguments.filepath, 1 ) IS "\" ) {
+			arguments.filepath &= listLast( arguments.uri, "/\" );
+		}
+
+		var results = s3Request(
+			method        = "GET",
+			resource      = arguments.bucketName & "/" & arguments.uri,
+			timeout       = arguments.HTTPTimeout,
+			filename      = arguments.filepath,
+			parseResponse = false
+		);
+
+		results.filename = arguments.filepath;
+
+		if ( !fileExists( arguments.filepath ) ) {
+			results.error   = true;
+			results.message = "Downloaded file doesn't exist";
+		}
+
+		return results;
+	}
+	
 	/**
 	 * Deletes an object.
 	 *
@@ -1136,9 +1131,10 @@ component accessors="true" singleton {
 
 			for ( var paramName in signatureData.requestParams ) {
 				cfhttpparam(
-					type ="URL",
-					name =paramName,
-					value=signatureData.requestParams[ paramName ]
+					type   ="URL",
+					name   =paramName,
+					encoded=false,
+					value  =signatureData.requestParams[ paramName ]
 				);
 			}
 
@@ -1149,7 +1145,7 @@ component accessors="true" singleton {
 
 		if ( log.canDebug() ) {
 			log.debug(
-				"Amazon Rest Call ->URL: #variables.URLEndPoint#/#arguments.resource# ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#",
+				"Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#",
 				HTTPResults
 			);
 		}
@@ -1200,8 +1196,8 @@ component accessors="true" singleton {
 
 			throw(
 				type    = "S3SDKError",
-				message = "Error making Amazon REST Call",
-				detail  = results.message
+				message = "Error making Amazon REST Call: #results.message#",
+				detail  = serializeJSON( results.response )
 			);
 		}
 
