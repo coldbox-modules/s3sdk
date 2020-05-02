@@ -179,6 +179,21 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					expect( bucketContents[ 1 ].key ).toBe( "example-2.txt" );
 				} );
 
+				it( "can get a file", function() {
+					s3.putObject( testBucket, "example.txt", "Hello, world!" );
+					var get = s3.getObject( testBucket, "example.txt" );
+					expect( get.error ).toBeFalse();
+					expect( get.response ).toBe( "Hello, world!" );
+				} );
+
+				it( "can download a file", function() {
+					s3.putObject( testBucket, "example.txt", "Hello, world!" );
+					var dl = s3.downloadObject( testBucket, "example.txt", "ram:///example.txt" );
+					debug( dl );
+					expect( dl ).notToBeEmpty();
+					expect( dl.error ).toBeFalse();
+				} );
+
 				it( "validates missing bucketname", function() {
 				  expect( function(){ s3.getBucket(); }).toThrow( message='bucketName is required' );
 				} );
