@@ -5,10 +5,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
 	function beforeAll() {
 		variables.s3 = new s3sdk.models.AmazonS3(
-			getUtil().getSystemSetting( "AWS_ACCESS_KEY" ),
-			getUtil().getSystemSetting( "AWS_ACCESS_SECRET" ),
-			getUtil().getSystemSetting( "AWS_REGION" ),
-			getUtil().getSystemSetting( "AWS_DOMAIN" )
+			accessKey = getUtil().getSystemSetting( "AWS_ACCESS_KEY" ),
+			secretKey = getUtil().getSystemSetting( "AWS_ACCESS_SECRET" ),
+			awsRegion = getUtil().getSystemSetting( "AWS_REGION" ),
+			awsDomain = getUtil().getSystemSetting( "AWS_DOMAIN" )
 		);
 		prepareMock( s3 );
 		s3.$property( propertyName = "log", mock = createLogStub() );
