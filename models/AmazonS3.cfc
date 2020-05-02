@@ -95,9 +95,9 @@ component accessors="true" singleton {
 		required string accessKey,
 		required string secretKey,
 		string awsDomain           = "amazonaws.com",
-		string awsRegion           = ( arguments.awsDomain == "amazonaws.com" ? "us-east-1" : "" ),
+		string awsRegion           = "", // us-east-1 default for aws
 		string encryption_charset  = "UTF-8",
-		string signature           = "V4",
+		string signatureType       = "V4",
 		boolean ssl                = true,
 		string defaultTimeOut      = 300,
 		string defaultDelimiter    = "/",
@@ -108,12 +108,16 @@ component accessors="true" singleton {
 		string throwOnRequestError = true,
 		boolean autoContentType    = false,
 		boolean autoMD5            = false,
+		string serviceName         = "s3",
 		boolean debug              = false
 	) {
+		if ( arguments.awsDomain == "amazonaws.com" && arguments.awsRegion == "" ) {
+			arguments.awsRegion = "us-east-1";
+		}
 		variables.accessKey           = arguments.accessKey;
 		variables.secretKey           = arguments.secretKey;
 		variables.encryption_charset  = arguments.encryption_charset;
-		variables.signature           = arguments.signature;
+		variables.signatureType       = arguments.signatureType;
 		variables.awsDomain           = arguments.awsDomain;
 		variables.awsRegion           = arguments.awsRegion;
 		variables.defaultTimeOut      = arguments.defaultTimeOut;
@@ -124,8 +128,8 @@ component accessors="true" singleton {
 		variables.defaultACL          = arguments.defaultACL;
 		variables.throwOnRequestError = arguments.throwOnRequestError;
 		variables.autoContentType     = arguments.autoContentType;
-		variables.autoMD5             = ( arguments.autoMD5 ? "auto" : "" );
-		variables.serviceName        = arguments.serviceName;
+		variables.autoMD5             = ( variables.signatureType == "V2" || arguments.autoMD5 ? "auto" : "" );
+		variables.serviceName         = arguments.serviceName;
 
 		// Construct the SSL Domain
 		setSSL( arguments.ssl );
@@ -134,41 +138,11 @@ component accessors="true" singleton {
 		buildUrlEndpoint();
 
 		// Build signature utility
-		if ( variables.signature == "V4" ) {
-			variables.sv4Util = new Sv4Util(
-				accessKeyId        = variables.accessKey,
-				secretAccessKey    = variables.secretKey,
-				defaultRegionName  = arguments.awsRegion,
-				defaultServiceName = "s3"
-			);
-		} else if ( variables.signature == "V2" ) {
-			variables.autoMD5 = "auto";
-		}
+		variables.signatureUtil = createSignatureUtil( variables.signatureType );
 
 		// manual debugging replacement for logbox
 		if ( NOT structKeyExists( variables, "log" ) ) {
-			var d          = arguments.debug;
-			variables.logs = [];
-			variables.log  = {
-				canDebug : function() {
-					return d;
-				},
-				debug : function( msg, data ) {
-					arrayAppend( variables.logs, arguments.msg );
-					if ( structKeyExists( arguments, "data" ) ) {
-						arrayAppend( variables.logs, arguments.data );
-					}
-				},
-				error : function( msg, data ) {
-					arrayAppend( variables.logs, "Error: " & arguments.msg );
-					if ( structKeyExists( arguments, "data" ) ) {
-						arrayAppend( variables.logs, arguments.data );
-					}
-				}
-			};
-			this.getLogs = function() {
-				return variables.logs;
-			}
+			variables.log = new MiniLogBox( arguments.debug );
 		}
 
 		// detect mimetypes from file extension
@@ -204,6 +178,14 @@ component accessors="true" singleton {
 		return this;
 	}
 
+	function createSignatureUtil( required string type ) {
+		if ( arguments.type == "V4" ) {
+			return new Sv4Util();
+		} else if ( arguments.type == "V2" ) {
+			return new Sv2Util();
+		}
+	}
+
 	/**
 	 * Set the Amazon Credentials.
 	 *
@@ -227,8 +209,9 @@ component accessors="true" singleton {
 	AmazonS3 function setAWSRegion( required string region ) {
 		variables.awsRegion = arguments.region;
 		buildUrlEndpoint();
+		return this;
 	}
-	
+
 	/**
 	 * This function builds the variables.UrlEndpoint according to credentials and ssl configuration, usually called after init() for you automatically.
 	 */
@@ -268,7 +251,7 @@ component accessors="true" singleton {
 				replace(
 					arguments.stringToSign,
 					"\n",
-					"#chr( 10 )#",
+					chr( 10 ),
 					"all"
 				)
 			)
@@ -592,7 +575,7 @@ component accessors="true" singleton {
 		required string bucketName = variables.defaultBucketName,
 		required string filepath,
 		string uri             = "",
-		string contentType     = ( variables.autoContentType ? "auto" : "binary/octet-stream" ),
+		string contentType     = "",
 		string contentEncoding = "",
 		numeric HTTPTimeout    = variables.defaultTimeout,
 		string cacheControl    = variables.defaultCacheControl,
@@ -609,6 +592,9 @@ component accessors="true" singleton {
 			arguments.uri = getFileFromPath( arguments.filePath );
 		}
 
+		if ( arguments.contentType == "" ) {
+			arguments.contentType = ( variables.autoContentType ? "auto" : "binary/octet-stream" );
+		}
 		if ( arguments.contentType == "auto" ) {
 			arguments.contentType = getFileMimeType( arguments.filepath );
 		}
@@ -755,7 +741,12 @@ component accessors="true" singleton {
 		);
 
 		if ( results.responseHeader.status_code == 200 ) {
-			return results.responseHeader.etag;
+			return replace(
+				results.responseHeader.etag,
+				'"',
+				"",
+				"all"
+			);
 		}
 
 		return "";
@@ -870,10 +861,19 @@ component accessors="true" singleton {
 		}
 	}
 
-
-	
-
-
+	/**
+	 * Get an object's metadata information.
+	 *
+	 * @bucketName The bucket the object resides in.
+	 * @uri        The object URI to retrieve the info.
+	 *
+	 * @return     The object's metadata information.
+	 */
+	struct function getObject( required string bucketName = variables.defaultBucketName, required string uri ) {
+		requireBucketName( arguments.bucketName );
+		var results = s3Request( method = "GET", resource = arguments.bucketName & "/" & arguments.uri );
+		return results;
+	}
 
 	/**
 	 * Gets an object from a bucket.
@@ -889,21 +889,18 @@ component accessors="true" singleton {
 	struct function downloadObject(
 		required string bucketName = variables.defaultBucketName,
 		required string uri,
-		required string filepath,
-		required string charset = "utf-8",
-		numeric HTTPTimeout     = variables.defaultTimeOut
+		required string filepath
 	) {
 		requireBucketName( arguments.bucketName );
 
 		// if filepath is a directory, append filename
-		if ( right( arguments.filepath, 1 ) IS "/" || right( arguments.filepath, 1 ) IS "\" ) {
+		if ( right( arguments.filepath, 1 ) == "/" || right( arguments.filepath, 1 ) == "\" ) {
 			arguments.filepath &= listLast( arguments.uri, "/\" );
 		}
 
 		var results = s3Request(
 			method        = "GET",
 			resource      = arguments.bucketName & "/" & arguments.uri,
-			timeout       = arguments.HTTPTimeout,
 			filename      = arguments.filepath,
 			parseResponse = false
 		);
@@ -917,7 +914,7 @@ component accessors="true" singleton {
 
 		return results;
 	}
-	
+
 	/**
 	 * Deletes an object.
 	 *
@@ -1073,30 +1070,22 @@ component accessors="true" singleton {
 		}
 
 		// Create Signature
-		if ( variables.signature == "V4" ) {
-			var signatureData = sv4Util.generateSignatureData(
-				requestMethod = arguments.method,
-				// hostName 		= variables.URLEndpoint,
-				hostName      = reReplaceNoCase(
-					variables.URLEndpoint,
-					"https?\:\/\/",
-					""
-				),
-				requestURI     = arguments.resource,
-				requestBody    = arguments.body,
-				requestHeaders = arguments.headers,
-				requestParams  = arguments.parameters
-			);
-		} else if ( variables.signature == "V2" ) {
-			var signatureData = generateBasicSignatureData(
-				requestMethod  = arguments.method,
-				requestURI     = arguments.resource,
-				requestHeaders = arguments.headers,
-				requestParams  = arguments.parameters,
-				amzHeaders     = arguments.amzHeaders
-			);
-		}
-
+		var signatureData = signatureUtil.generateSignatureData(
+			requestMethod = arguments.method,
+			hostName      = reReplaceNoCase(
+				variables.URLEndpoint,
+				"https?\:\/\/",
+				""
+			),
+			requestURI     = arguments.resource,
+			requestBody    = arguments.body,
+			requestHeaders = arguments.headers,
+			requestParams  = arguments.parameters,
+			accessKey      = variables.accessKey,
+			secretKey      = variables.secretKey,
+			regionName     = variables.awsRegion,
+			serviceName    = variables.serviceName
+		);
 		cfhttp(
 			method   =arguments.method,
 			url      ="#variables.URLEndPoint#/#arguments.resource#",
@@ -1104,9 +1093,7 @@ component accessors="true" singleton {
 			result   ="HTTPResults",
 			redirect =true,
 			timeout  =arguments.timeout,
-			useragent="ColdFusion-S3SDK",
-			path     =getDirectoryFromPath( arguments.filename ),
-			file     =getFileFromPath( arguments.filename )
+			useragent="ColdFusion-S3SDK"
 		) {
 			// Amazon Global Headers
 			cfhttpparam(
@@ -1141,6 +1128,10 @@ component accessors="true" singleton {
 			if ( len( arguments.body ) ) {
 				cfhttpparam( type="body", value=arguments.body );
 			}
+		}
+
+		if ( len( arguments.filename ) ) {
+			fileWrite( arguments.filename, HTTPResults.fileContent );
 		}
 
 		if ( log.canDebug() ) {
@@ -1183,6 +1174,7 @@ component accessors="true" singleton {
 				"Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#",
 				HTTPResults
 			);
+			results.http = HTTPResults;
 		}
 
 		if ( results.error && arguments.throwOnError ) {
@@ -1234,52 +1226,6 @@ component accessors="true" singleton {
 		return toBase64( result );
 	}
 
-	/**
-	 * Generates a version 2 signature and returns headers for the request
-	 *
-	 *  @requestMethod   - Request operation, ie PUT, GET, POST, etcetera.
-	 *  @requestURI      - Absolute path of the URI. Portion of the URL after the host, to the "?" beginning the query string
-	 *  @requestHeaders  - Structure of http headers for used the request.
-	 *  @requestParams   - Structure containing any url parameters for the request.
-	 *  @amzHeaders      - Structure containing any amazon headers used to build the signature.
-	 */
-	struct function generateBasicSignatureData(
-		required string requestMethod,
-		required string requestURI,
-		required struct requestHeaders,
-		required struct requestParams,
-		required struct amzHeaders
-	) {
-		var out = {
-			amzDate        : getHTTPTimeString( now() ),
-			requestHeaders : arguments.requestHeaders,
-			requestParams  : arguments.requestParams,
-			canonical      : ""
-		};
-
-		for ( header in structSort( arguments.amzHeaders, "text", "asc" ) ) {
-			out.canonical &= lCase( trim( header ) ) & ":" & arguments.amzHeaders[ header ] & chr( 10 );
-		};
-
-		out.cs = arguments.requestMethod & chr( 10 )
-		& ( arguments.requestHeaders[ "content-md5" ] ?: "" ) & chr( 10 )
-		& ( arguments.requestHeaders[ "content-type" ] ?: "" ) & chr( 10 )
-		& out.amzDate & chr( 10 )
-		& out.canonical
-		& "/" & arguments.requestURI;
-
-		//  Calculate the hash of the information
-		out.digest              = hMAC_SHA1( variables.secretKey, out.cs );
-		//  fix the returned data to be a proper signature
-		out.signature           = toBase64( out.digest );
-		out.authorizationHeader = "AWS #variables.accessKey#:#out.signature#";
-
-		if ( log.canDebug() ) {
-			log.debug( "Created basic v2 signature", out );
-		}
-
-		return out;
-	}
 
 	/**
 	 * Helper function to catch missing bucket name
