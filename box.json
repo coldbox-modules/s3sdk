@@ -23,7 +23,9 @@
         "Andrew Davis"
     ],
     "dependencies":{},
-    "devDependencies":{},
+    "devDependencies":{
+        "commandbox-dotenv": "*"
+    },
     "installPaths":{},
     "ignore":[
         "**/.*",

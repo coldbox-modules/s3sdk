@@ -3,5 +3,6 @@
 # Use first param as our serverConfigFile, defaulting to Lucee 5.
 serverConfigFile=${1:-server-lucee@5.json}
 
-# Start server, passing in environment variables from .env file
-cat .env | xargs -J % env % box server start serverConfigFile="$serverConfigFile"
+# Start server. Environment variables are automatically passed in
+# (from .env file) by commandbox-dotenv .
+box server start serverConfigFile="$serverConfigFile"
