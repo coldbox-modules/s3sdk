@@ -184,6 +184,62 @@ component accessors="true" singleton {
 	}
 
 	/**
+     * List all the buckets associated with the Amazon credentials.
+     *
+     * @return
+     */
+    array function listObjects(
+        required string bucketName=variables.defaultBucketName,
+        string prefix = "",
+        string marker = "",
+        string maxKeys = "",
+        string EncodingType = "url",
+        string delimiter = variables.defaultDelimiter
+    ) {
+        requireBucketName( arguments.bucketName );
+        var parameters = {};
+
+        if ( len( arguments.prefix ) ) {
+            parameters[ "prefix" ] = arguments.prefix;
+        }
+
+        if ( len( arguments.marker ) ) {
+            parameters[ "marker" ] = arguments.marker;
+        }
+
+        if ( len( arguments.maxKeys ) ) {
+            parameters[ "maxKeys" ] = arguments.maxKeys;
+        }
+
+        if ( len( arguments.EncodingType ) ) {
+            parameters[ "EncodingType" ] = arguments.EncodingType;
+        }
+
+        if ( len( arguments.delimiter ) ) {
+            parameters[ "delimiter" ] = arguments.delimiter;
+        }
+
+        var results = S3Request(
+            resource = arguments.bucketName,
+            parameters = parameters
+            );
+
+        var bucketsXML = xmlSearch( results.response, "//*[local-name()='Contents']" );
+
+        return arrayMap( bucketsXML, function( node ) {
+            return {
+                "filename"         = trim( node.Key.xmlText ),
+                "size"             = trim( node.Size.xmlText ),
+                "etag"        	=	trim( node.ETag.xmlText ),
+                "LastModified"	= trim( node.LastModified.xmlText ),
+                "StorageClass"	= trim( node.StorageClass.xmlText ),
+				"OwnerName" 	= trim( node.Owner.DisplayName.xmlText ),
+				"OwnerID" 		= trim( node.Owner.ID.xmlText )
+            };
+        } );
+    }
+
+	/**
 	 * Get the S3 region for the bucket provided.
 	 *
 	 * @bucketName The bucket for which to fetch the region.
