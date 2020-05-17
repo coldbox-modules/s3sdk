@@ -62,7 +62,7 @@ component singleton {
 		}
 
 		var sortedHeaders = structSort( props.requestHeaders, "text", "asc" );
-		for ( header in sortedHeaders ) {
+		for ( var header in sortedHeaders ) {
 			props.canonicalURI &= lCase( trim( header ) ) & ":" & props.requestHeaders[ header ] & chr( 10 );
 		};
 
