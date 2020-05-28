@@ -66,18 +66,19 @@ component {
 			.initArg( name = "autoMD5", value = variables.settings.autoMD5 )
 			.initArg( name = "serviceName", value = variables.settings.serviceName )
 			.initArg( name = "debug", value = variables.settings.debug );
-	};
 
-	binder.map( "Sv4Util@s3sdk" ).to( "#moduleMapping#.models.AmazonS3" );
+		binder.map( "Sv4Util@s3sdk" ).to( "#moduleMapping#.models.AmazonS3" );
 
-	binder.map( "Sv2Util@s3sdk" ).to( "#moduleMapping#.models.AmazonS3" );
+		binder.map( "Sv2Util@s3sdk" ).to( "#moduleMapping#.models.AmazonS3" );
+	}
 
-}
 
-/**
- * Fired when the module is unregistered and unloaded
- */
-function onUnload() {
-}
+
+
+	/**
+	 * Fired when the module is unregistered and unloaded
+	 */
+	function onUnload() {
+	}
 
 }
