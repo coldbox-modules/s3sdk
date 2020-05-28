@@ -5,10 +5,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
 	function beforeAll() {
 		variables.s3 = new s3sdk.models.AmazonS3(
-			getUtil().getSystemSetting( "AWS_ACCESS_KEY" ),
-			getUtil().getSystemSetting( "AWS_ACCESS_SECRET" ),
-			getUtil().getSystemSetting( "AWS_REGION" ),
-			getUtil().getSystemSetting( "AWS_DOMAIN" )
+			accessKey = getUtil().getSystemSetting( "AWS_ACCESS_KEY" ),
+			secretKey = getUtil().getSystemSetting( "AWS_ACCESS_SECRET" ),
+			awsRegion = getUtil().getSystemSetting( "AWS_REGION" ),
+			awsDomain = getUtil().getSystemSetting( "AWS_DOMAIN" )
 		);
 		prepareMock( s3 );
 		s3.$property( propertyName = "log", mock = createLogStub() );
@@ -177,6 +177,21 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					var bucketContents = s3.getBucket( testBucket );
 					expect( bucketContents ).toHaveLength( 1 );
 					expect( bucketContents[ 1 ].key ).toBe( "example-2.txt" );
+				} );
+
+				it( "can get a file", function() {
+					s3.putObject( testBucket, "example.txt", "Hello, world!" );
+					var get = s3.getObject( testBucket, "example.txt" );
+					expect( get.error ).toBeFalse();
+					expect( get.response ).toBe( "Hello, world!" );
+				} );
+
+				it( "can download a file", function() {
+					s3.putObject( testBucket, "example.txt", "Hello, world!" );
+					var dl = s3.downloadObject( testBucket, "example.txt", "ram:///example.txt" );
+					debug( dl );
+					expect( dl ).notToBeEmpty();
+					expect( dl.error ).toBeFalse();
 				} );
 
 				it( "validates missing bucketname", function() {
