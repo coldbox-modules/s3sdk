@@ -121,4 +121,4 @@ Please check out the api docs: https://apidocs.ortussolutions.com/#/coldbox-modu
 
 ## Development
 
-See [[dev_setup.md]].
+See [dev_setup.md].
