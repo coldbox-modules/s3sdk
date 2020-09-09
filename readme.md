@@ -121,4 +121,4 @@ Please check out the api docs: https://apidocs.ortussolutions.com/#/coldbox-modu
 
 ## Development
 
-See [Dev Setup](dev-setup.md)
+See [Dev Setup](https://github.com/coldbox-modules/s3sdk/blob/development/dev_setup.md)
