@@ -26,6 +26,44 @@ component extends="coldbox.system.testing.BaseTestCase" {
 	function run() {
 		describe( "SigV4 utilities", function() {
 
+			describe( "get-presigned-url" , function() {
+
+				it( "generateSignatureData", function() {
+					// The following are example data from
+					// https://docs.aws.amazon.com/AmazonS3/latest/API/sigv4-query-string-auth.html
+					config = {
+						accessKey = "AKIAIOSFODNN7EXAMPLE",
+						dateStamp = "20130524",
+						regionName = "us-east-1",
+						serviceName = "s3",
+						amzDate = "20130524T000000Z",
+						secretKey = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+					};
+					var testData = fixtureData( "get-presigned-url" );
+
+					var sigData = sv4.generateSignatureData(
+						requestMethod = testData.method,
+						hostName = testData.host,
+						requestURI = testData.uri,
+						requestBody = "",
+						requestHeaders = testData.headers,
+						requestParams = testData.urlParams,
+						accessKey = config.accessKey,
+						secretKey = config.secretKey,
+						regionName = config.regionName,
+						serviceName = config.serviceName,
+						amzDate = config.amzDate,
+						dateStamp = config.dateStamp,
+						presignDownloadURL = true
+					);
+
+					expect( sigData.canonicalRequest ).toBe( testData.canonicalRequest );
+					expect( sigData.stringToSign ).toBe( testData.stringToSign );
+					expect( sigData.authorizationHeader ).toBe( testData.authHeader );
+				} );
+
+			} );
+
 			describe( "adapted AWS SigV4 test suite tests", function() {
 				it( "signs get-vanilla-query-unreserved", function() {
 					var config = variables.awsSigV4TestSuiteConfig;
