@@ -187,7 +187,7 @@ component accessors="true" singleton {
      */
     string function getBucketLocation( required string bucketName=variables.defaultBucketName ) {
         requireBucketName( arguments.bucketName );
-        var results = S3Request( resource = arguments.bucketname & "?location" );
+        var results = S3Request( resource = arguments.bucketname, parameters={ "location" : true } );
 
         if ( results.error ) {
             throw( message="Error making Amazon REST Call", detail=results.message );
@@ -209,7 +209,7 @@ component accessors="true" singleton {
      */
     string function getBucketVersionStatus( required string bucketName=variables.defaultBucketName ) {
         requireBucketName( arguments.bucketName );
-        var results = S3Request( resource = arguments.bucketname & "?versioning" );
+        var results = S3Request( resource = arguments.bucketname, parameters={ "versioning" : true } );
 
         var status = xmlSearch( results.response, "//*[local-name()='VersioningConfiguration']//*[local-name()='Status']/*[1]" );
 
@@ -261,11 +261,11 @@ component accessors="true" singleton {
         requireBucketName( arguments.bucketName );
         var resource = arguments.bucketName;
 
-        if ( len( arguments.uri ) ) {
+		if ( len( arguments.uri ) ) {
             resource = resource & "/" & arguments.uri;
         }
 
-        var results = S3Request( resource = resource & "?acl" );
+        var results = S3Request( resource = resource, parameters={ "acl" : true } );
 
         var grantsXML = xmlSearch( results.response, "//*[local-name()='Grant']" );
         return arrayMap( grantsXML, function( node ) {
