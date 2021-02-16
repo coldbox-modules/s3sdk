@@ -278,6 +278,37 @@ component accessors="true" singleton {
         } );
     }
 
+
+
+	/**
+     * Sets a bucket's or object's ACL policy.
+     *
+     * @bucketName The bucket to get the ACL.
+     * @uri        An optional resource uri to get the ACL.
+	 * @acl        A known ACL string
+     *
+     */
+	void function setAccessControlPolicy( required string bucketName=variables.defaultBucketName, string uri = "", string acl ){
+		requireBucketName( arguments.bucketName );
+
+		var resource = arguments.bucketName;
+
+        if ( len( arguments.uri ) ) {
+            resource = resource & "/" & arguments.uri;
+        }
+
+		S3Request(
+            method     = "PUT",
+            resource   = resource,
+			parameters = { "acl" : true }
+            body       = "",
+            headers    = {},
+            amzHeaders = { "x-amz-acl" = arguments.acl }
+        );
+
+
+	}
+
     /**
      * Lists information about the objects of a bucket.
      *
