@@ -262,7 +262,7 @@ component accessors="true" singleton {
         var resource = arguments.bucketName;
 
         if ( len( arguments.uri ) ) {
-            resource = resource & "\" & arguments.uri;
+            resource = resource & "/" & arguments.uri;
         }
 
         var results = S3Request( resource = resource & "?acl" );
