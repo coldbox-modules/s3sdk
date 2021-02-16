@@ -279,7 +279,6 @@ component accessors="true" singleton {
     }
 
 
-
 	/**
      * Sets a bucket's or object's ACL policy.
      *
@@ -300,14 +299,13 @@ component accessors="true" singleton {
 		S3Request(
             method     = "PUT",
             resource   = resource,
-			parameters = { "acl" : true }
-            body       = "",
-            headers    = {},
+			parameters = { "acl" : true },
             amzHeaders = { "x-amz-acl" = arguments.acl }
         );
 
 
 	}
+
 
     /**
      * Lists information about the objects of a bucket.
