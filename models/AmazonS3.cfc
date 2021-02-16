@@ -297,7 +297,9 @@ component accessors="true" singleton {
         string delimiter = variables.defaultDelimiter
     ) {
         requireBucketName( arguments.bucketName );
-        var parameters = {};
+        var parameters = {
+			"list-type" : 2
+		};
 
         if ( len( arguments.prefix ) ) {
             parameters[ "prefix" ] = arguments.prefix;
