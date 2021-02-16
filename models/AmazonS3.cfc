@@ -307,7 +307,7 @@ component accessors="true" singleton {
             parameters[ "marker" ] = arguments.marker;
         }
 
-        if ( isNumeric(arguments.maxKeys ) ) {
+        if ( isNumeric( arguments.maxKeys ) ) {
             parameters[ "max-keys" ] = arguments.maxKeys;
         }
 
