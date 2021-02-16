@@ -448,6 +448,10 @@ component accessors="true" singleton {
             parameters[ "max-keys" ] = arguments.maxKeys;
         }
 
+		if ( len( arguments.delimiter ) ) {
+			parameters[ "delimiter" ] = arguments.delimiter;
+		}
+
 		var results = s3Request( resource = arguments.bucketName, parameters = parameters );
 
 		var contentsXML = xmlSearch( results.response, "//*[local-name()='Contents']" );
