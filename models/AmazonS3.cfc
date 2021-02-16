@@ -407,15 +407,6 @@ component accessors="true" singleton {
             amzHeaders = { "x-amz-acl" = arguments.acl }
         );
 
-		var grantsXML = xmlSearch( results.response, "//*[local-name()='Grant']" );
-		return arrayMap( grantsXML, function( node ) {
-			return {
-				"type"        : node.grantee.XMLAttributes[ "xsi:type" ],
-				"displayName" : "",
-				"permission"  : node.permission.XMLText,
-				"uri"         : node.grantee.XMLAttributes[ "xsi:type" ] == "Group" ? node.grantee.uri.xmlText : node.grantee.displayName.xmlText
-			};
-		} );
 	}
 
 	/**
@@ -440,6 +431,10 @@ component accessors="true" singleton {
         var parameters = {
 			"list-type" : 2
 		};
+
+        if ( len( arguments.prefix ) ) {
+            parameters[ "prefix" ] = arguments.prefix;
+        }
 
 		if ( len( arguments.marker ) ) {
 			parameters[ "marker" ] = arguments.marker;
