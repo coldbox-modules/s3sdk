@@ -15,8 +15,8 @@ env:
 
 branches:
   only:
-  - development
-  - master
+    - development
+    - master
 
 dist: trusty
 
@@ -44,6 +44,13 @@ script:
   - box package set version=@build.version@+@build.number@
   # Startup the harness
   - cd test-harness
+  # Seed our env
+  - touch .env
+  - printf "AWS_ACCESS_KEY=${AWS_ACCESS_KEY}\n" >> .env
+  - printf "AWS_ACCESS_SECRET=${AWS_ACCESS_SECRET}\n" >> .env
+  - printf "AWS_REGION=${AWS_REGION}\n" >> .env
+  - printf "AWS_DOMAIN=${AWS_DOMAIN}\n" >> .env
+  - printf "ENGINE=${ENGINE}\n" >> .env
   # run our dependency install to ensure the workbench is in place
   - box install
   # run our matrix server

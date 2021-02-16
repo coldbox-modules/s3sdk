@@ -8,11 +8,20 @@
         "coldbox":"^5.0.0"
     },
     "devDependencies":{
-        "testbox":"^2.8.0"
+        "testbox":"^4"
     },
     "installPaths":{
         "coldbox":"coldbox/",
         "testbox":"testbox/"
+    },
+    "scripts":{
+        "start" : "server start serverConfigFile='server-lucee@5.json'",
+        "start:lucee5" : "server start serverConfigFile='server-lucee@5.json'",
+        "start:2016" : "server start serverConfigFile='server-adobe@2016.json'",
+        "start:2018" : "server start serverConfigFile='server-adobe@2018.json'",
+        "log:lucee5" : "server log coldbox-lucee@5 --follow",
+        "log:2016" : "server log coldbox-adobe@2016 --follow",
+        "log:2018" : "server log coldbox-adobe@2018 --follow"
     },
     "testbox":{
         "runner":"http://localhost:60299/tests/runner.cfm"

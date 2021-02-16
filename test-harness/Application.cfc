@@ -13,9 +13,9 @@ component{
 	this.name              = hash( getCurrentTemplatePath() );
 	this.sessionManagement = true;
 	this.sessionTimeout    = createTimeSpan(0,0,15,0);
-    this.setClientCookies  = true;
+	this.setClientCookies  = true;
 
-    /**************************************
+	/**************************************
 	LUCEE Specific Settings
 	**************************************/
 	// buffer the output of a tag/function body to output in case of a exception
@@ -36,7 +36,7 @@ component{
 	// COLDBOX APPLICATION KEY OVERRIDE
 	COLDBOX_APP_KEY 		    = "";
 
-    // Mappings
+	// Mappings
 	this.mappings[ "/root" ] = COLDBOX_APP_ROOT_PATH;
 
 	// Map back to its root

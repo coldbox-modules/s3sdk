@@ -76,12 +76,9 @@
 		moduleSettings = {
 			s3sdk = {
 				// Settings
-				accessKey          : getSystemSetting( "AWS_ACCESS_KEY", "" ),
-				secretKey          : getSystemSetting( "AWS_ACCESS_SECRET", "" ),
-				encryption_charset : "utf-8",
-				ssl                : false,
-				awsregion          : "us-east-1"
-				}
+				accessKey          : getSystemSetting( "AWS_ACCESS_KEY" ),
+				secretKey          : getSystemSetting( "AWS_ACCESS_SECRET" )
+			}
 		};
 
 	}

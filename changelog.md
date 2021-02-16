@@ -1,5 +1,12 @@
 # Changelog
 
+## v4.6.0
+
+* `Improvements` : Added more formatting
+* `Task` : Cleanup of old cfml engine files
+* `Task` : Cleanup of old init code
+* `Task` : Removed some settings from test harness
+
 ## v4.5.0
 
 * `Feature` : `SV4Util` is now a singleton for added performance and more configuration expansion by adding the sdk reference
