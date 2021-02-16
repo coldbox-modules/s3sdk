@@ -955,12 +955,6 @@ component accessors="true" singleton {
 	boolean function deleteObject( required string bucketName = variables.defaultBucketName, required string uri ) {
 		requireBucketName( arguments.bucketName );
 
-		// arguments.uri = urlEncodedFormat( urlDecode( arguments.uri ) );
-		// arguments.uri = replaceNoCase( arguments.uri, "%2F", "/", "all" );
-		// arguments.uri = replaceNoCase( arguments.uri, "%2E", ".", "all" );
-		// arguments.uri = replaceNoCase( arguments.uri, "%2D", "-", "all" );
-		// arguments.uri = replaceNoCase( arguments.uri, "%5F", "_", "all" );
-
 		var results = s3Request( method = "DELETE", resource = arguments.bucketName & "/" & arguments.uri );
 
 		return results.responseheader.status_code == 204;
