@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.org/coldbox-modules/s3sdk.svg?branch=master)](https://travis-ci.org/coldbox-modules/s3sdk)
+[![Build Status](https://travis-ci.com/coldbox-modules/s3sdk.svg?branch=master)](https://travis-ci.com/coldbox-modules/s3sdk)
 
 # Welcome to the Amazon S3, DigitalOcean Spaces SDK
 

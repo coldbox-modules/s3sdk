@@ -33,8 +33,9 @@
         "*/.md"
     ],
     "scripts":{
-        "toMaster":"recipe build/toMaster.boxr",
+        "release":"recipe build/release.boxr",
         "format":"cfformat run models/**/*.cfc,test-harness/tests/**/*.cfc,*.cfc --overwrite",
+		"format:watch":"cfformat watch models/**/*.cfc,test-harness/tests/**/*.cfc,*.cfc",
         "format:check":"cfformat check models/**/*.cfc,test-harness/tests/**/*.cfc,*.cfc"
     }
 }
