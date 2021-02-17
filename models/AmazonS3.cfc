@@ -375,9 +375,6 @@ component accessors="true" singleton {
     /**
      * Sets a bucket's or object's ACL policy.
      *
-     * @bucketName The bucket to get the ACL.
-     * @uri        An optional resource uri to get the ACL.
-	 * @acl        A known ACL string
      * @bucketName The bucket to set the ACL.
      * @uri        An optional resource uri to set the ACL.
      * @acl        A known ACL string.
