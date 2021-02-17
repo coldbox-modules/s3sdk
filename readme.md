@@ -9,7 +9,7 @@ This SDK allows you to add Amazon S3, Digital Ocean Spaces capabilities to your 
 * Source: https://github.com/coldbox-modules/s3sdk
 * Issues: https://github.com/coldbox-modules/s3sdk/issues
 * [Changelog](changelog.md)
-* S3 API Reference: http://docs.aws.amazon.com/AmazonS3/latest/API/Welcome.html
+* S3 API Reference: https://docs.aws.amazon.com/AmazonS3/latest/API/API_Operations_Amazon_Simple_Storage_Service.html
 * Digital Oceans Spaces API Reference: https://developers.digitalocean.com/documentation/spaces/
 
 ## Installation

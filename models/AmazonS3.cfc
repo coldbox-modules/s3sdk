@@ -272,9 +272,9 @@ component accessors="true" singleton {
 	 *
 	 * @return     The region code for the bucket.
 	 */
-	string function getBucketLocation( required string bucketName = variables.defaultBucketName ) {
+	string function getBucketLocation( required string bucketName=variables.defaultBucketName ) {
 		requireBucketName( arguments.bucketName );
-		var results = s3Request( resource = arguments.bucketname & "?location" );
+		var results = S3Request( resource = arguments.bucketname, parameters={ "location" : true } );
 
 		if ( results.error ) {
 			throw( message = "Error making Amazon REST Call", detail = results.message );
@@ -294,9 +294,9 @@ component accessors="true" singleton {
 	 *
 	 * @return     The bucket version status or an empty string if there is none.
 	 */
-	string function getBucketVersionStatus( required string bucketName = variables.defaultBucketName ) {
+	string function getBucketVersionStatus( required string bucketName=variables.defaultBucketName ) {
 		requireBucketName( arguments.bucketName );
-		var results = s3Request( resource = arguments.bucketname & "?versioning" );
+		var results = S3Request( resource = arguments.bucketname, parameters={ "versioning" : true } );
 
 		var status = xmlSearch(
 			results.response,
@@ -350,25 +350,54 @@ component accessors="true" singleton {
 	 *
 	 * @return     An array containing the ACL for the given resource.
 	 */
-	array function getAccessControlPolicy( required string bucketName = variables.defaultBucketName, string uri = "" ) {
+	array function getAccessControlPolicy( required string bucketName=variables.defaultBucketName, string uri = "" ) {
 		requireBucketName( arguments.bucketName );
 		var resource = arguments.bucketName;
 
 		if ( len( arguments.uri ) ) {
-			resource = resource & "\" & arguments.uri;
+			resource = resource & "/" & arguments.uri;
 		}
 
-		var results = s3Request( resource = resource & "?acl" );
+		var results = S3Request( resource = resource, parameters={ "acl" : true } );
 
 		var grantsXML = xmlSearch( results.response, "//*[local-name()='Grant']" );
 		return arrayMap( grantsXML, function( node ) {
 			return {
-				"type"        : node.grantee.XMLAttributes[ "xsi:type" ],
-				"displayName" : "",
-				"permission"  : node.permission.XMLText,
-				"uri"         : node.grantee.XMLAttributes[ "xsi:type" ] == "Group" ? node.grantee.uri.xmlText : node.grantee.displayName.xmlText
+				"type" 		  = node.grantee.XMLAttributes[ "xsi:type" ],
+				"displayName" = "",
+				"permission"  = node.permission.XMLText,
+				"uri"         = node.grantee.XMLAttributes[ "xsi:type" ] == "Group" ? node.grantee.uri.xmlText : node.grantee.displayName.xmlText
 			};
 		} );
+	}
+
+
+	/**
+	 * Sets a bucket's or object's ACL policy.
+	 *
+	 * @bucketName The bucket to set the ACL.
+	 * @uri        An optional resource uri to set the ACL.
+	 * @acl        A known ACL string.
+	 *
+	 * @see        https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl_overview.html#permissions
+	 *
+	 */
+	void function setAccessControlPolicy( required string bucketName=variables.defaultBucketName, string uri = "", string acl ){
+		requireBucketName( arguments.bucketName );
+
+		var resource = arguments.bucketName;
+
+		if ( len( arguments.uri ) ) {
+			resource = resource & "/" & arguments.uri;
+		}
+
+		S3Request(
+			method     = "PUT",
+			resource   = resource,
+			parameters = { "acl" : true },
+			amzHeaders = { "x-amz-acl" = arguments.acl }
+		);
+
 	}
 
 	/**
@@ -380,6 +409,8 @@ component accessors="true" singleton {
 	 * @maxKeys    The maximum number of keys you'd like to see in the response body, if any.
 	 * @delimiter  The delimiter to use in the keys, if any.
 	 *
+	 * @see 		https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html
+	 *
 	 * @return     The bucket contents.
 	 */
 	array function getBucket(
@@ -390,7 +421,10 @@ component accessors="true" singleton {
 		string delimiter           = variables.defaultDelimiter
 	) {
 		requireBucketName( arguments.bucketName );
-		var parameters = {};
+
+		var parameters = {
+			"list-type" : 2
+		};
 
 		if ( len( arguments.prefix ) ) {
 			parameters[ "prefix" ] = arguments.prefix;
@@ -890,12 +924,6 @@ component accessors="true" singleton {
 	 */
 	boolean function deleteObject( required string bucketName = variables.defaultBucketName, required string uri ) {
 		requireBucketName( arguments.bucketName );
-
-		// arguments.uri = urlEncodedFormat( urlDecode( arguments.uri ) );
-		// arguments.uri = replaceNoCase( arguments.uri, "%2F", "/", "all" );
-		// arguments.uri = replaceNoCase( arguments.uri, "%2E", ".", "all" );
-		// arguments.uri = replaceNoCase( arguments.uri, "%2D", "-", "all" );
-		// arguments.uri = replaceNoCase( arguments.uri, "%5F", "_", "all" );
 
 		var results = s3Request( method = "DELETE", resource = arguments.bucketName & "/" & arguments.uri );
 
