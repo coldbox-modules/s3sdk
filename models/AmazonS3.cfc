@@ -372,12 +372,17 @@ component accessors="true" singleton {
 	}
 
 
-	/**
+    /**
      * Sets a bucket's or object's ACL policy.
      *
      * @bucketName The bucket to get the ACL.
      * @uri        An optional resource uri to get the ACL.
 	 * @acl        A known ACL string
+     * @bucketName The bucket to set the ACL.
+     * @uri        An optional resource uri to set the ACL.
+     * @acl        A known ACL string.
+	 *
+	 * @see        https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl_overview.html#permissions
      *
      */
 	void function setAccessControlPolicy( required string bucketName=variables.defaultBucketName, string uri = "", string acl ){
@@ -407,6 +412,8 @@ component accessors="true" singleton {
 	 * @maxKeys    The maximum number of keys you'd like to see in the response body, if any.
 	 * @delimiter  The delimiter to use in the keys, if any.
 	 *
+	 * @see 		https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html
+	 *
 	 * @return     The bucket contents.
 	 */
 	array function getBucket(
@@ -417,6 +424,7 @@ component accessors="true" singleton {
 		string delimiter           = variables.defaultDelimiter
 	) {
         requireBucketName( arguments.bucketName );
+
         var parameters = {
 			"list-type" : 2
 		};
@@ -432,10 +440,6 @@ component accessors="true" singleton {
 		if ( isNumeric( arguments.maxKeys ) ) {
 			parameters[ "max-keys" ] = arguments.maxKeys;
 		}
-
-        if ( isNumeric( arguments.maxKeys ) ) {
-            parameters[ "max-keys" ] = arguments.maxKeys;
-        }
 
 		if ( len( arguments.delimiter ) ) {
 			parameters[ "delimiter" ] = arguments.delimiter;
