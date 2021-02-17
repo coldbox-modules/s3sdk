@@ -4,7 +4,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 	variables.testBucket   = "ortus-s3sdk-bdd-#replace( variables.targetEngine, "@", "-" )#";
 
 	function beforeAll() {
-		cleanupTestExample();
+		prepTmpFolder();
 		variables.s3 = new s3sdk.models.AmazonS3(
 			accessKey = getUtil().getSystemSetting( "AWS_ACCESS_KEY" ),
 			secretKey = getUtil().getSystemSetting( "AWS_ACCESS_SECRET" ),
@@ -22,13 +22,17 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			s3.deleteBucket( bucketName = testBucket, force = true );
 		} catch ( any e ) {
 		}
-		cleanupTestExample();
 	}
 
-	private function cleanupTestExample(){
-		var targetPath = expandPath( "/tests/tmp/example.txt" );
-		if( fileExists( targetPath ) ){
-			fileDelete( targetPath );
+	private function prepTmpFolder(){
+		var targetPath = expandPath( "/tests/tmp" );
+
+		if( !directoryExists( targetPath ) ){
+			directoryCreate( targetPath );
+		}
+
+		if( fileExists( targetPath & "/example.txt" ) ){
+			fileDelete( targetPath & "/example.txt" );
 		}
 	}
 
