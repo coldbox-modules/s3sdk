@@ -265,16 +265,16 @@ component accessors="true" singleton {
 		} );
 	}
 
-    /**
-     * Get the S3 region for the bucket provided.
-     *
-     * @bucketName The bucket for which to fetch the region.
-     *
-     * @return     The region code for the bucket.
-     */
-    string function getBucketLocation( required string bucketName=variables.defaultBucketName ) {
-        requireBucketName( arguments.bucketName );
-        var results = S3Request( resource = arguments.bucketname, parameters={ "location" : true } );
+	/**
+	 * Get the S3 region for the bucket provided.
+	 *
+	 * @bucketName The bucket for which to fetch the region.
+	 *
+	 * @return     The region code for the bucket.
+	 */
+	string function getBucketLocation( required string bucketName=variables.defaultBucketName ) {
+		requireBucketName( arguments.bucketName );
+		var results = S3Request( resource = arguments.bucketname, parameters={ "location" : true } );
 
 		if ( results.error ) {
 			throw( message = "Error making Amazon REST Call", detail = results.message );
@@ -287,16 +287,16 @@ component accessors="true" singleton {
 		return "US";
 	}
 
-    /**
-     * Get the versioning status of a bucket.
-     *
-     * @bucketName The bucket for which to fetch the versioning status.
-     *
-     * @return     The bucket version status or an empty string if there is none.
-     */
-    string function getBucketVersionStatus( required string bucketName=variables.defaultBucketName ) {
-        requireBucketName( arguments.bucketName );
-        var results = S3Request( resource = arguments.bucketname, parameters={ "versioning" : true } );
+	/**
+	 * Get the versioning status of a bucket.
+	 *
+	 * @bucketName The bucket for which to fetch the versioning status.
+	 *
+	 * @return     The bucket version status or an empty string if there is none.
+	 */
+	string function getBucketVersionStatus( required string bucketName=variables.defaultBucketName ) {
+		requireBucketName( arguments.bucketName );
+		var results = S3Request( resource = arguments.bucketname, parameters={ "versioning" : true } );
 
 		var status = xmlSearch(
 			results.response,
@@ -340,63 +340,63 @@ component accessors="true" singleton {
 		);
 
 		return results.responseheader.status_code == 200;
-    }
+	}
 
-    /**
-     * Gets a bucket's or object's ACL policy.
-     *
-     * @bucketName The bucket to get the ACL.
-     * @uri        An optional resource uri to get the ACL.
-     *
-     * @return     An array containing the ACL for the given resource.
-     */
-    array function getAccessControlPolicy( required string bucketName=variables.defaultBucketName, string uri = "" ) {
-        requireBucketName( arguments.bucketName );
-        var resource = arguments.bucketName;
+	/**
+	 * Gets a bucket's or object's ACL policy.
+	 *
+	 * @bucketName The bucket to get the ACL.
+	 * @uri        An optional resource uri to get the ACL.
+	 *
+	 * @return     An array containing the ACL for the given resource.
+	 */
+	array function getAccessControlPolicy( required string bucketName=variables.defaultBucketName, string uri = "" ) {
+		requireBucketName( arguments.bucketName );
+		var resource = arguments.bucketName;
 
 		if ( len( arguments.uri ) ) {
-            resource = resource & "/" & arguments.uri;
-        }
+			resource = resource & "/" & arguments.uri;
+		}
 
-        var results = S3Request( resource = resource, parameters={ "acl" : true } );
+		var results = S3Request( resource = resource, parameters={ "acl" : true } );
 
-        var grantsXML = xmlSearch( results.response, "//*[local-name()='Grant']" );
-        return arrayMap( grantsXML, function( node ) {
-            return {
-                "type" 		  = node.grantee.XMLAttributes[ "xsi:type" ],
-                "displayName" = "",
-                "permission"  = node.permission.XMLText,
-                "uri"         = node.grantee.XMLAttributes[ "xsi:type" ] == "Group" ? node.grantee.uri.xmlText : node.grantee.displayName.xmlText
-            };
-        } );
+		var grantsXML = xmlSearch( results.response, "//*[local-name()='Grant']" );
+		return arrayMap( grantsXML, function( node ) {
+			return {
+				"type" 		  = node.grantee.XMLAttributes[ "xsi:type" ],
+				"displayName" = "",
+				"permission"  = node.permission.XMLText,
+				"uri"         = node.grantee.XMLAttributes[ "xsi:type" ] == "Group" ? node.grantee.uri.xmlText : node.grantee.displayName.xmlText
+			};
+		} );
 	}
 
 
-    /**
-     * Sets a bucket's or object's ACL policy.
-     *
-     * @bucketName The bucket to set the ACL.
-     * @uri        An optional resource uri to set the ACL.
-     * @acl        A known ACL string.
+	/**
+	 * Sets a bucket's or object's ACL policy.
+	 *
+	 * @bucketName The bucket to set the ACL.
+	 * @uri        An optional resource uri to set the ACL.
+	 * @acl        A known ACL string.
 	 *
 	 * @see        https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl_overview.html#permissions
-     *
-     */
+	 *
+	 */
 	void function setAccessControlPolicy( required string bucketName=variables.defaultBucketName, string uri = "", string acl ){
 		requireBucketName( arguments.bucketName );
 
 		var resource = arguments.bucketName;
 
-        if ( len( arguments.uri ) ) {
-            resource = resource & "/" & arguments.uri;
-        }
+		if ( len( arguments.uri ) ) {
+			resource = resource & "/" & arguments.uri;
+		}
 
 		S3Request(
-            method     = "PUT",
-            resource   = resource,
+			method     = "PUT",
+			resource   = resource,
 			parameters = { "acl" : true },
-            amzHeaders = { "x-amz-acl" = arguments.acl }
-        );
+			amzHeaders = { "x-amz-acl" = arguments.acl }
+		);
 
 	}
 
@@ -420,15 +420,15 @@ component accessors="true" singleton {
 		string maxKeys             = "",
 		string delimiter           = variables.defaultDelimiter
 	) {
-        requireBucketName( arguments.bucketName );
+		requireBucketName( arguments.bucketName );
 
-        var parameters = {
+		var parameters = {
 			"list-type" : 2
 		};
 
-        if ( len( arguments.prefix ) ) {
-            parameters[ "prefix" ] = arguments.prefix;
-        }
+		if ( len( arguments.prefix ) ) {
+			parameters[ "prefix" ] = arguments.prefix;
+		}
 
 		if ( len( arguments.marker ) ) {
 			parameters[ "marker" ] = arguments.marker;
