@@ -7,10 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ----
 
-## v4.6.0 => 2021-FEB-17
+## v4.6.0 => 
 
 ### Added
 
+* New method: `setAccessControlPolicy()` so you can add ACLs to buckets
+* `getBucket()` has been updated to use the ListObjectsv2 API - which is recommended by AWS for more detailed information.
+* Implements SigV4-signed requests thanks to @sbleon's amazing work!
 * Added more formatting rules via cfformat
 * Added a `gitattributes` for cross OS compatibilities
 * Added a `markdownlint.json` for more control over markdown
@@ -18,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+* Handles some cleanup of parameters which were being passed as resource strings ( which were then being encoded and blowing up ).
 * Updated release recipe to match newer modules.
 
 ### Removed
@@ -27,31 +31,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Removed some settings from test harness
 
 ----
-## v4.5.0
+## v4.5.0 => 2020-MAR-11
 
 * `Feature` : `SV4Util` is now a singleton for added performance and more configuration expansion by adding the sdk reference
 * `Improvement` : Better error messages when s3 goes :boom:
 * `Bug` : Fix for ACF double encoding
 
 ----
-## v4.4.0
+## v4.4.0 => 2019-MAY-15
 
 * Reworked SSL setup to allow for dynamic creation of the URL entry point
 * Removed ACF11 officially, it is impossible to deal with their cfhttp junk! It works, but at your own risk.
 
 ----
-## v4.3.0
+## v4.3.0 => 2019-APR-05
 
 * Removal of debugging code
 
 ----
-## v4.2.1
+## v4.2.1 => 2019-MAR-26
 
 * Avoid double encoding on `copy`, `putObjectFile`, and `delete()` operations
 * Consolidate ssl to use `variables` instead of `arguments`
 
 ----
-## v4.2.0
+## v4.2.0 => 2019-MAR-15
 
 * ACF compatiblities
 * Fixes for auth on folder commands
@@ -61,12 +65,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Fix URI encoding on signatures for headers and query params
 
 ----
-## v4.1.1
+## v4.1.1 => 2019-MAR-26
 
 * Left some dump/aborts
 
 ----
-## v4.1.0
+## v4.1.0 => 2019-MAR-13
 
 * DigitalOcean Spaces compatiblity
 * Region naming support, you can now pass the `awsRegion` argument to the constructor to select the AWS or DO region
@@ -75,12 +79,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * Added log debugging to calls and signatures if LogBox is on `debug` level
 
 ----
-## v4.0.1
+## v4.0.1 => 2018-OCT-22
 
 * Fixes to models location, oopsy!
 
 ----
-## v4.0.0
+## v4.0.0 => 2018-OCT-20
 
 * AWS Region Support
 * Migrated Module Layout to use Ortus Standard Module Layout
