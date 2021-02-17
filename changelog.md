@@ -21,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+* Updated tests to fire up in ColdBox 6
 * Handles some cleanup of parameters which were being passed as resource strings ( which were then being encoded and blowing up ).
 * Updated release recipe to match newer modules.
 
