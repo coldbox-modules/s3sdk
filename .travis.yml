@@ -19,7 +19,7 @@ branches:
     - master
 
 sudo: required
-dist: xenial
+dist: trusty
 
 before_install:
   # CommandBox Keys
