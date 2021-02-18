@@ -26,7 +26,7 @@
 			//Error/Exception Handling
 			exceptionHandler		= "",
 			onInvalidEvent			= "",
-			customErrorTemplate 	= "/coldbox/system/includes/BugReport.cfm",
+			customErrorTemplate 	= "/coldbox/system/exceptions/Whoops.cfm",
 
 			//Application Aspects
 			handlerCaching 			= false,
@@ -49,10 +49,7 @@
 		};
 
 		//Register interceptors as an array, we need order
-		interceptors = [
-			 //SES
-			 { class="coldbox.system.interceptors.SES" }
-		];
+		interceptors = [];
 
 		//LogBox DSL
 		logBox = {
@@ -70,18 +67,16 @@
 			// Root Logger
 			root = { levelmax="DEBUG", appenders="*" },
 			// Implicit Level Categories
-			info = [ "coldbox.system" ]
+			info = [ "coldbox.system" ],
+			debug = [ "s3sdk" ]
 		};
 
 		moduleSettings = {
 			s3sdk = {
 				// Settings
-				accessKey          : getSystemSetting( "AWS_ACCESS_KEY", "" ),
-				secretKey          : getSystemSetting( "AWS_ACCESS_SECRET", "" ),
-				encryption_charset : "utf-8",
-				ssl                : false,
-				awsregion          : "us-east-1"
-				}
+				accessKey          : getSystemSetting( "AWS_ACCESS_KEY" ),
+				secretKey          : getSystemSetting( "AWS_ACCESS_SECRET" )
+			}
 		};
 
 	}

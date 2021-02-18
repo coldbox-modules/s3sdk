@@ -10,18 +10,18 @@ component{
 	request.MODULE_NAME = "s3sdk";
 
 	// APPLICATION CFC PROPERTIES
-	this.name 				= "ColdBoxTestingSuite" & hash(getCurrentTemplatePath());
-	this.sessionManagement 	= true;
-	this.sessionTimeout 	= createTimeSpan( 0, 0, 15, 0 );
-	this.applicationTimeout = createTimeSpan( 0, 0, 15, 0 );
-	this.setClientCookies 	= true;
+	this.name                = "ColdBoxTestingSuite" & hash(getCurrentTemplatePath());
+	this.sessionManagement   = true;
+	this.sessionTimeout      = createTimeSpan( 0, 0, 15, 0 );
+	this.applicationTimeout  = createTimeSpan( 0, 0, 15, 0 );
+	this.setClientCookies    = true;
 
 	// Create testing mapping
 	this.mappings[ "/tests" ] = getDirectoryFromPath( getCurrentTemplatePath() );
 
 	// The application root
 	rootPath = REReplaceNoCase( this.mappings[ "/tests" ], "tests(\\|/)", "" );
-	this.mappings[ "/root" ]   = rootPath;
+	this.mappings[ "/root" ] = rootPath;
 
 	// The module root path
 	moduleRootPath = REReplaceNoCase( this.mappings[ "/root" ], "#request.module_name#(\\|/)test-harness(\\|/)", "" );

@@ -10,6 +10,7 @@ test-harness/testbox/**
 test-harness/logs/**
 test-harness/modules/**
 test-harness/.env
+test-harness/tests/tmp/**
 
 # log files
 logs/**

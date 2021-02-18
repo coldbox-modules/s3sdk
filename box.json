@@ -1,6 +1,6 @@
 {
     "name":"Amazon S3 SDK",
-    "version":"4.5.0",
+    "version":"4.6.0",
     "slug":"s3sdk",
     "location":"https://downloads.ortussolutions.com/ortussolutions/coldbox-modules/s3sdk/@build.version@/s3sdk-@build.version@.zip",
     "author":"Ortus Solutions, Corp",
@@ -11,28 +11,32 @@
         "URL":"https://github.com/coldbox-modules/s3sdk"
     },
     "bugs":"https://github.com/coldbox-modules/s3sdk/issues",
-    "shortDescription":"This SDK will provide you with Amazon S3 connectivity for any ColdFusion (CFML) application.",
+    "shortDescription":"This SDK will provide you with Amazon S3, Digital Ocean Spaces connectivity for any ColdFusion (CFML) application.",
     "type":"modules",
     "license":[
         {
             "type":"Apache2",
-            "URL":"http://www.apache.org/licenses/LICENSE-2.0"
+            "URL":"https://www.apache.org/licenses/LICENSE-2.0"
         }
     ],
     "contributors":[
         "Andrew Davis"
     ],
     "dependencies":{},
-    "devDependencies":{},
+    "devDependencies":{
+        "commandbox-dotenv": "*"
+    },
     "installPaths":{},
     "ignore":[
         "**/.*",
         "test-harness",
+		"build",
         "*/.md"
     ],
     "scripts":{
-		"toMaster":"recipe build/toMaster.boxr",
-		"format":"cfformat run models/**/*.cfc,test-harness/**/*.cfc,*.cfc --overwrite",
-        "format:check":"cfformat check models/**/*.cfc,test-harness/**/*.cfc,*.cfc"
+        "release":"recipe build/release.boxr",
+        "format":"cfformat run models/**/*.cfc,test-harness/tests/**/*.cfc,*.cfc --overwrite",
+		"format:watch":"cfformat watch models/**/*.cfc,test-harness/tests/**/*.cfc,*.cfc",
+        "format:check":"cfformat check models/**/*.cfc,test-harness/tests/**/*.cfc,*.cfc"
     }
 }
