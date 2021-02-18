@@ -1,6 +1,6 @@
 {
     "name":"Amazon S3 SDK",
-    "version":"4.6.0",
+    "version":"4.7.0",
     "slug":"s3sdk",
     "location":"https://downloads.ortussolutions.com/ortussolutions/coldbox-modules/s3sdk/@build.version@/s3sdk-@build.version@.zip",
     "author":"Ortus Solutions, Corp",
@@ -24,19 +24,19 @@
     ],
     "dependencies":{},
     "devDependencies":{
-        "commandbox-dotenv": "*"
+        "commandbox-dotenv":"*"
     },
     "installPaths":{},
     "ignore":[
         "**/.*",
         "test-harness",
-		"build",
+        "build",
         "*/.md"
     ],
     "scripts":{
         "release":"recipe build/release.boxr",
         "format":"cfformat run models/**/*.cfc,test-harness/tests/**/*.cfc,*.cfc --overwrite",
-		"format:watch":"cfformat watch models/**/*.cfc,test-harness/tests/**/*.cfc,*.cfc",
+        "format:watch":"cfformat watch models/**/*.cfc,test-harness/tests/**/*.cfc,*.cfc",
         "format:check":"cfformat check models/**/*.cfc,test-harness/tests/**/*.cfc,*.cfc"
     }
 }
