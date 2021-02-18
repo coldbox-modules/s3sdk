@@ -67,7 +67,6 @@ public AmazonS3 function init(
 	boolean autoMD5= false,
 	boolean debug= false
 )
-)
 ```
 
 ### ColdBox Module
@@ -117,7 +116,7 @@ Then you can leverage the SDK CFC via the injection DSL: `AmazonS3@s3sdk`
 
 ## Usage
 
-Please check out the api docs: https://apidocs.ortussolutions.com/#/coldbox-modules/s3sdk/
+Please check out the api docs: https://apidocs.ortussolutions.com/#/coldbox-modules/s3sdk/, choose your version and code away!
 
 ## Development
 
