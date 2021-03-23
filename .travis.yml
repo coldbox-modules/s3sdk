@@ -12,6 +12,7 @@ env:
     - ENGINE=lucee@5
     - ENGINE=adobe@2016
     - ENGINE=adobe@2018
+    - ENGINE=adobe@2021
 
 branches:
   only:
