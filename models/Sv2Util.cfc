@@ -57,7 +57,7 @@ component singleton {
 		} else {
 			var utcDateTime = dateConvert( "local2UTC", now() );
 			// Generate UTC time stamps
-			props.dateStamp = dateFormat( utcDateTime, "YYYYMMDD" );
+			props.dateStamp = dateFormat( utcDateTime, "yyyymmdd" );
 			props.amzDate   = props.dateStamp & "T" & timeFormat( utcDateTime, "HHmmss" ) & "Z";
 		}
 
