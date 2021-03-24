@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 * Adobe 2021 issues with date formatting
+* Watcher needed to use the root `.cfformat.json`
 
 ----
 
