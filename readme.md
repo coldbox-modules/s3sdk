@@ -12,6 +12,11 @@ This SDK allows you to add Amazon S3, Digital Ocean Spaces capabilities to your 
 * S3 API Reference: https://docs.aws.amazon.com/AmazonS3/latest/API/API_Operations_Amazon_Simple_Storage_Service.html
 * Digital Oceans Spaces API Reference: https://developers.digitalocean.com/documentation/spaces/
 
+## Requirements
+
+* Lucee 5+
+* Adobe 2016+
+
 ## Installation
 
 This SDK can be installed as standalone or as a ColdBox Module.  Either approach requires a simple CommandBox command:

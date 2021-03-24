@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ----
 
-## v4.6.0 => 
+## v4.7.0 => 2021-MAR-24
+
+### Added
+
+* Adobe 2021 to the testing matrix and supported engines
+
+### Fixed
+
+* Adobe 2021 issues with date formatting
+
+----
+
+## v4.6.0 => 2021-FEB-18
 
 ### Added
 
