@@ -890,7 +890,7 @@ component accessors="true" singleton {
 		required string uri,
 		required string filepath,
 		numeric HTTPTimeout        = variables.defaultTimeOut,
-		boolean getAsBinary        = no
+		boolean getAsBinary        = "no"
 	) {
 		requireBucketName( arguments.bucketName );
 
@@ -1042,7 +1042,7 @@ component accessors="true" singleton {
 		string filename       = "",
 		numeric timeout       = variables.defaultTimeOut,
 		boolean parseResponse = true,
-		boolean getAsBinary   = no,
+		boolean getAsBinary   = "no",
 		boolean throwOnError  = variables.throwOnRequestError
 	) {
 		var results = {
