@@ -888,7 +888,8 @@ component accessors="true" singleton {
 	struct function downloadObject(
 		required string bucketName = variables.defaultBucketName,
 		required string uri,
-		required string filepath
+		required string filepath,
+		boolean getAsBinary = false
 	) {
 		requireBucketName( arguments.bucketName );
 
@@ -901,6 +902,7 @@ component accessors="true" singleton {
 			method        = "GET",
 			resource      = arguments.bucketName & "/" & arguments.uri,
 			filename      = arguments.filepath,
+			getAsBinary   = arguments.getAsBinary,
 			parseResponse = false
 		);
 
@@ -1038,6 +1040,7 @@ component accessors="true" singleton {
 		string filename       = "",
 		numeric timeout       = variables.defaultTimeOut,
 		boolean parseResponse = true,
+		boolean getAsBinary   = false,
 		boolean throwOnError  = variables.throwOnRequestError
 	) {
 		var results = {
@@ -1076,13 +1079,14 @@ component accessors="true" singleton {
 			serviceName    = variables.serviceName
 		);
 		cfhttp(
-			method   =arguments.method,
-			url      ="#variables.URLEndPoint#/#arguments.resource#",
-			charset  ="utf-8",
-			result   ="HTTPResults",
-			redirect =true,
-			timeout  =arguments.timeout,
-			useragent="ColdFusion-S3SDK"
+			method      =arguments.method,
+			url         ="#variables.URLEndPoint#/#arguments.resource#",
+			charset     ="utf-8",
+			result      ="HTTPResults",
+			redirect    =true,
+			timeout     =arguments.timeout,
+			getAsBinary =arguments.getAsBinary,
+			useragent   ="ColdFusion-S3SDK"
 		) {
 			// Amazon Global Headers
 			cfhttpparam(
