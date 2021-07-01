@@ -879,9 +879,9 @@ component accessors="true" singleton {
 	 *
 	 * @bucketName         The bucket in which to store the object.
 	 * @uri                The destination uri key to use when saving the object.
-	 * @filepath           The file path write the object to, if no filename given filename from uri is used
-	 * @charset            The file charset, defaults to UTF-8
+	 * @filepath           The file path write the object to, if no filename given filename from uri is used.
 	 * @HTTPTimeout        The HTTP timeout to use.
+	 * @getAsBinary        Treat the response body as binary instead of text.
 	 *
 	 * @return             The object's eTag.
 	 */
@@ -889,7 +889,8 @@ component accessors="true" singleton {
 		required string bucketName = variables.defaultBucketName,
 		required string uri,
 		required string filepath,
-		boolean getAsBinary = false
+		numeric HTTPTimeout        = variables.defaultTimeOut,
+		boolean getAsBinary        = no
 	) {
 		requireBucketName( arguments.bucketName );
 
@@ -902,6 +903,7 @@ component accessors="true" singleton {
 			method        = "GET",
 			resource      = arguments.bucketName & "/" & arguments.uri,
 			filename      = arguments.filepath,
+			timeout       = arguments.HTTPTimeout,
 			getAsBinary   = arguments.getAsBinary,
 			parseResponse = false
 		);
@@ -1040,7 +1042,7 @@ component accessors="true" singleton {
 		string filename       = "",
 		numeric timeout       = variables.defaultTimeOut,
 		boolean parseResponse = true,
-		boolean getAsBinary   = false,
+		boolean getAsBinary   = no,
 		boolean throwOnError  = variables.throwOnRequestError
 	) {
 		var results = {
