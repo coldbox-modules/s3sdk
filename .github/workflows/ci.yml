@@ -1,0 +1,189 @@
+name: AWS S3 SDK CI
+
+# Only on Development we build snapshots
+on:
+  push:
+    branches:
+      - development
+      - master
+
+jobs:
+  #############################################
+  # Tests First baby! We fail, no build :(
+  #############################################
+  tests:
+    name: Tests
+    runs-on: ubuntu-20.04
+    env:
+      MODULE_ID: s3sdk
+      AWS_DOMAIN: amazonaws.com
+      AWS_REGION: us-east-1
+    strategy:
+      fail-fast: false
+      matrix:
+        cfengine: [ "lucee@5", "adobe@2016", "adobe@2018", "adobe@2021" ]
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: "adopt"
+          java-version: "11"
+
+      - name: Setup Environment For Testing Process
+        working-directory: ./test-harness
+        run: |
+          # Setup .env
+          touch .env
+          printf "AWS_ACCESS_KEY=${{ secrets.AWS_ACCESS_KEY }}\n" >> .env
+          printf "AWS_ACCESS_SECRET=${{ secrets.AWS_ACCESS_SECRET }}\n" >> .env
+          printf "AWS_REGION=${{ env.AWS_REGION }}\n" >> .env
+          printf "AWS_DOMAIN=${{ env.AWS_DOMAIN }}\n" >> .env
+          printf "ENGINE=${{ matrix.cfengine }}\n" >> .env
+
+      - name: Cache CommandBox Dependencies
+        uses: actions/cache@v1
+        if: ${{ true }}
+        with:
+          path: ~/.CommandBox/artifacts
+          key: ${{ runner.OS }}-commandbox-cache-${{ hashFiles( 'box.json' ) }}
+          restore-keys: |
+            ${{ runner.OS }}-commandbox-cache-${{ hashFiles( 'box.json' ) }}
+
+      - name: Setup CommandBox
+        uses: elpete/setup-commandbox@v1.0.0
+
+      - name: Install Dependencies
+        working-directory: ./test-harness
+        run: |
+          box install
+
+      - name: Start ${{ matrix.cfengine }} Server
+        working-directory: ./test-harness
+        run: |
+          box server start serverConfigFile="server-${{ matrix.cfengine }}.json" --noSaveSettings --debug
+          curl http://127.0.0.1:8589
+
+      - name: Run Tests
+        working-directory: ./test-harness
+        run: |
+          mkdir tests/results
+          box package set testbox.runner="http://localhost:60299/tests/runner.cfm"
+          box testbox run --verbose outputFile=tests/results/test-results outputFormats=json,antjunit
+
+      - name: Publish Test Results
+        uses: EnricoMi/publish-unit-test-result-action@v1
+        if: always()
+        with:
+          files: test-harness/tests/results/**/*.xml
+          check_name: "${{ matrix.cfengine }} Test Results"
+
+      - name: Upload Test Results Artifacts
+        if: always()
+        uses: actions/upload-artifact@v2
+        with:
+          name: contentbox-test-results-${{ matrix.cfengine }}
+          path: |
+            test-harness/tests/results/**/*
+
+      - name: Failure Debugging Info
+        if: ${{ failure() }}
+        working-directory: ./test-harness
+        run: |
+          box server log serverConfigFile="server-${{ matrix.cfengine }}.json"
+
+      - name: Upload Debugging Info To Artifacts
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v2
+        with:
+          name: Failure Debugging Info - ${{ matrix.cfengine }}
+          path: |
+            test-harness/.engines/**/logs/*
+            test-harness/.engines/**/WEB-INF/cfusion/logs/*
+
+  #############################################
+  # Build ContentBox
+  #############################################
+  build:
+    name: Build & Publish
+    needs: tests
+    runs-on: ubuntu-20.04
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v2
+        with:
+          distribution: "adopt"
+          java-version: "11"
+
+      - name: Cache CommandBox Dependencies
+        uses: actions/cache@v1
+        if: ${{ true }}
+        with:
+          path: ~/.CommandBox/artifacts
+          key: ${{ runner.OS }}-commandbox-cache-${{ hashFiles( 'box.json' ) }}
+          restore-keys: |
+            ${{ runner.OS }}-commandbox-cache-${{ hashFiles( 'box.json' ) }}
+
+      - name: Setup CommandBox
+        uses: elpete/setup-commandbox@v1.0.0
+        with:
+          forgeboxAPIKey: ${{ secrets.FORGEBOX_API_TOKEN }}
+
+      - name: Setup Environment Variables For Build Process
+        id: current_version
+        run: |
+          echo "VERSION=`cat box.json | jq '.version' -r`" >> $GITHUB_ENV
+          box package set version=@build.version@+@build.number@
+          # master or snapshot
+          echo "BRANCH=master" >> $GITHUB_ENV
+          if [[ "{{ GITHUB_REF }}" == "refs/heads/development" ]] ; then
+            echo "BRANCH=development" >> $GITHUB_ENV
+          fi
+          echo "Building for ${{ env.BRANCH }}"
+
+      - name: Build ${{ env.MODULE_ID }}
+        run: |
+          box task run taskfile=build/Build target=run :version=${{ env.VERSION }} :projectName=${{ env.MODULE_ID }} :buildID=${{ github.run_number }} :branch=${{ env.BRNACH }}
+
+      - name: Upload Build Artifacts
+        if: success()
+        uses: actions/upload-artifact@v2
+        with:
+          name: s3sdk
+          path: |
+            .artifacts/**/*
+
+      - name: Upload Binaries to S3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --acl public-read
+        env:
+          AWS_S3_BUCKET: "downloads.ortussolutions.com"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_SECRET }}
+          SOURCE_DIR: ".artifacts/${{ env.MODULE_ID }}"
+          DEST_DIR: "ortussolutions/coldbox-modules/${{ env.MODULE_ID }}"
+
+      - name: Upload API Docs to S3
+        uses: jakejarvis/s3-sync-action@master
+        with:
+          args: --acl public-read
+        env:
+          AWS_S3_BUCKET: "apidocs.ortussolutions.com"
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_ACCESS_SECRET }}
+          SOURCE_DIR: ".tmp/apidocs"
+          DEST_DIR: "coldbox-modules/${{ env.MODULE_ID }}/${{ env.VERSION }}"
+
+      - name: Publish To ForgeBox
+        run: |
+          cd .tmp/${{ env.MODULE_ID }}
+          cat box.json
+          box forgebox publish

@@ -65,9 +65,6 @@ component {
 		// Create project mapping
 		fileSystemUtil.createMapping( arguments.projectName, variables.cwd );
 
-		// Run the tests
-		runTests();
-
 		// Build the source
 		buildSource( argumentCollection = arguments );
 
