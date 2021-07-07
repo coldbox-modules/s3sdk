@@ -34,9 +34,14 @@
         "*/.md"
     ],
     "scripts":{
+        "build:module":"task run taskFile=build/Build.cfc :projectName=`package show slug` :version=`package show version`",
+		"build:docs":"task run taskFile=build/Build.cfc target=docs :projectName=`package show slug` :version=`package show version`",
         "release":"recipe build/release.boxr",
         "format":"cfformat run models/**/*.cfc,test-harness/tests/**/*.cfc,*.cfc --overwrite",
         "format:watch":"cfformat watch models/**/*.cfc,test-harness/tests/**/*.cfc,*.cfc ./.cfformat.json",
         "format:check":"cfformat check models/**/*.cfc,test-harness/tests/**/*.cfc,*.cfc"
+    },
+	"testbox":{
+        "runner":"http://localhost:60299/tests/runner.cfm"
     }
 }
