@@ -64,7 +64,7 @@ jobs:
         working-directory: ./test-harness
         run: |
           box server start serverConfigFile="server-${{ matrix.cfengine }}.json" --noSaveSettings --debug
-          curl http://127.0.0.1:8589
+          curl http://127.0.0.1:60299
 
       - name: Run Tests
         working-directory: ./test-harness
