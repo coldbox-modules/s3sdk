@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ----
 
+## v4.8.0 => 2021-JUL-06
+
+### Added
+
+* Migrations to github actions
+* Added new argument to `downloadObject( getAsBinary : 'no' )` so you can get binary or non binary objects. Defaults to non binary.
+  
+----
+
 ## v4.7.0 => 2021-MAR-24
 
 ### Added
