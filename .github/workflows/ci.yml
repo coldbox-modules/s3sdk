@@ -7,6 +7,8 @@ on:
       - development
       - master
 
+env:
+  MODULE_ID: s3sdk
 jobs:
   #############################################
   # Tests First baby! We fail, no build :(
@@ -15,7 +17,6 @@ jobs:
     name: Tests
     runs-on: ubuntu-20.04
     env:
-      MODULE_ID: s3sdk
       AWS_DOMAIN: amazonaws.com
       AWS_REGION: us-east-1
     strategy:
@@ -154,16 +155,16 @@ jobs:
           echo "VERSION=`cat box.json | jq '.version' -r`" >> $GITHUB_ENV
           box package set version=@build.version@+@build.number@
           # master or snapshot
+          echo "Github Ref is $GITHUB_REF"
           echo "BRANCH=master" >> $GITHUB_ENV
-          if [[ "{{ GITHUB_REF }}" == "refs/heads/development" ]] ; then
+          if [ $GITHUB_REF == 'refs/heads/development' ]
+          then
             echo "BRANCH=development" >> $GITHUB_ENV
           fi
-          echo "Building for ${{ env.BRANCH }}"
-
-      - name: Build ${{ env.MODULE_ID }}
+      - name: Build ${{ env.MODULE_ID }} for ${{ env.BRANCH }} v${{ env.VERSION }}
         run: |
           box install commandbox-docbox
-          box task run taskfile=build/Build target=run :version=${{ env.VERSION }} :projectName=${{ env.MODULE_ID }} :buildID=${{ github.run_number }} :branch=${{ env.BRNACH }}
+          box task run taskfile=build/Build target=run :version=${{ env.VERSION }} :projectName=${{ env.MODULE_ID }} :buildID=${{ github.run_number }} :branch=${{ env.BRANCH }}
 
       - name: Upload Build Artifacts
         if: success()
