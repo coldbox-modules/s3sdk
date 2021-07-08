@@ -154,13 +154,13 @@ jobs:
           echo "VERSION=`cat box.json | jq '.version' -r`" >> $GITHUB_ENV
           box package set version=@build.version@+@build.number@
           # master or snapshot
+          echo "Github Ref is $GITHUB_REF"
           echo "BRANCH=master" >> $GITHUB_ENV
-          if [[ "$GITHUB_REF" == "refs/heads/development" ]] ; then
+          if [ $GITHUB_REF == 'refs/heads/development' ]
+          then
             echo "BRANCH=development" >> $GITHUB_ENV
           fi
-          echo "Building for $BRANCH - $VERSION"
-
-      - name: Build ${{ env.MODULE_ID }}
+      - name: Build ${{ env.MODULE_ID }} for ${{ env.BRANCH }} v${{ env.VERSION}}
         run: |
           box install commandbox-docbox
           box task run taskfile=build/Build target=run :version=${{ env.VERSION }} :projectName=${{ env.MODULE_ID }} :buildID=${{ github.run_number }} :branch=${{ env.BRNACH }}
