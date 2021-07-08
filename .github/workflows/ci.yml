@@ -161,10 +161,10 @@ jobs:
           then
             echo "BRANCH=development" >> $GITHUB_ENV
           fi
-      - name: Build ${{ env.MODULE_ID }} for ${{ env.BRANCH }} v${{ env.VERSION}}
+      - name: Build ${{ env.MODULE_ID }} for ${{ env.BRANCH }} v${{ env.VERSION }}
         run: |
           box install commandbox-docbox
-          box task run taskfile=build/Build target=run :version=${{ env.VERSION }} :projectName=${{ env.MODULE_ID }} :buildID=${{ github.run_number }} :branch=${{ env.BRNACH }}
+          box task run taskfile=build/Build target=run :version=${{ env.VERSION }} :projectName=${{ env.MODULE_ID }} :buildID=${{ github.run_number }} :branch=${{ env.BRANCH }}
 
       - name: Upload Build Artifacts
         if: success()
