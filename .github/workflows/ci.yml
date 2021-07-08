@@ -155,10 +155,10 @@ jobs:
           box package set version=@build.version@+@build.number@
           # master or snapshot
           echo "BRANCH=master" >> $GITHUB_ENV
-          if [[ "{{ GITHUB_REF }}" == "refs/heads/development" ]] ; then
+          if [[ "${{ GITHUB_REF }}" == "refs/heads/development" ]] ; then
             echo "BRANCH=development" >> $GITHUB_ENV
           fi
-          echo "Building for ${{ env.BRANCH }}"
+          echo "Building for $BRANCH - $VERSION"
 
       - name: Build ${{ env.MODULE_ID }}
         run: |
