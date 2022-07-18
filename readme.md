@@ -110,7 +110,7 @@ moduleSettings = {
 		// Tries to determine content type of file by file extension. Defaults to false.
 		autoContentType = false,
 		// Calculates MD5 hash of content automatically. Defaults to false.
-		autoMD5 = false
+		autoMD5 = false,
 		// Used to turn debugging on or off outside of logbox. Defaults to false.
 		debug = false
 	}
