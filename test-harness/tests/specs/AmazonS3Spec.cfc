@@ -3,7 +3,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 	variables.targetEngine = getUtil().getSystemSetting( "ENGINE", "localhost" );
 	variables.testBucket   = "ortus-s3sdk-bdd-#replace( variables.targetEngine, "@", "-" )#";
 
-	function beforeAll() {
+	function beforeAll(){
 		prepTmpFolder();
 		variables.s3 = new s3sdk.models.AmazonS3(
 			accessKey = getUtil().getSystemSetting( "AWS_ACCESS_KEY" ),
@@ -12,14 +12,20 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			awsDomain = getUtil().getSystemSetting( "AWS_DOMAIN" )
 		);
 		prepareMock( s3 );
-		s3.$property( propertyName = "log", mock = createLogStub() );
+		s3.$property(
+			propertyName = "log",
+			mock         = createLogStub()
+		);
 
 		s3.putBucket( testBucket );
 	}
 
-	function afterAll() {
+	function afterAll(){
 		try {
-			s3.deleteBucket( bucketName = testBucket, force = true );
+			s3.deleteBucket(
+				bucketName = testBucket,
+				force      = true
+			);
 		} catch ( any e ) {
 		}
 	}
@@ -27,24 +33,27 @@ component extends="coldbox.system.testing.BaseTestCase" {
 	private function prepTmpFolder(){
 		var targetPath = expandPath( "/tests/tmp" );
 
-		if( !directoryExists( targetPath ) ){
+		if ( !directoryExists( targetPath ) ) {
 			directoryCreate( targetPath );
 		}
 
-		if( fileExists( targetPath & "/example.txt" ) ){
+		if ( fileExists( targetPath & "/example.txt" ) ) {
 			fileDelete( targetPath & "/example.txt" );
 		}
 	}
 
 	private function isOldACF(){
-		var isLucee = StructKeyExists(server, 'lucee');
-		return !isLucee and listFind( "11,2016", listFirst( server.coldfusion.productVersion ) );
+		var isLucee = structKeyExists( server, "lucee" );
+		return !isLucee and listFind(
+			"11,2016",
+			listFirst( server.coldfusion.productVersion )
+		);
 	}
 
-	function run() {
-		describe( "Amazon S3 SDK", function() {
-			describe( "objects", function() {
-				afterEach( function( currentSpec ) {
+	function run(){
+		describe( "Amazon S3 SDK", function(){
+			describe( "objects", function(){
+				afterEach( function( currentSpec ){
 					// Add any test fixtures here that you create below
 					s3.deleteObject( testBucket, "example.txt" );
 					s3.deleteObject( testBucket, "example-2.txt" );
@@ -58,7 +67,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					s3.setDefaultBucketName( "" );
 				} );
 
-				it( "can store a new object", function() {
+				it( "can store a new object", function(){
 					s3.putObject(
 						testBucket,
 						"example.txt",
@@ -72,7 +81,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 				it(
 					title = "can store a new object with spaces in the name",
 					skip  = isOldACF(),
-					body  = function() {
+					body  = function(){
 						s3.putObject(
 							testBucket,
 							"Word Doc Tests.txt",
@@ -84,7 +93,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					}
 				);
 
-				it( "can list all objects", function() {
+				it( "can list all objects", function(){
 					s3.putObject(
 						testBucket,
 						"example.txt",
@@ -95,7 +104,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 						"testFolder/example.txt",
 						"Hello, world!"
 					);
-					var bucketContents = s3.getBucket( bucketName = testBucket, delimiter = "/" );
+					var bucketContents = s3.getBucket(
+						bucketName = testBucket,
+						delimiter  = "/"
+					);
 					expect( bucketContents ).toBeArray();
 					expect( bucketContents ).toHaveLength( 2 );
 					for ( var item in bucketContents ) {
@@ -107,7 +119,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					}
 				} );
 
-				it( "can list with prefix", function() {
+				it( "can list with prefix", function(){
 					s3.putObject(
 						testBucket,
 						"example.txt",
@@ -145,7 +157,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					expect( bucketContents[ 1 ].isDirectory ).toBeTrue();
 				} );
 
-				it( "can list with and without delimter", function() {
+				it( "can list with and without delimter", function(){
 					s3.putObject(
 						testBucket,
 						"example.txt",
@@ -158,20 +170,26 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					);
 
 					// With no delimiter, there is no concept of folders, so all keys just show up and everything is a "file"
-					var bucketContents = s3.getBucket( bucketName = testBucket, delimiter = "" );
+					var bucketContents = s3.getBucket(
+						bucketName = testBucket,
+						delimiter  = ""
+					);
 					expect( bucketContents ).toBeArray();
 					expect( bucketContents ).toHaveLength( 2 );
 
-					bucketContents.each( function( item ) {
+					bucketContents.each( function( item ){
 						expect( item.isDirectory ).toBeFalse();
 					} );
 
 					// With a delimiter of "/", we only get the top level items and "testFolder" shows as a directory
-					var bucketContents = s3.getBucket( bucketName = testBucket, delimiter = "/" );
+					var bucketContents = s3.getBucket(
+						bucketName = testBucket,
+						delimiter  = "/"
+					);
 					expect( bucketContents ).toBeArray();
 					expect( bucketContents ).toHaveLength( 2 );
 
-					bucketContents.each( function( item ) {
+					bucketContents.each( function( item ){
 						if ( item.key == "testFolder" ) {
 							expect( item.isDirectory ).toBeTrue();
 						} else {
@@ -180,7 +198,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					} );
 				} );
 
-				it( "can check if an object exists", function() {
+				it( "can check if an object exists", function(){
 					s3.putObject(
 						testBucket,
 						"example.txt",
@@ -211,7 +229,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					}
 				} );
 
-				it( "can delete an object from a bucket", function() {
+				it( "can delete an object from a bucket", function(){
 					s3.putObject(
 						testBucket,
 						"example.txt",
@@ -223,7 +241,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					expect( bucketContents ).toHaveLength( 0 );
 				} );
 
-				it( "can copy an object", function() {
+				it( "can copy an object", function(){
 					s3.putObject(
 						testBucket,
 						"example.txt",
@@ -243,7 +261,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					expect( bucketContents ).toHaveLength( 2 );
 				} );
 
-				it( "can rename an object", function() {
+				it( "can rename an object", function(){
 					s3.putObject(
 						testBucket,
 						"example.txt",
@@ -261,7 +279,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					expect( bucketContents[ 1 ].key ).toBe( "example-2.txt" );
 				} );
 
-				it( "can get a file", function() {
+				it( "can get a file", function(){
 					s3.putObject(
 						testBucket,
 						"example.txt",
@@ -272,7 +290,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					expect( get.response ).toBe( "Hello, world!" );
 				} );
 
-				it( "can download a file", function() {
+				it( "can download a file", function(){
 					s3.putObject(
 						testBucket,
 						"example.txt",
@@ -288,18 +306,18 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					expect( dl.error ).toBeFalse();
 				} );
 
-				it( "validates missing bucketname", function() {
-					expect( function() {
+				it( "validates missing bucketname", function(){
+					expect( function(){
 						s3.getBucket();
 					} ).toThrow( message = "bucketName is required" );
 				} );
 
-				it( "Allows default bucket name", function() {
+				it( "Allows default bucket name", function(){
 					s3.setDefaultBucketName( testBucket );
 					s3.getBucket();
 				} );
 
-				it( "Allows default delimiter", function() {
+				it( "Allows default delimiter", function(){
 					s3.setDefaultDelimiter( "/" );
 
 					s3.putObject(
@@ -313,48 +331,68 @@ component extends="coldbox.system.testing.BaseTestCase" {
 						"Hello, world!"
 					);
 
-					var bucketContents = s3.getBucket( bucketName = testBucket, prefix = "testFolder/" );
+					var bucketContents = s3.getBucket(
+						bucketName = testBucket,
+						prefix     = "testFolder/"
+					);
 
 					expect( bucketContents ).toBeArray();
 					expect( bucketContents ).toHaveLength( 1 );
 					expect( bucketContents[ 1 ].isDirectory ).toBeFalse();
 				} );
 
-				it( "generates a valid authenticated URL", function() {
+				it( "generates a valid authenticated URL", function(){
 					var testFileContents = "Hello, world!";
-					s3.putObject( testBucket, "example.txt", testFileContents );
+					s3.putObject(
+						testBucket,
+						"example.txt",
+						testFileContents
+					);
 
-					var authedURL = s3.getAuthenticatedURL( bucketName=testBucket, uri="example.txt" );
+					var authedURL = s3.getAuthenticatedURL(
+						bucketName = testBucket,
+						uri        = "example.txt"
+					);
 
 					var httpSvc = new http();
-					httpSvc.setMethod("get");
-					httpSvc.setUrl(authedURL);
+					httpSvc.setMethod( "get" );
+					httpSvc.setUrl( authedURL );
 					var response = httpSvc.send().getPrefix();
 					expect( response.fileContent ).toBe( testFileContents );
 				} );
 
-				it( "generates a valid authenticated URL", function() {
+				it( "generates a valid authenticated URL", function(){
 					var testFileContents = "Hello, world!";
-					s3.putObject( testBucket, "example.txt", testFileContents );
+					s3.putObject(
+						testBucket,
+						"example.txt",
+						testFileContents
+					);
 
-					var authedURL = s3.getAuthenticatedURL( bucketName=testBucket, uri="example.txt" );
+					var authedURL = s3.getAuthenticatedURL(
+						bucketName = testBucket,
+						uri        = "example.txt"
+					);
 
 					var httpSvc = new http();
-					httpSvc.setMethod("get");
-					httpSvc.setUrl(authedURL);
+					httpSvc.setMethod( "get" );
+					httpSvc.setUrl( authedURL );
 					var response = httpSvc.send().getPrefix();
 					expect( response.fileContent ).toBe( testFileContents );
 				} );
 			} );
 
-			describe( "buckets", function() {
-				it( "returns true if a bucket exists", function() {
+			describe( "buckets", function(){
+				it( "returns true if a bucket exists", function(){
 					expect( s3.hasBucket( testBucket ) ).toBeTrue();
 				} );
-				it( "can list the buckets associated with the account", function() {
-					expect( arrayLen( s3.listBuckets() ) ).toBeGTE( 1, "At least one bucket should be returned" );
+				it( "can list the buckets associated with the account", function(){
+					expect( arrayLen( s3.listBuckets() ) ).toBeGTE(
+						1,
+						"At least one bucket should be returned"
+					);
 				} );
-				it( "can delete a bucket", function() {
+				it( "can delete a bucket", function(){
 					expect( s3.hasBucket( testBucket ) ).toBeTrue();
 					var results = s3.deleteBucket( testBucket );
 					expect( results ).toBeTrue();
@@ -363,7 +401,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 		} );
 	}
 
-	private function createLogStub() {
+	private function createLogStub(){
 		return createStub()
 			.$( "canDebug", false )
 			.$( "debug" )

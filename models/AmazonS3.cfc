@@ -110,7 +110,7 @@ component accessors="true" singleton {
 		boolean autoMD5            = false,
 		string serviceName         = "s3",
 		boolean debug              = false
-	) {
+	){
 		if ( arguments.awsDomain == "amazonaws.com" && arguments.awsRegion == "" ) {
 			arguments.awsRegion = "us-east-1";
 		}
@@ -178,7 +178,7 @@ component accessors="true" singleton {
 		return this;
 	}
 
-	function createSignatureUtil( required string type ) {
+	function createSignatureUtil( required string type ){
 		if ( arguments.type == "V4" ) {
 			return new Sv4Util();
 		} else if ( arguments.type == "V2" ) {
@@ -194,19 +194,22 @@ component accessors="true" singleton {
 	 *
 	 * @return    The AmazonS3 Instance.
 	 */
-	AmazonS3 function setAuth( required string accessKey, required string secretKey ) {
+	AmazonS3 function setAuth(
+		required string accessKey,
+		required string secretKey
+	){
 		variables.accessKey = arguments.accessKey;
 		variables.secretKey = arguments.secretKey;
 		return this;
 	}
 
-	AmazonS3 function setAWSDomain( required string domain ) {
+	AmazonS3 function setAWSDomain( required string domain ){
 		variables.awsDomain = arguments.domain;
 		buildUrlEndpoint();
 		return this;
 	}
 
-	AmazonS3 function setAWSRegion( required string region ) {
+	AmazonS3 function setAWSRegion( required string region ){
 		variables.awsRegion = arguments.region;
 		buildUrlEndpoint();
 		return this;
@@ -215,20 +218,20 @@ component accessors="true" singleton {
 	/**
 	 * This function builds variables.UrlEndpoint and variables.URLEndpointHostname according to credentials and ssl configuration, usually called after init() for you automatically.
 	 */
-	AmazonS3 function buildUrlEndpoint() {
+	AmazonS3 function buildUrlEndpoint(){
 		// Build accordingly
 		var URLEndPointProtocol = ( variables.ssl ) ? "https://" : "http://";
 
 		var hostnameComponents = [];
-		if( variables.awsDomain contains "amazonaws.com" ) {
+		if ( variables.awsDomain contains "amazonaws.com" ) {
 			hostnameComponents.append( "s3" );
 		}
-		if( Len( variables.awsRegion ) ) {
+		if ( len( variables.awsRegion ) ) {
 			hostnameComponents.append( variables.awsRegion );
 		}
 		hostnameComponents.append( variables.awsDomain );
-		variables.URLEndpointHostname = ArrayToList( hostnameComponents, "." );
-		variables.URLEndpoint = URLEndpointProtocol & variables.URLEndpointHostname;
+		variables.URLEndpointHostname = arrayToList( hostnameComponents, "." );
+		variables.URLEndpoint         = URLEndpointProtocol & variables.URLEndpointHostname;
 
 		return this;
 	}
@@ -241,7 +244,7 @@ component accessors="true" singleton {
 	 *
 	 * @return The AmazonS3 instance.
 	 */
-	AmazonS3 function setSSL( boolean useSSL = true ) {
+	AmazonS3 function setSSL( boolean useSSL = true ){
 		variables.ssl = arguments.useSSL;
 		buildUrlEndpoint();
 		return this;
@@ -252,12 +255,15 @@ component accessors="true" singleton {
 	 *
 	 * @return
 	 */
-	array function listBuckets() {
+	array function listBuckets(){
 		var results = s3Request();
 
-		var bucketsXML = xmlSearch( results.response, "//*[local-name()='Bucket']" );
+		var bucketsXML = xmlSearch(
+			results.response,
+			"//*[local-name()='Bucket']"
+		);
 
-		return arrayMap( bucketsXML, function( node ) {
+		return arrayMap( bucketsXML, function( node ){
 			return {
 				"name"         : trim( node.name.xmlText ),
 				"creationDate" : trim( node.creationDate.xmlText )
@@ -272,12 +278,18 @@ component accessors="true" singleton {
 	 *
 	 * @return     The region code for the bucket.
 	 */
-	string function getBucketLocation( required string bucketName=variables.defaultBucketName ) {
+	string function getBucketLocation( required string bucketName = variables.defaultBucketName ){
 		requireBucketName( arguments.bucketName );
-		var results = S3Request( resource = arguments.bucketname, parameters={ "location" : true } );
+		var results = s3Request(
+			resource   = arguments.bucketname,
+			parameters = { "location" : true }
+		);
 
 		if ( results.error ) {
-			throw( message = "Error making Amazon REST Call", detail = results.message );
+			throw(
+				message = "Error making Amazon REST Call",
+				detail  = results.message
+			);
 		}
 
 		if ( len( results.response.LocationConstraint.XMLText ) ) {
@@ -294,9 +306,12 @@ component accessors="true" singleton {
 	 *
 	 * @return     The bucket version status or an empty string if there is none.
 	 */
-	string function getBucketVersionStatus( required string bucketName=variables.defaultBucketName ) {
+	string function getBucketVersionStatus( required string bucketName = variables.defaultBucketName ){
 		requireBucketName( arguments.bucketName );
-		var results = S3Request( resource = arguments.bucketname, parameters={ "versioning" : true } );
+		var results = s3Request(
+			resource   = arguments.bucketname,
+			parameters = { "versioning" : true }
+		);
 
 		var status = xmlSearch(
 			results.response,
@@ -321,14 +336,14 @@ component accessors="true" singleton {
 	boolean function setBucketVersionStatus(
 		required string bucketName = variables.defaultBucketName,
 		boolean version            = true
-	) {
+	){
 		requireBucketName( arguments.bucketName );
 		var constraintXML = "";
 		var headers       = { "content-type" : "text/plain" };
 
 		if ( arguments.version ) {
 			headers[ "?versioning" ] = "";
-			constraintXML            = '<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Status>Enabled</Status></VersioningConfiguration>';
+			constraintXML            = "<VersioningConfiguration xmlns=""http://s3.amazonaws.com/doc/2006-03-01/""><Status>Enabled</Status></VersioningConfiguration>";
 		}
 
 		var results = s3Request(
@@ -350,7 +365,10 @@ component accessors="true" singleton {
 	 *
 	 * @return     An array containing the ACL for the given resource.
 	 */
-	array function getAccessControlPolicy( required string bucketName=variables.defaultBucketName, string uri = "" ) {
+	array function getAccessControlPolicy(
+		required string bucketName = variables.defaultBucketName,
+		string uri                 = ""
+	){
 		requireBucketName( arguments.bucketName );
 		var resource = arguments.bucketName;
 
@@ -358,15 +376,21 @@ component accessors="true" singleton {
 			resource = resource & "/" & arguments.uri;
 		}
 
-		var results = S3Request( resource = resource, parameters={ "acl" : true } );
+		var results = s3Request(
+			resource   = resource,
+			parameters = { "acl" : true }
+		);
 
-		var grantsXML = xmlSearch( results.response, "//*[local-name()='Grant']" );
-		return arrayMap( grantsXML, function( node ) {
+		var grantsXML = xmlSearch(
+			results.response,
+			"//*[local-name()='Grant']"
+		);
+		return arrayMap( grantsXML, function( node ){
 			return {
-				"type" 		  = node.grantee.XMLAttributes[ "xsi:type" ],
-				"displayName" = "",
-				"permission"  = node.permission.XMLText,
-				"uri"         = node.grantee.XMLAttributes[ "xsi:type" ] == "Group" ? node.grantee.uri.xmlText : node.grantee.displayName.xmlText
+				"type"        : node.grantee.XMLAttributes[ "xsi:type" ],
+				"displayName" : "",
+				"permission"  : node.permission.XMLText,
+				"uri"         : node.grantee.XMLAttributes[ "xsi:type" ] == "Group" ? node.grantee.uri.xmlText : node.grantee.displayName.xmlText
 			};
 		} );
 	}
@@ -382,7 +406,11 @@ component accessors="true" singleton {
 	 * @see        https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl_overview.html#permissions
 	 *
 	 */
-	void function setAccessControlPolicy( required string bucketName=variables.defaultBucketName, string uri = "", string acl ){
+	void function setAccessControlPolicy(
+		required string bucketName = variables.defaultBucketName,
+		string uri                 = "",
+		string acl
+	){
 		requireBucketName( arguments.bucketName );
 
 		var resource = arguments.bucketName;
@@ -391,13 +419,12 @@ component accessors="true" singleton {
 			resource = resource & "/" & arguments.uri;
 		}
 
-		S3Request(
+		s3Request(
 			method     = "PUT",
 			resource   = resource,
 			parameters = { "acl" : true },
-			amzHeaders = { "x-amz-acl" = arguments.acl }
+			amzHeaders = { "x-amz-acl" : arguments.acl }
 		);
-
 	}
 
 	/**
@@ -419,12 +446,10 @@ component accessors="true" singleton {
 		string marker              = "",
 		string maxKeys             = "",
 		string delimiter           = variables.defaultDelimiter
-	) {
+	){
 		requireBucketName( arguments.bucketName );
 
-		var parameters = {
-			"list-type" : 2
-		};
+		var parameters = { "list-type" : 2 };
 
 		if ( len( arguments.prefix ) ) {
 			parameters[ "prefix" ] = arguments.prefix;
@@ -442,19 +467,28 @@ component accessors="true" singleton {
 			parameters[ "delimiter" ] = arguments.delimiter;
 		}
 
-		var results = s3Request( resource = arguments.bucketName, parameters = parameters );
+		var results = s3Request(
+			resource   = arguments.bucketName,
+			parameters = parameters
+		);
 
-		var contentsXML = xmlSearch( results.response, "//*[local-name()='Contents']" );
-		var foldersXML  = xmlSearch( results.response, "//*[local-name()='CommonPrefixes']" );
+		var contentsXML = xmlSearch(
+			results.response,
+			"//*[local-name()='Contents']"
+		);
+		var foldersXML = xmlSearch(
+			results.response,
+			"//*[local-name()='CommonPrefixes']"
+		);
 
-		var objectContents = arrayMap( contentsXML, function( node ) {
+		var objectContents = arrayMap( contentsXML, function( node ){
 			return {
 				"key"          : trim( node.key.xmlText ),
 				"lastModified" : trim( node.lastModified.xmlText ),
 				"size"         : trim( node.Size.xmlText ),
 				"eTag"         : replace(
 					trim( node.etag.xmlText ),
-					'"',
+					"""",
 					"",
 					"all"
 				),
@@ -468,7 +502,7 @@ component accessors="true" singleton {
 			};
 		} );
 
-		var folderContents = arrayMap( foldersXML, function( node ) {
+		var folderContents = arrayMap( foldersXML, function( node ){
 			return {
 				"key" : reReplaceNoCase(
 					trim( node.prefix.xmlText ),
@@ -499,7 +533,7 @@ component accessors="true" singleton {
 		required string bucketName = variables.defaultBucketName,
 		string acl                 = variables.defaultACL,
 		string location            = "USA"
-	) {
+	){
 		requireBucketName( arguments.bucketName );
 		var constraintXML = arguments.location == "EU" ? "<CreateBucketConfiguration><LocationConstraint>EU</LocationConstraint></CreateBucketConfiguration>" : "";
 
@@ -521,10 +555,10 @@ component accessors="true" singleton {
 	 *
 	 * @return     True if the bucket exists.
 	 */
-	boolean function hasBucket( required string bucketName = variables.defaultBucketName ) {
+	boolean function hasBucket( required string bucketName = variables.defaultBucketName ){
 		requireBucketName( arguments.bucketName );
 		return !arrayIsEmpty(
-			arrayFilter( listBuckets(), function( bucket ) {
+			arrayFilter( listBuckets(), function( bucket ){
 				return bucket.name == bucketName;
 			} )
 		);
@@ -538,7 +572,10 @@ component accessors="true" singleton {
 	 *
 	 * @return     True, if the bucket was deleted successfully.
 	 */
-	boolean function deleteBucket( required string bucketName = variables.defaultBucketName, boolean force = false ) {
+	boolean function deleteBucket(
+		required string bucketName = variables.defaultBucketName,
+		boolean force              = false
+	){
 		requireBucketName( arguments.bucketName );
 		if ( arguments.force && hasBucket( arguments.bucketName ) ) {
 			var bucketContents = getBucket( arguments.bucketName );
@@ -607,7 +644,7 @@ component accessors="true" singleton {
 		struct metaHeaders     = {},
 		string md5             = variables.autoMD5,
 		string storageClass    = variables.defaultStorageClass
-	) {
+	){
 		requireBucketName( arguments.bucketName );
 		arguments.data = fileReadBinary( arguments.filepath );
 
@@ -659,7 +696,7 @@ component accessors="true" singleton {
 		string expires             = "",
 		string acl                 = variables.defaultACL,
 		struct metaHeaders         = {}
-	) {
+	){
 		requireBucketName( arguments.bucketName );
 		arguments.data = "";
 		return putObject( argumentCollection = arguments );
@@ -672,7 +709,7 @@ component accessors="true" singleton {
 	 *
 	 * @return      A struct of Amazon-enabled metadata headers.
 	 */
-	struct function createMetaHeaders( struct metaHeaders = {} ) {
+	struct function createMetaHeaders( struct metaHeaders = {} ){
 		var md = {};
 		for ( var key in arguments.metaHeaders ) {
 			md[ "x-amz-meta-" & key ] = arguments.metaHeaders[ key ];
@@ -721,7 +758,7 @@ component accessors="true" singleton {
 		struct metaHeaders        = {},
 		string md5                = variables.autoMD5,
 		string storageClass       = variables.defaultStorageClass
-	) {
+	){
 		requireBucketName( arguments.bucketName );
 		var amzHeaders            = createMetaHeaders( arguments.metaHeaders );
 		amzHeaders[ "x-amz-acl" ] = arguments.acl;
@@ -751,7 +788,10 @@ component accessors="true" singleton {
 		}
 
 		if ( isNumeric( arguments.expires ) ) {
-			headers[ "expires" ] = "#dateFormat( now() + arguments.expires, "ddd, dd mmm yyyy" )# #timeFormat( now(), "H:MM:SS" )# GMT";
+			headers[ "expires" ] = "#dateFormat(
+				now() + arguments.expires,
+				"ddd, dd mmm yyyy"
+			)# #timeFormat( now(), "H:MM:SS" )# GMT";
 		}
 
 		var results = s3Request(
@@ -766,7 +806,7 @@ component accessors="true" singleton {
 		if ( results.responseHeader.status_code == 200 ) {
 			return replace(
 				results.responseHeader.etag,
-				'"',
+				"""",
 				"",
 				"all"
 			);
@@ -783,9 +823,15 @@ component accessors="true" singleton {
 	 *
 	 * @return     The object's metadata information.
 	 */
-	struct function getObjectInfo( required string bucketName = variables.defaultBucketName, required string uri ) {
+	struct function getObjectInfo(
+		required string bucketName = variables.defaultBucketName,
+		required string uri
+	){
 		requireBucketName( arguments.bucketName );
-		var results = s3Request( method = "HEAD", resource = arguments.bucketName & "/" & arguments.uri );
+		var results = s3Request(
+			method   = "HEAD",
+			resource = arguments.bucketName & "/" & arguments.uri
+		);
 
 		var metadata = {};
 		for ( var key in results.responseHeader ) {
@@ -802,7 +848,10 @@ component accessors="true" singleton {
 	 *
 	 * @return     True/false whether the object exists
 	 */
-	boolean function objectExists( required string bucketName = variables.defaultBucketName, required string uri ) {
+	boolean function objectExists(
+		required string bucketName = variables.defaultBucketName,
+		required string uri
+	){
 		requireBucketName( arguments.bucketName );
 		var results = s3Request(
 			method       = "HEAD",
@@ -816,7 +865,10 @@ component accessors="true" singleton {
 		} else if ( status_code == 404 ) {
 			return false;
 		} else {
-			throw( message = "Error checking for the existence of [#uri#].", detail = results.message );
+			throw(
+				message = "Error checking for the existence of [#uri#].",
+				detail  = results.message
+			);
 		}
 	}
 
@@ -833,26 +885,24 @@ component accessors="true" singleton {
 	string function getAuthenticatedURL(
 		required string bucketName = variables.defaultBucketName,
 		required string uri,
-		string minutesValid      = 60,
-		boolean useSSL           = variables.ssl
-	) {
+		string minutesValid = 60,
+		boolean useSSL      = variables.ssl
+	){
 		requireBucketName( arguments.bucketName );
 
 		var hostname = "#bucketName#.#variables.URLEndpointHostname#";
 
 		var sigData = variables.signatureUtil.generateSignatureData(
-			requestMethod = "GET",
-			hostName = hostname,
-			requestURI = arguments.uri,
-			requestBody = "",
-			requestHeaders = {},
-			requestParams = {
-				"X-Amz-Expires" = arguments.minutesValid * 60
-			},
-			accessKey = variables.accessKey,
-			secretKey = variables.secretKey,
-			regionName = variables.awsRegion,
-			serviceName = variables.serviceName,
+			requestMethod      = "GET",
+			hostName           = hostname,
+			requestURI         = arguments.uri,
+			requestBody        = "",
+			requestHeaders     = {},
+			requestParams      = { "X-Amz-Expires" : arguments.minutesValid * 60 },
+			accessKey          = variables.accessKey,
+			secretKey          = variables.secretKey,
+			regionName         = variables.awsRegion,
+			serviceName        = variables.serviceName,
 			presignDownloadURL = true
 		);
 
@@ -868,9 +918,15 @@ component accessors="true" singleton {
 	 *
 	 * @return     The object's metadata information.
 	 */
-	struct function getObject( required string bucketName = variables.defaultBucketName, required string uri ) {
+	struct function getObject(
+		required string bucketName = variables.defaultBucketName,
+		required string uri
+	){
 		requireBucketName( arguments.bucketName );
-		var results = s3Request( method = "GET", resource = arguments.bucketName & "/" & arguments.uri );
+		var results = s3Request(
+			method   = "GET",
+			resource = arguments.bucketName & "/" & arguments.uri
+		);
 		return results;
 	}
 
@@ -889,9 +945,9 @@ component accessors="true" singleton {
 		required string bucketName = variables.defaultBucketName,
 		required string uri,
 		required string filepath,
-		numeric HTTPTimeout        = variables.defaultTimeOut,
-		boolean getAsBinary        = "no"
-	) {
+		numeric HTTPTimeout = variables.defaultTimeOut,
+		boolean getAsBinary = "no"
+	){
 		requireBucketName( arguments.bucketName );
 
 		// if filepath is a directory, append filename
@@ -926,10 +982,16 @@ component accessors="true" singleton {
 	 *
 	 * @return     Returns true if the object is deleted successfully.
 	 */
-	boolean function deleteObject( required string bucketName = variables.defaultBucketName, required string uri ) {
+	boolean function deleteObject(
+		required string bucketName = variables.defaultBucketName,
+		required string uri
+	){
 		requireBucketName( arguments.bucketName );
 
-		var results = s3Request( method = "DELETE", resource = arguments.bucketName & "/" & arguments.uri );
+		var results = s3Request(
+			method   = "DELETE",
+			resource = arguments.bucketName & "/" & arguments.uri
+		);
 
 		return results.responseheader.status_code == 204;
 	}
@@ -956,7 +1018,7 @@ component accessors="true" singleton {
 		string acl          = variables.defaultACL,
 		struct metaHeaders  = {},
 		string storageClass = variables.defaultStorageClass
-	) {
+	){
 		var headers    = { "content-length" : 0 };
 		var amzHeaders = createMetaHeaders( arguments.metaHeaders );
 
@@ -1003,7 +1065,7 @@ component accessors="true" singleton {
 		required string oldFileKey,
 		required string newBucketName,
 		required string newFileKey
-	) {
+	){
 		if ( compare( oldBucketName, newBucketName ) || compare( oldFileKey, newFileKey ) ) {
 			copyObject(
 				oldBucketName,
@@ -1044,7 +1106,7 @@ component accessors="true" singleton {
 		boolean parseResponse = true,
 		boolean getAsBinary   = "no",
 		boolean throwOnError  = variables.throwOnRequestError
-	) {
+	){
 		var results = {
 			"error"          : false,
 			"response"       : {},
@@ -1054,7 +1116,12 @@ component accessors="true" singleton {
 		var HTTPResults = "";
 		var param       = "";
 		var md5         = "";
-		var sortedAMZ   = listToArray( listSort( structKeyList( arguments.amzHeaders ), "textnocase" ) );
+		var sortedAMZ   = listToArray(
+			listSort(
+				structKeyList( arguments.amzHeaders ),
+				"textnocase"
+			)
+		);
 
 		// Default Content Type
 		if ( NOT structKeyExists( arguments.headers, "content-type" ) ) {
@@ -1069,7 +1136,7 @@ component accessors="true" singleton {
 
 		// Create Signature
 		var signatureData = signatureUtil.generateSignatureData(
-			requestMethod = arguments.method,
+			requestMethod  = arguments.method,
 			hostName       = variables.URLEndpointHostname,
 			requestURI     = arguments.resource,
 			requestBody    = arguments.body,
@@ -1081,52 +1148,58 @@ component accessors="true" singleton {
 			serviceName    = variables.serviceName
 		);
 		cfhttp(
-			method      =arguments.method,
-			url         ="#variables.URLEndPoint#/#arguments.resource#",
-			charset     ="utf-8",
-			result      ="HTTPResults",
-			redirect    =true,
-			timeout     =arguments.timeout,
-			getAsBinary =arguments.getAsBinary,
-			useragent   ="ColdFusion-S3SDK"
+			method      = arguments.method,
+			url         = "#variables.URLEndPoint#/#arguments.resource#",
+			charset     = "utf-8",
+			result      = "HTTPResults",
+			redirect    = true,
+			timeout     = arguments.timeout,
+			getAsBinary = arguments.getAsBinary,
+			useragent   = "ColdFusion-S3SDK"
 		) {
 			// Amazon Global Headers
 			cfhttpparam(
-				type ="header",
-				name ="Date",
-				value=signatureData.amzDate
+				type  = "header",
+				name  = "Date",
+				value = signatureData.amzDate
 			);
 
 			cfhttpparam(
-				type ="header",
-				name ="Authorization",
-				value=signatureData.authorizationHeader
+				type  = "header",
+				name  = "Authorization",
+				value = signatureData.authorizationHeader
 			);
 
 			for ( var headerName in signatureData.requestHeaders ) {
 				cfhttpparam(
-					type ="header",
-					name =headerName,
-					value=signatureData.requestHeaders[ headerName ]
+					type  = "header",
+					name  = headerName,
+					value = signatureData.requestHeaders[ headerName ]
 				);
 			}
 
 			for ( var paramName in signatureData.requestParams ) {
 				cfhttpparam(
-					type   ="URL",
-					name   =paramName,
-					encoded=false,
-					value  =signatureData.requestParams[ paramName ]
+					type    = "URL",
+					name    = paramName,
+					encoded = false,
+					value   = signatureData.requestParams[ paramName ]
 				);
 			}
 
 			if ( len( arguments.body ) ) {
-				cfhttpparam( type="body", value=arguments.body );
+				cfhttpparam(
+					type  = "body",
+					value = arguments.body
+				);
 			}
 		}
 
 		if ( len( arguments.filename ) ) {
-			fileWrite( arguments.filename, HTTPResults.fileContent );
+			fileWrite(
+				arguments.filename,
+				HTTPResults.fileContent
+			);
 		}
 
 		if ( log.canDebug() ) {
@@ -1147,16 +1220,24 @@ component accessors="true" singleton {
 		// Check XML Parsing?
 		if (
 			arguments.parseResponse &&
-			structKeyExists( HTTPResults.responseHeader, "content-type" ) &&
+			structKeyExists(
+				HTTPResults.responseHeader,
+				"content-type"
+			) &&
 			HTTPResults.responseHeader[ "content-type" ] == "application/xml" &&
 			isXML( HTTPResults.fileContent )
 		) {
 			results.response = xmlParse( HTTPResults.fileContent );
 			// Check for Errors
-			if ( NOT listFindNoCase( "200,204,302", HTTPResults.responseHeader.status_code ) ) {
+			if (
+				NOT listFindNoCase(
+					"200,204,302",
+					HTTPResults.responseHeader.status_code
+				)
+			) {
 				results.error   = true;
 				results.message = arrayToList(
-					arrayMap( results.response.error.XmlChildren, function( node ) {
+					arrayMap( results.response.error.XmlChildren, function( node ){
 						return "#node.XmlName#: #node.XmlText#";
 					} ),
 					"\n"
@@ -1194,11 +1275,17 @@ component accessors="true" singleton {
 	/**
 	 * NSA SHA-1 Algorithm: RFC 2104HMAC-SHA1
 	 */
-	private binary function HMAC_SHA1( required string signKey, required string signMessage ) {
+	private binary function HMAC_SHA1(
+		required string signKey,
+		required string signMessage
+	){
 		var jMsg = javacast( "string", arguments.signMessage ).getBytes( encryption_charset );
 		var jKey = javacast( "string", arguments.signKey ).getBytes( encryption_charset );
-		var key  = createObject( "java", "javax.crypto.spec.SecretKeySpec" ).init( jKey, "HmacSHA1" );
-		var mac  = createObject( "java", "javax.crypto.Mac" ).getInstance( key.getAlgorithm() );
+		var key  = createObject(
+			"java",
+			"javax.crypto.spec.SecretKeySpec"
+		).init( jKey, "HmacSHA1" );
+		var mac = createObject( "java", "javax.crypto.Mac" ).getInstance( key.getAlgorithm() );
 
 		mac.init( key );
 		mac.update( jMsg );
@@ -1209,10 +1296,13 @@ component accessors="true" singleton {
 	/**
 	 * @description Generate RSA MD5 hash
 	 */
-	string function MD5inBase64( required content ) {
+	string function MD5inBase64( required content ){
 		var result = 0;
-		var digest = createObject( "java", "java.security.MessageDigest" );
-		digest     = digest.getInstance( "MD5" );
+		var digest = createObject(
+			"java",
+			"java.security.MessageDigest"
+		);
+		digest = digest.getInstance( "MD5" );
 		if ( isSimpleValue( arguments.content ) ) {
 			result = digest.digest( arguments.content.getBytes() );
 		} else {
@@ -1225,7 +1315,7 @@ component accessors="true" singleton {
 	/**
 	 * Helper function to catch missing bucket name
 	 */
-	private function requireBucketName( bucketName ) {
+	private function requireBucketName( bucketName ){
 		if ( isNull( arguments.bucketName ) || !len( arguments.bucketName ) ) {
 			throw(
 				"bucketName is required.  Please provide the name of the bucket to access or set a default bucket name in the SDk."
@@ -1236,7 +1326,7 @@ component accessors="true" singleton {
 	/**
 	 * Determine mime type from the file extension
 	 * */
-	string function getFileMimeType( required string filePath ) {
+	string function getFileMimeType( required string filePath ){
 		var contentType = "binary/octet-stream";
 		if ( len( arguments.filePath ) ) {
 			var ext = listLast( arguments.filePath, "." );
@@ -1244,9 +1334,7 @@ component accessors="true" singleton {
 				contentType = variables.mimeTypes[ ext ];
 			} else {
 				try {
-					contentType = getPageContext()
-						.getServletContext()
-						.getMimeType( arguments.filePath );
+					contentType = getPageContext().getServletContext().getMimeType( arguments.filePath );
 				} catch ( any cfcatch ) {
 				}
 				if ( !isDefined( "contentType" ) ) {
