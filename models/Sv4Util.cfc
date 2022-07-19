@@ -25,7 +25,7 @@ component singleton {
 	 * Creates a new instance of the utility for generating signatures using the supplied settings
 	 * @returns new instance initalized with specified settings
 	 */
-	Sv4Util function init() {
+	Sv4Util function init(){
 		// Algorithms used in calculating the signature
 		variables.signatureAlgorithm = "AWS4-HMAC-SHA256";
 		variables.hashAlorithm       = "SHA256";
@@ -63,11 +63,11 @@ component singleton {
 		required string secretKey,
 		required string regionName,
 		required string serviceName,
-		array excludeHeaders  = [],
+		array excludeHeaders = [],
 		string amzDate,
 		string dateStamp,
 		boolean presignDownloadURL = false
-	) {
+	){
 		// Initialize properties
 		var props          = {};
 		var hasQueryParams = structCount( arguments.requestParams ) > 0;
@@ -125,7 +125,7 @@ component singleton {
 			props.requestPayload = "UNSIGNED-PAYLOAD";
 
 			// Identify which headers will be included in the signing process
-			props.signedHeaders  = buildSignedHeaders(
+			props.signedHeaders = buildSignedHeaders(
 				requestHeaders = props.requestHeaders,
 				excludeNames   = props.excludeHeaders
 			);
@@ -133,10 +133,10 @@ component singleton {
 			// When presigning a download URL, canonical query string must also
 			// include the parameters used as part of the signing process, ie hashing algorithm,
 			// credential scope, date, and signed headers parameters.
-			props.requestParams["X-Amz-Algorithm"] = variables.signatureAlgorithm;
-			props.requestParams["X-Amz-Credential"] = "#props.accessKey#/#props.credentialScope#";
-			props.requestParams["X-Amz-SignedHeaders"] = props.signedHeaders;
-			props.requestParams["X-Amz-Date"] = props.amzDate;
+			props.requestParams[ "X-Amz-Algorithm" ]     = variables.signatureAlgorithm;
+			props.requestParams[ "X-Amz-Credential" ]    = "#props.accessKey#/#props.credentialScope#";
+			props.requestParams[ "X-Amz-SignedHeaders" ] = props.signedHeaders;
+			props.requestParams[ "X-Amz-Date" ]          = props.amzDate;
 
 			// Finally, normalize url parameters
 			props.requestParams = encodeQueryParams( queryParams = props.requestParams );
@@ -144,7 +144,7 @@ component singleton {
 		// All other request types (PUT, DELETE, POST, ....)
 		else {
 			// Signed requests must include a checksum, ie hash of payload
-			props.requestHeaders["X-Amz-Content-Sha256"] = props.requestPayload;
+			props.requestHeaders[ "X-Amz-Content-Sha256" ] = props.requestPayload;
 
 			// Host header is mandatory for ALL requests
 			props.requestHeaders[ "Host" ]       = arguments.hostName;
@@ -176,7 +176,13 @@ component singleton {
 		props.stringToSign = generateStringToSign( argumentCollection = props );
 		props.signKeyBytes = generateSignatureKey( argumentCollection = props );
 		props.signature    = lCase(
-			binaryEncode( hmacBinary( message = props.stringToSign, key = props.signKeyBytes ), "hex" )
+			binaryEncode(
+				hmacBinary(
+					message = props.stringToSign,
+					key     = props.signKeyBytes
+				),
+				"hex"
+			)
 		);
 		props.authorizationHeader = buildAuthorizationHeader( argumentCollection = props );
 
@@ -198,7 +204,7 @@ component singleton {
 		required string amzDate,
 		required string credentialScope,
 		required string canonicalRequest
-	) {
+	){
 		// Format: Algorithm + '\n' + RequestDate + '\n' + CredentialScope + '\n' + HashedCanonicalRequest
 		var elements = [
 			variables.signatureAlgorithm,
@@ -227,7 +233,7 @@ component singleton {
 		required string canonicalHeaders,
 		required string signedHeaders,
 		required string requestPayload
-	) {
+	){
 		var canonicalRequest = "";
 
 		// Build ordered list of elements in the request, delimited by new lines
@@ -257,7 +263,10 @@ component singleton {
 	 * @isEncoded If true, the supplied parameters are already url encoded
 	 * @returns canonical query string
 	 */
-	private string function buildCanonicalQueryString( required struct requestParams, boolean isEncoded = true ) {
+	private string function buildCanonicalQueryString(
+		required struct requestParams,
+		boolean isEncoded = true
+	){
 		var encodedParams = "";
 		var paramNames    = "";
 		var paramPairs    = "";
@@ -271,8 +280,11 @@ component singleton {
 
 		// Build array of sorted name/value pairs
 		paramPairs = [];
-		arrayEach( paramNames, function( string param ) {
-			arrayAppend( paramPairs, arguments.param & "=" & encodedParams[ arguments.param ] );
+		arrayEach( paramNames, function( string param ){
+			arrayAppend(
+				paramPairs,
+				arguments.param & "=" & encodedParams[ arguments.param ]
+			);
 		} );
 
 		// Finally, generate sorted list of parameters, delimited by "&"
@@ -291,13 +303,16 @@ component singleton {
 	 * @excludeNames Names of any headers AWS should ignore for the signing process
 	 * @returns Sorted list of signed header names, delimited by semi-colon ";"
 	 */
-	private string function buildSignedHeaders( required struct requestHeaders, required array excludeNames ) {
+	private string function buildSignedHeaders(
+		required struct requestHeaders,
+		required array excludeNames
+	){
 		var name        = "";
 		var headerNames = [];
 		var allHeaders  = !arrayLen( arguments.excludeNames );
 
 		// Identify which headers are "signed"
-		structEach( arguments.requestHeaders, function( string name, any value ) {
+		structEach( arguments.requestHeaders, function( string name, any value ){
 			if ( allHeaders || !arrayFindNoCase( excludeNames, arguments.name ) ) {
 				arrayAppend( headerNames, arguments.name );
 			}
@@ -315,7 +330,7 @@ component singleton {
 	 * @requestHeaders Structure containing headers to be included in request hash
 	 * @returns Sorted list of header pairs, delimited by new lines
 	 */
-	private string function buildCanonicalHeaders( required struct requestHeaders ) {
+	private string function buildCanonicalHeaders( required struct requestHeaders ){
 		var pairs   = "";
 		var names   = "";
 		var headers = "";
@@ -329,8 +344,11 @@ component singleton {
 
 		// Build array of sorted header name and value pairs
 		pairs = [];
-		arrayEach( names, function( string key ) {
-			arrayAppend( pairs, arguments.key & ":" & headers[ arguments.key ] );
+		arrayEach( names, function( string key ){
+			arrayAppend(
+				pairs,
+				arguments.key & ":" & headers[ arguments.key ]
+			);
 		} );
 
 		// Generate list. Note: List must END WITH a new line character
@@ -346,7 +364,7 @@ component singleton {
 	 * @uriPath URI or path. If empty, "/" will be used
 	 * @returns URL encoded path
 	 */
-	private string function buildCanonicalURI( required string requestURI ) {
+	private string function buildCanonicalURI( required string requestURI ){
 		var path = arguments.requestURI;
 		// Return "/" for empty path
 		if ( !len( trim( path ) ) ) {
@@ -379,13 +397,19 @@ component singleton {
 		required string serviceName,
 		required string secretKey,
 		string algorithm = "HMACSHA256"
-	) {
-		var kSecret  = charsetDecode( "AWS4" & arguments.secretKey, "UTF-8" );
+	){
+		var kSecret = charsetDecode(
+			"AWS4" & arguments.secretKey,
+			"UTF-8"
+		);
 		var kDate    = hmacBinary( arguments.dateStamp, kSecret );
 		// Region information as a lowercase alphanumeric string
 		var kRegion  = hmacBinary( lCase( arguments.regionName ), kDate );
 		// Service name information as a lowercase alphanumeric string
-		var kService = hmacBinary( lCase( arguments.serviceName ), kRegion );
+		var kService = hmacBinary(
+			lCase( arguments.serviceName ),
+			kRegion
+		);
 		// A special termination string: aws4_request
 		var kSigning = hmacBinary( "aws4_request", kService );
 
@@ -408,7 +432,7 @@ component singleton {
 		required string dateStamp,
 		required string regionName,
 		required string serviceName
-	) {
+	){
 		return arguments.dateStamp & "/" & lCase( arguments.regionName ) & "/" & lCase( arguments.serviceName ) & "/" & "aws4_request";
 	}
 
@@ -430,7 +454,7 @@ component singleton {
 		required string credentialScope,
 		required string signature,
 		required string accessKey
-	) {
+	){
 		var authHeader = variables.signatureAlgorithm & " "
 		& "Credential=" & arguments.accessKey & "/" & arguments.credentialScope & ","
 		& "SignedHeaders=" & arguments.signedHeaders & ","
@@ -455,7 +479,7 @@ component singleton {
 		required binary key,
 		string algorithm = "HMACSHA256",
 		string encoding  = "UTF-8"
-	) {
+	){
 		// Generate HMAC and decode result into binary
 		return binaryDecode(
 			hmac(
@@ -474,7 +498,7 @@ component singleton {
 	 * @text value to hash
 	 * @returns hashed value, in lower case
 	 */
-	private string function hash256( required any text ) {
+	private string function hash256( required any text ){
 		return lCase( hash( arguments.text, "SHA-256" ) );
 	}
 
@@ -484,10 +508,10 @@ component singleton {
 	 * @params Structure containing all query parameters for the request
 	 * @returns new structure with all parameter names and values encoded
 	 */
-	private struct function encodeQueryParams( required struct queryParams ) {
+	private struct function encodeQueryParams( required struct queryParams ){
 		// First encode parameter names and values
 		var encodedParams = {};
-		structEach( arguments.queryParams, function( string key, string value ) {
+		structEach( arguments.queryParams, function( string key, string value ){
 			encodedParams[ urlEncodeForAWS( arguments.key ) ] = urlEncodeForAWS( arguments.value );
 		} );
 		return encodedParams;
@@ -503,12 +527,12 @@ component singleton {
 	 * @headers Header names and values to scrub
 	 * @returns structure of parsed header names and values
 	 */
-	private struct function cleanHeaders( required struct headers ) {
+	private struct function cleanHeaders( required struct headers ){
 		var headerName  = "";
 		var headerValue = "";
 		var cleaned     = {};
 
-		structEach( arguments.headers, function( string key, string value ) {
+		structEach( arguments.headers, function( string key, string value ){
 			headerName                     = cleanHeader( arguments.key );
 			headerValue                    = cleanHeader( arguments.value );
 			cleaned[ lCase( headerName ) ] = headerValue;
@@ -527,12 +551,15 @@ component singleton {
 	 * @headers Header names to scrub
 	 * @returns array of parsed header names
 	 */
-	private array function cleanHeaderNames( required array names ) {
+	private array function cleanHeaderNames( required array names ){
 		var headerName = "";
 
 		var cleaned = [];
-		arrayEach( names, function( string headerName ) {
-			arrayAppend( cleaned, cleanHeader( arguments.headerName ) );
+		arrayEach( names, function( string headerName ){
+			arrayAppend(
+				cleaned,
+				cleanHeader( arguments.headerName )
+			);
 		} );
 
 		return cleaned;
@@ -550,7 +577,7 @@ component singleton {
 	 * @text Text to scrub
 	 * @returns parsed text
 	 */
-	private string function cleanHeader( required string text ) {
+	private string function cleanHeader( required string text ){
 		return reReplace(
 			trim( arguments.text ),
 			"\s+",
@@ -569,7 +596,7 @@ component singleton {
 	 * @value string to encode
 	 * @returns URI encoded string
 	 */
-	private string function urlEncodeForAWS( string value ) {
+	private string function urlEncodeForAWS( string value ){
 		var encodedValue = encodeForURL( arguments.value );
 		// Reverse encoding of tilde "~"
 		encodedValue     = replace(
@@ -596,7 +623,7 @@ component singleton {
 	 * @value string to encode
 	 * @returns URI encoded string
 	 */
-	private string function urlEncodePath( string value ) {
+	private string function urlEncodePath( string value ){
 		var encodedValue = encodeForURL( arguments.value );
 		// Reverse encoding of tilde "~"
 		encodedValue     = replace(
@@ -621,7 +648,7 @@ component singleton {
 	 *   - timeStamp - Current UTC date and time, format: yyyymmddTHHnnssZ
 	 * @returns structure containing date and time strings
 	 */
-	public struct function getUTCStrings() {
+	public struct function getUTCStrings(){
 		var utcDateTime = dateConvert( "local2UTC", now() );
 		var result      = {};
 
