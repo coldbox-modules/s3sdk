@@ -39,7 +39,7 @@ This SDK will be installed into a directory called `s3sdk` and then the SDK can 
  * @secretKey The Amazon secret key.
  * @awsDomain The Domain used S3 Service (amazonws.com, digitalocean.com, storage.googleapis.com). Defaults to amazonws.com
  * @awsRegion The Amazon region. Defaults to us-east-1 for amazonaws.com
- * @encryption_charset The charset for the encryption. Defaults to UTF-8.
+ * @encryptionCharset The charset for the encryption. Defaults to UTF-8.
  * @signature The signature version to calculate, "V2" is deprecated but more compatible with other endpoints. "V4" requires Sv4Util.cfc & ESAPI on Lucee. Defaults to V4
  * @ssl True if the request should use SSL. Defaults to true.
  * @defaultTimeOut Default HTTP timeout for all requests. Defaults to 300.
@@ -59,7 +59,7 @@ public AmazonS3 function init(
 	required string secretKey,
 	string awsDomain = "amazonaws.com",
 	string awsRegion = "us-east-1",
-	string encryption_charset = "UTF-8",
+	string encryptionCharset = "UTF-8",
 	string signature = "V4",
 	boolean ssl = true,
 	string defaultTimeOut= 300,
@@ -86,7 +86,7 @@ moduleSettings = {
 		// Your amazon, digital ocean secret key
 		secretKey = "",
 		// The default encryption character set: defaults to utf-8
-		encryption_charset = "utf-8",
+		encryptionCharset = "utf-8",
 		// The signature version to calculate, "V2" is deprecated but more compatible with other endpoints. "V4" requires Sv4Util.cfc & ESAPI on Lucee. Defaults to V4
 		signature = "V4",
 		// SSL mode or not on cfhttp calls: Defaults to true
