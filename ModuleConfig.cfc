@@ -24,7 +24,7 @@ component {
 			secretKey           : "",
 			awsDomain           : "amazonaws.com",
 			awsRegion           : "us-east-1",
-			encryptionCharset  : "utf-8",
+			encryptionCharset   : "utf-8",
 			signatureType       : "V4",
 			ssl                 : true,
 			defaultTimeOut      : 300,
