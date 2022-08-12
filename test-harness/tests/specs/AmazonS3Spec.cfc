@@ -9,8 +9,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			accessKey = getUtil().getSystemSetting( "AWS_ACCESS_KEY" ),
 			secretKey = getUtil().getSystemSetting( "AWS_ACCESS_SECRET" ),
 			awsRegion = getUtil().getSystemSetting( "AWS_REGION" ),
-			awsDomain = getUtil().getSystemSetting( "AWS_DOMAIN" ),
-			defaultBucketName = getUtil().getSystemSetting( "AWS_DEFAULT_BUCKET_NAME", "" )
+			awsDomain = getUtil().getSystemSetting( "AWS_DOMAIN" )
 		);
 		prepareMock( s3 );
 		s3.$property(
