@@ -114,7 +114,7 @@ component accessors="true" singleton {
 		if ( arguments.awsDomain == "amazonaws.com" && arguments.awsRegion == "" ) {
 			arguments.awsRegion = "us-east-1";
 		}
-		/* 
+		/*
 			Add backwards compatability for the previous key name
 			'encryption_charset'. Remove this from the next major release.
 		*/
