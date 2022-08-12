@@ -6,10 +6,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 	function beforeAll(){
 		prepTmpFolder();
 		variables.s3 = new s3sdk.models.AmazonS3(
-			accessKey = getUtil().getSystemSetting( "AWS_ACCESS_KEY" ),
-			secretKey = getUtil().getSystemSetting( "AWS_ACCESS_SECRET" ),
-			awsRegion = getUtil().getSystemSetting( "AWS_REGION" ),
-			awsDomain = getUtil().getSystemSetting( "AWS_DOMAIN" ),
+			accessKey         = getUtil().getSystemSetting( "AWS_ACCESS_KEY" ),
+			secretKey         = getUtil().getSystemSetting( "AWS_ACCESS_SECRET" ),
+			awsRegion         = getUtil().getSystemSetting( "AWS_REGION" ),
+			awsDomain         = getUtil().getSystemSetting( "AWS_DOMAIN" ),
 			defaultBucketName = getUtil().getSystemSetting( "AWS_DEFAULT_BUCKET_NAME", "" )
 		);
 		prepareMock( s3 );

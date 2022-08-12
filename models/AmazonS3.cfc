@@ -96,7 +96,7 @@ component accessors="true" singleton {
 		required string secretKey,
 		string awsDomain           = "amazonaws.com",
 		string awsRegion           = "", // us-east-1 default for aws
-		string encryptionCharset  = "UTF-8",
+		string encryptionCharset   = "UTF-8",
 		string signatureType       = "V4",
 		boolean ssl                = true,
 		string defaultTimeOut      = 300,
