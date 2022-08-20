@@ -90,8 +90,8 @@ component singleton {
 		required string signKey,
 		required string signMessage
 	){
-		var jMsg = javacast( "string", arguments.signMessage ).getBytes( encryption_charset );
-		var jKey = javacast( "string", arguments.signKey ).getBytes( encryption_charset );
+		var jMsg = javacast( "string", arguments.signMessage ).getBytes( encryptionCharset );
+		var jKey = javacast( "string", arguments.signKey ).getBytes( encryptionCharset );
 		var key  = createObject(
 			"java",
 			"javax.crypto.spec.SecretKeySpec"

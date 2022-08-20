@@ -32,7 +32,7 @@ component accessors="true" singleton {
 	// Properties
 	property name="accessKey";
 	property name="secretKey";
-	property name="encryption_charset";
+	property name="encryptionCharset";
 	property name="ssl";
 	property name="URLEndpoint";
 	property name="awsRegion";
@@ -75,7 +75,7 @@ component accessors="true" singleton {
 	 * @secretKey The Amazon secret key.
 	 * @awsDomain The Domain used S3 Service (amazonws.com, digitalocean.com, storage.googleapis.com). Defaults to amazonws.com
 	 * @awsRegion The Amazon region. Defaults to us-east-1 for amazonaws.com
-	 * @encryption_charset The charset for the encryption. Defaults to UTF-8.
+	 * @encryptionCharset The charset for the encryption. Defaults to UTF-8.
 	 * @signature The signature version to calculate, "V2" is deprecated but more compatible with other endpoints. "V4" requires Sv4Util.cfc & ESAPI on Lucee. Defaults to V4
 	 * @ssl True if the request should use SSL. Defaults to true.
 	 * @defaultTimeOut Default HTTP timeout for all requests. Defaults to 300.
@@ -96,7 +96,7 @@ component accessors="true" singleton {
 		required string secretKey,
 		string awsDomain           = "amazonaws.com",
 		string awsRegion           = "", // us-east-1 default for aws
-		string encryption_charset  = "UTF-8",
+		string encryptionCharset   = "UTF-8",
 		string signatureType       = "V4",
 		boolean ssl                = true,
 		string defaultTimeOut      = 300,
@@ -114,9 +114,16 @@ component accessors="true" singleton {
 		if ( arguments.awsDomain == "amazonaws.com" && arguments.awsRegion == "" ) {
 			arguments.awsRegion = "us-east-1";
 		}
+		/*
+			Add backwards compatability for the previous key name
+			'encryption_charset'. Remove this from the next major release.
+		*/
+		if ( arguments.keyExists( "encryption_charset" ) ) {
+			arguments.encryptionCharset = arguments.encryption_charset;
+		}
 		variables.accessKey           = arguments.accessKey;
 		variables.secretKey           = arguments.secretKey;
-		variables.encryption_charset  = arguments.encryption_charset;
+		variables.encryptionCharset   = arguments.encryptionCharset;
 		variables.signatureType       = arguments.signatureType;
 		variables.awsDomain           = arguments.awsDomain;
 		variables.awsRegion           = arguments.awsRegion;
@@ -1279,8 +1286,8 @@ component accessors="true" singleton {
 		required string signKey,
 		required string signMessage
 	){
-		var jMsg = javacast( "string", arguments.signMessage ).getBytes( encryption_charset );
-		var jKey = javacast( "string", arguments.signKey ).getBytes( encryption_charset );
+		var jMsg = javacast( "string", arguments.signMessage ).getBytes( encryptionCharset );
+		var jKey = javacast( "string", arguments.signKey ).getBytes( encryptionCharset );
 		var key  = createObject(
 			"java",
 			"javax.crypto.spec.SecretKeySpec"

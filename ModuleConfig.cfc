@@ -24,7 +24,7 @@ component {
 			secretKey           : "",
 			awsDomain           : "amazonaws.com",
 			awsRegion           : "us-east-1",
-			encryption_charset  : "utf-8",
+			encryptionCharset   : "utf-8",
 			signatureType       : "V4",
 			ssl                 : true,
 			defaultTimeOut      : 300,
@@ -65,8 +65,8 @@ component {
 				value = variables.settings.awsregion
 			)
 			.initArg(
-				name  = "encryption_charset",
-				value = variables.settings.encryption_charset
+				name  = "encryptionCharset",
+				value = variables.settings.encryptionCharset
 			)
 			.initArg(
 				name  = "signatureType",
