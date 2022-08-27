@@ -1220,7 +1220,8 @@ component accessors="true" singleton {
 		results.responseHeader = HTTPResults.responseHeader;
 
 		results.message = HTTPResults.errorDetail;
-		if ( len( HTTPResults.errorDetail ) && HTTPResults.errorDetail neq "302 Found" ) {
+		// Ignore redirects and 404s when getting a HEAD request (exists check)
+		if ( len( HTTPResults.errorDetail ) && HTTPResults.errorDetail neq "302 Found" && !( arguments.method == 'HEAD' && HTTPResults.errorDetail eq "404 Not Found" ) ) {
 			results.error = true;
 		}
 
