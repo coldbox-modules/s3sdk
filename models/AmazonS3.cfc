@@ -1238,7 +1238,7 @@ component accessors="true" singleton {
 			// Check for Errors
 			if (
 				NOT listFindNoCase(
-					"200,204,302",
+					"404,200,204,302",
 					HTTPResults.responseHeader.status_code
 				)
 			) {
