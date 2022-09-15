@@ -17,6 +17,13 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			mock         = createLogStub()
 		);
 
+		try {
+			s3.deleteBucket(
+				bucketName = testBucket,
+				force      = true
+			);
+		} catch ( any e ) {
+		}
 		s3.putBucket( testBucket );
 	}
 
