@@ -34,6 +34,7 @@ component {
 			defaultStorageClass : "STANDARD",
 			defaultACL          : "public-read",
 			throwOnRequestError : true,
+			retriesOnError		: 3,
 			autoContentType     : false,
 			autoMD5             : false,
 			serviceName         : "s3",

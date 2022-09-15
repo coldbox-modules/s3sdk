@@ -43,6 +43,8 @@ component accessors="true" singleton {
 	property name="defaultCacheControl";
 	property name="defaultStorageClass";
 	property name="defaultACL";
+	property name="throwOnRequestError";
+	property name="retriesOnError";
 	property name="autoContentType";
 	property name="autoMD5";
 	property name="mimeTypes";
@@ -106,6 +108,7 @@ component accessors="true" singleton {
 		string defaultStorageClass = this.S3_STANDARD,
 		string defaultACL          = this.ACL_PUBLIC_READ,
 		string throwOnRequestError = true,
+		numeric retriesOnError		= 3,
 		boolean autoContentType    = false,
 		boolean autoMD5            = false,
 		string serviceName         = "s3",
@@ -134,6 +137,7 @@ component accessors="true" singleton {
 		variables.defaultStorageClass = arguments.defaultStorageClass;
 		variables.defaultACL          = arguments.defaultACL;
 		variables.throwOnRequestError = arguments.throwOnRequestError;
+		variables.retriesOnError	  = arguments.retriesOnError;
 		variables.autoContentType     = arguments.autoContentType;
 		variables.autoMD5             = ( variables.signatureType == "V2" || arguments.autoMD5 ? "auto" : "" );
 		variables.serviceName         = arguments.serviceName;
@@ -1208,7 +1212,7 @@ component accessors="true" singleton {
 			listFindNoCase(
 				"500,503",
 				HTTPResults.responseHeader.status_code
-			) && tryCount < 3
+			) && tryCount < variables.retriesOnError
 		) {
 			log.warn(
 				"AWS call #arguments.method# #variables.URLEndpointHostname#/#arguments.resource# returned #HTTPResults.statusCode#.  Retrying (attempt #tryCount#)"
