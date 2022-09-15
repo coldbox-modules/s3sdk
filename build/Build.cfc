@@ -94,10 +94,10 @@ component {
 
 		command( "testbox run" )
 			.params(
-				runner     = variables.testRunner,
-				verbose    = true,
-				outputFile = "#variables.cwd#/test-harness/results/test-results",
-				outputFormats="json,antjunit"
+				runner        = variables.testRunner,
+				verbose       = true,
+				outputFile    = "#variables.cwd#/test-harness/results/test-results",
+				outputFormats = "json,antjunit"
 			)
 			.run();
 

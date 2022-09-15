@@ -1018,9 +1018,9 @@ component accessors="true" singleton {
 	 * @return      True if the object was copied correctly.
 	 */
 	boolean function copyObject(
-		required string fromBucket,
+		required string fromBucket = variables.defaultBucketName,
 		required string fromURI,
-		required string toBucket,
+		required string toBucket = variables.defaultBucketName,
 		required string toURI,
 		string acl          = variables.defaultACL,
 		struct metaHeaders  = {},
@@ -1033,7 +1033,7 @@ component accessors="true" singleton {
 			amzHeaders[ "x-amz-metadata-directive" ] = "REPLACE";
 		}
 
-		amzHeaders[ "x-amz-copy-source" ] = "/#arguments.fromBucket#/#arguments.fromURI#";
+		amzHeaders[ "x-amz-copy-source" ] = signatureUtil.urlEncodePath( "/#arguments.fromBucket#/#arguments.fromURI#" );
 		amzHeaders[ "x-amz-acl" ]         = arguments.acl;
 
 		if ( len( arguments.storageClass ) ) {
@@ -1112,7 +1112,8 @@ component accessors="true" singleton {
 		numeric timeout       = variables.defaultTimeOut,
 		boolean parseResponse = true,
 		boolean getAsBinary   = "no",
-		boolean throwOnError  = variables.throwOnRequestError
+		boolean throwOnError  = variables.throwOnRequestError,
+		numeric tryCount      = 1
 	){
 		var results = {
 			"error"          : false,
@@ -1202,6 +1203,21 @@ component accessors="true" singleton {
 			}
 		}
 
+		// Amazon recommends retrying these requests after a deley
+		if (
+			listFindNoCase(
+				"500,503",
+				HTTPResults.responseHeader.status_code
+			) && tryCount < 3
+		) {
+			log.warn(
+				"AWS call #arguments.method# #variables.URLEndpointHostname#/#arguments.resource# returned #HTTPResults.statusCode#.  Retrying (attempt #tryCount#)"
+			);
+			sleep( 1000 );
+			arguments.tryCount++;
+			return s3Request( argumentCollection = arguments );
+		}
+
 		if ( len( arguments.filename ) ) {
 			fileWrite(
 				arguments.filename,
@@ -1221,7 +1237,11 @@ component accessors="true" singleton {
 
 		results.message = HTTPResults.errorDetail;
 		// Ignore redirects and 404s when getting a HEAD request (exists check)
-		if ( len( HTTPResults.errorDetail ) && HTTPResults.errorDetail neq "302 Found" && !( arguments.method == 'HEAD' && HTTPResults.errorDetail eq "404 Not Found" ) ) {
+		if (
+			len( HTTPResults.errorDetail ) && HTTPResults.errorDetail neq "302 Found" && !(
+				arguments.method == "HEAD" && HTTPResults.errorDetail eq "404 Not Found"
+			)
+		) {
 			results.error = true;
 		}
 
@@ -1239,7 +1259,7 @@ component accessors="true" singleton {
 			// Check for Errors
 			if (
 				NOT listFindNoCase(
-					"404,200,204,302",
+					"200,404,204,302",
 					HTTPResults.responseHeader.status_code
 				)
 			) {

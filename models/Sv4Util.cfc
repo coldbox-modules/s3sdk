@@ -623,7 +623,7 @@ component singleton {
 	 * @value string to encode
 	 * @returns URI encoded string
 	 */
-	private string function urlEncodePath( string value ){
+	public string function urlEncodePath( string value ){
 		var encodedValue = encodeForURL( arguments.value );
 		// Reverse encoding of tilde "~"
 		encodedValue     = replace(
@@ -636,7 +636,7 @@ component singleton {
 		encodedValue = replace( encodedValue, "+", "%20", "all" );
 		// Asterisk "*" should be encoded
 		encodedValue = replace( encodedValue, "*", "%2A", "all" );
-		// Asterisk "*" should be encoded
+		// Forward slash "/" should NOT be encoded
 		encodedValue = replace( encodedValue, "%2F", "/", "all" );
 
 		return encodedValue;
