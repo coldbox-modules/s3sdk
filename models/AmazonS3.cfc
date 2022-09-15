@@ -785,7 +785,7 @@ component accessors="true" singleton {
 		};
 
 		if ( arguments.md5 == "auto" ) {
-			headers[ "content-md5" ] = mD5inBase64( arguments.content );
+			headers[ "content-md5" ] = mD5inBase64( arguments.data );
 		} else if ( len( arguments.md5 ) ) {
 			headers[ "content-md5" ] = arguments.md5;
 		}
