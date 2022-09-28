@@ -778,6 +778,9 @@ component accessors="true" singleton {
 			amzHeaders[ "x-amz-storage-class" ] = arguments.storageClass;
 		}
 
+		if ( arguments.contentType == "auto" ) {
+			arguments.contentType = getFileMimeType( arguments.uri );
+		}
 		var headers = { "content-type" : arguments.contentType };
 
 		if ( len( arguments.cacheControl ) ) {
@@ -1018,6 +1021,10 @@ component accessors="true" singleton {
 	 * @storageClass Sets the S3 storage class which affects cost, access speed and durability.
 	 *               Defaults to STANDARD.
 	 * @metaHeaders  Additonal metadata headers to add.
+	 * @storageClass Sets the S3 storage class which affects cost, access speed and durability.
+	 *               Defaults to STANDARD.
+	 * @contentType  The file content type. Defaults to binary/octet-stream.
+	 * @throwOnError Flag to throw exceptions on any error or not, default is true
 	 *
 	 * @return      True if the object was copied correctly.
 	 */
@@ -1028,10 +1035,21 @@ component accessors="true" singleton {
 		required string toURI,
 		string acl          = variables.defaultACL,
 		struct metaHeaders  = {},
-		string storageClass = variables.defaultStorageClass
+		string storageClass = variables.defaultStorageClass,
+		string contentType,
+		boolean throwOnError = variables.throwOnRequestError
 	){
 		var headers    = { "content-length" : 0 };
 		var amzHeaders = createMetaHeaders( arguments.metaHeaders );
+
+		// If not passed, keep source files content type
+		if( !isNull( arguments.contentType ) ) {
+			if ( arguments.contentType == "auto" ) {
+				arguments.contentType = getFileMimeType( arguments.toURI );
+			}
+			headers[ "content-type" ] = arguments.contentType;
+			amzHeaders[ "x-amz-metadata-directive" ] = "REPLACE";
+		}
 
 		if ( not structIsEmpty( arguments.metaHeaders ) ) {
 			amzHeaders[ "x-amz-metadata-directive" ] = "REPLACE";
@@ -1055,10 +1073,11 @@ component accessors="true" singleton {
 			resource    = arguments.toBucket & "/" & arguments.toURI,
 			metaHeaders = metaHeaders,
 			headers     = headers,
-			amzHeaders  = amzHeaders
+			amzHeaders  = amzHeaders,
+			throwOnError = throwOnError
 		);
 
-		return results.responseheader.status_code == 204;
+		return ( results.responseheader.status_code == 204 || results.responseheader.status_code == 200 );
 	}
 
 	/**
