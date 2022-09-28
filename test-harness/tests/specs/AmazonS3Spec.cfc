@@ -24,6 +24,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			);
 			sleep(5000);
 		} catch ( any e ) {
+			rethrow;
 		}
 		s3.putBucket( testBucket );
 	}
