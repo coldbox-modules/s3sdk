@@ -108,10 +108,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 	private function fixtureData( required string folderName ){
 		var folderPath = expandPath( "./fixtures/#folderName#" );
 		var data       = {
-			request          : fileRead( "#folderPath#/#folderName#.req" ),
-			canonicalRequest : fileRead( "#folderPath#/#folderName#.creq" ),
-			stringToSign     : fileRead( "#folderPath#/#folderName#.sts" ),
-			authHeader       : fileRead( "#folderPath#/#folderName#.authz" )
+			request          : fileRead( "#folderPath#/#folderName#.req" ).replace( chr(13), '', 'all' ),
+			canonicalRequest : fileRead( "#folderPath#/#folderName#.creq" ).replace( chr(13), '', 'all' ),
+			stringToSign     : fileRead( "#folderPath#/#folderName#.sts" ).replace( chr(13), '', 'all' ),
+			authHeader       : fileRead( "#folderPath#/#folderName#.authz" ).replace( chr(13), '', 'all' )
 		};
 		data.method    = data.request.listToArray( " " )[ 1 ];
 		data.host      = data.request.listToArray( chr( 10 ) )[ 2 ].listToArray( ":" )[ 2 ];
