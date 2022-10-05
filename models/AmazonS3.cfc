@@ -1226,6 +1226,11 @@ component accessors="true" singleton {
 			}
 		}
 
+		// I've seen this variable disappear in Lucee on failed HTTP requests for some reason.
+		if( isNull( HTTPResults.responseHeader.status_code ) ) {
+			HTTPResults.responseHeader.status_code = 0;
+		}
+
 		// Amazon recommends retrying these requests after a deley
 		if (
 			listFindNoCase(
