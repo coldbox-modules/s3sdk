@@ -22,11 +22,11 @@ component extends="coldbox.system.testing.BaseTestCase" {
 				bucketName = testBucket,
 				force      = true
 			);
-			sleep(5000);
-		} catch ( any e ) {
-			rethrow;
-		}
-		s3.putBucket( testBucket );
+		} catch ( any e ) {}
+
+		try {
+			s3.putBucket( testBucket );
+		} catch ( any e ) {}
 	}
 
 	function afterAll(){
@@ -35,8 +35,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 				bucketName = testBucket,
 				force      = true
 			);
-		} catch ( any e ) {
-		}
+		} catch ( any e ) {}
 	}
 
 	private function prepTmpFolder(){
