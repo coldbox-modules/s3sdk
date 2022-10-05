@@ -361,8 +361,7 @@ component accessors="true" singleton {
 			method     = "PUT",
 			resource   = arguments.bucketName,
 			body       = constraintXML,
-			headers    = headers,
-			amzHeaders = {}
+			headers    = headers
 		);
 
 		return results.responseheader.status_code == 200;
@@ -434,7 +433,7 @@ component accessors="true" singleton {
 			method     = "PUT",
 			resource   = resource,
 			parameters = { "acl" : true },
-			amzHeaders = { "x-amz-acl" : arguments.acl }
+			headers = { "x-amz-acl" : arguments.acl }
 		);
 	}
 
@@ -552,8 +551,7 @@ component accessors="true" singleton {
 			method     = "PUT",
 			resource   = arguments.bucketName,
 			body       = constraintXML,
-			headers    = { "content-type" : "text/xml" },
-			amzHeaders = { "x-amz-acl" : arguments.acl }
+			headers    = { "content-type" : "text/xml", "x-amz-acl" : arguments.acl }
 		);
 
 		return results.responseheader.status_code == 200;
@@ -771,17 +769,17 @@ component accessors="true" singleton {
 		string storageClass       = variables.defaultStorageClass
 	){
 		requireBucketName( arguments.bucketName );
-		var amzHeaders            = createMetaHeaders( arguments.metaHeaders );
-		amzHeaders[ "x-amz-acl" ] = arguments.acl;
+		var headers            = createMetaHeaders( arguments.metaHeaders );
+		headers[ "content-type" ] = arguments.contentType;
+		headers[ "x-amz-acl" ] = arguments.acl;
 
 		if ( len( arguments.storageClass ) ) {
-			amzHeaders[ "x-amz-storage-class" ] = arguments.storageClass;
+			headers[ "x-amz-storage-class" ] = arguments.storageClass;
 		}
 
 		if ( arguments.contentType == "auto" ) {
 			arguments.contentType = getFileMimeType( arguments.uri );
 		}
-		var headers = { "content-type" : arguments.contentType };
 
 		if ( len( arguments.cacheControl ) ) {
 			headers[ "cache-control" ] = arguments.cacheControl;
@@ -813,8 +811,7 @@ component accessors="true" singleton {
 			resource   = arguments.bucketName & "/" & arguments.uri,
 			body       = arguments.data,
 			timeout    = arguments.HTTPTimeout,
-			headers    = headers,
-			amzHeaders = amzHeaders
+			headers    = headers
 		);
 
 		if ( results.responseHeader.status_code == 200 ) {
@@ -1039,8 +1036,8 @@ component accessors="true" singleton {
 		string contentType,
 		boolean throwOnError = variables.throwOnRequestError
 	){
-		var headers    = { "content-length" : 0 };
-		var amzHeaders = createMetaHeaders( arguments.metaHeaders );
+		var headers = createMetaHeaders( arguments.metaHeaders );
+		headers[ "content-length" ] = 0;
 
 		// If not passed, keep source files content type
 		if( !isNull( arguments.contentType ) ) {
@@ -1048,18 +1045,18 @@ component accessors="true" singleton {
 				arguments.contentType = getFileMimeType( arguments.toURI );
 			}
 			headers[ "content-type" ] = arguments.contentType;
-			amzHeaders[ "x-amz-metadata-directive" ] = "REPLACE";
+			headers[ "x-amz-metadata-directive" ] = "REPLACE";
 		}
 
 		if ( not structIsEmpty( arguments.metaHeaders ) ) {
-			amzHeaders[ "x-amz-metadata-directive" ] = "REPLACE";
+			headers[ "x-amz-metadata-directive" ] = "REPLACE";
 		}
 
-		amzHeaders[ "x-amz-copy-source" ] = signatureUtil.urlEncodePath( "/#arguments.fromBucket#/#arguments.fromURI#" );
-		amzHeaders[ "x-amz-acl" ]         = arguments.acl;
+		headers[ "x-amz-copy-source" ] = signatureUtil.urlEncodePath( "/#arguments.fromBucket#/#arguments.fromURI#" );
+		headers[ "x-amz-acl" ]         = arguments.acl;
 
 		if ( len( arguments.storageClass ) ) {
-			amzHeaders[ "x-amz-storage-class" ] = arguments.storageClass;
+			headers[ "x-amz-storage-class" ] = arguments.storageClass;
 		}
 
 		// arguments.toURI = urlEncodedFormat( arguments.toURI );
@@ -1073,7 +1070,6 @@ component accessors="true" singleton {
 			resource    = arguments.toBucket & "/" & arguments.toURI,
 			metaHeaders = metaHeaders,
 			headers     = headers,
-			amzHeaders  = amzHeaders,
 			throwOnError = throwOnError
 		);
 
@@ -1117,7 +1113,6 @@ component accessors="true" singleton {
 	 * @resource   The resource to hit in the Amazon S3 service.
 	 * @body       The body content of the request, if passed.
 	 * @headers    A struct of HTTP headers to send.
-	 * @amzHeaders A struct of special Amazon headers to send.
 	 * @parameters A struct of HTTP URL parameters to send.
 	 * @timeout    The default CFHTTP timeout.
 	 * @throwOnError Flag to throw exceptions on any error or not, default is true
@@ -1129,7 +1124,6 @@ component accessors="true" singleton {
 		string resource       = "",
 		any body              = "",
 		struct headers        = {},
-		struct amzHeaders     = {},
 		struct parameters     = {},
 		string filename       = "",
 		numeric timeout       = variables.defaultTimeOut,
@@ -1147,22 +1141,10 @@ component accessors="true" singleton {
 		var HTTPResults = "";
 		var param       = "";
 		var md5         = "";
-		var sortedAMZ   = listToArray(
-			listSort(
-				structKeyList( arguments.amzHeaders ),
-				"textnocase"
-			)
-		);
 
 		// Default Content Type
 		if ( NOT structKeyExists( arguments.headers, "content-type" ) ) {
 			arguments.headers[ "Content-Type" ] = "";
-		}
-
-		// Prepare amz headers in sorted order
-		for ( var x = 1; x <= arrayLen( sortedAMZ ); x++ ) {
-			// Create amz signature string
-			arguments.headers[ sortedAMZ[ x ] ] = arguments.amzHeaders[ sortedAMZ[ x ] ];
 		}
 
 		// Create Signature
