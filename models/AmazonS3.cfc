@@ -921,7 +921,7 @@ component accessors="true" singleton {
 		);
 
 		var HTTPPrefix = arguments.useSSL ? "https://" : "http://";
-		return "#HTTPPrefix##hostname#/#arguments.uri#?#sigData.canonicalQueryString#&X-Amz-Signature=#sigData.signature#";
+		return "#HTTPPrefix##hostname##variables.signatureUtil.buildCanonicalURI( arguments.uri )#?#sigData.canonicalQueryString#&X-Amz-Signature=#sigData.signature#";
 	}
 
 	/**

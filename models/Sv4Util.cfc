@@ -364,7 +364,7 @@ component singleton {
 	 * @uriPath URI or path. If empty, "/" will be used
 	 * @returns URL encoded path
 	 */
-	private string function buildCanonicalURI( required string requestURI ){
+	public string function buildCanonicalURI( required string requestURI ) {
 		var path = arguments.requestURI;
 		// Return "/" for empty path
 		if ( !len( trim( path ) ) ) {
