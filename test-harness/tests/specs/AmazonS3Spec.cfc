@@ -344,46 +344,6 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					expect( bucketContents[ 1 ].isDirectory ).toBeFalse();
 				} );
 
-				it( "generates a valid authenticated URL", function(){
-					var testFileContents = "Hello, world!";
-					s3.putObject(
-						testBucket,
-						"example.txt",
-						testFileContents
-					);
-
-					var authedURL = s3.getAuthenticatedURL(
-						bucketName = testBucket,
-						uri        = "example.txt"
-					);
-
-					var httpSvc = new http();
-					httpSvc.setMethod( "get" );
-					httpSvc.setUrl( authedURL );
-					var response = httpSvc.send().getPrefix();
-					expect( response.fileContent ).toBe( testFileContents );
-				} );
-
-				it( "generates a valid authenticated URL", function(){
-					var testFileContents = "Hello, world!";
-					s3.putObject(
-						testBucket,
-						"example.txt",
-						testFileContents
-					);
-
-					var authedURL = s3.getAuthenticatedURL(
-						bucketName = testBucket,
-						uri        = "example.txt"
-					);
-
-					var httpSvc = new http();
-					httpSvc.setMethod( "get" );
-					httpSvc.setUrl( authedURL );
-					var response = httpSvc.send().getPrefix();
-					expect( response.fileContent ).toBe( testFileContents );
-				} );
-
 			} );
 
 			describe( "buckets", function(){
@@ -427,7 +387,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					var presignedURL = s3.getAuthenticatedURL( bucketName=testBucket, uri='example.txt' );
 					cfhttp( url="#presignedURL#", result="local.cfhttp" );
 
-					expect( local.cfhttp.Responseheader.status_code ).toBe( '200' );
+					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( '200', local.cfhttp.fileContent );
 					expect( local.cfhttp.fileContent ).toBe( "Hello, world!" );
 				} );
 
@@ -441,7 +401,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					sleep( 2000 )
 					cfhttp( url="#presignedURL#", result="local.cfhttp" );
 
-					expect( local.cfhttp.Responseheader.status_code ).toBe( '403' );
+					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( '403', local.cfhttp.fileContent );
 					expect( local.cfhttp.fileContent ).toMatch( "expired" );
 				} );
 
@@ -458,7 +418,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					};
 
 					// If a presigned URL is created for a GET operation, it can't be used for anything else!
-					expect( local.cfhttp.Responseheader.status_code ).toBe( '403' );
+					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( '403', local.cfhttp.fileContent );
 				} );
 
 				it( "can put file", function(){
@@ -466,7 +426,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					cfhttp( url="#presignedURL#", result="local.cfhttp", method="PUT" ) {
 						cfhttpparam( type='body', value='Pre-Signed Put!' );
 					};
-					expect( local.cfhttp.Responseheader.status_code ).toBe( '200' );
+					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( '200', local.cfhttp.fileContent );
 
 					var get = s3.getObject( testBucket, "presignedput.txt" );
 
@@ -491,7 +451,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 						cfhttpparam( type='header', name='x-amz-acl', value='public-read' );
 						cfhttpparam( type='header', name='x-amz-meta-custom-header', value='custom value' );
 					};
-					expect( local.cfhttp.Responseheader.status_code ).toBe( '200' );
+					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( '200', local.cfhttp.fileContent );
 
 					var get = s3.getObject( testBucket, "presignedputfriends.txt" );
 
@@ -512,7 +472,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 						// ACL doesn't match!
 						cfhttpparam( type='header', name='x-amz-acl', value='public-read-write' );
 					};
-					expect( local.cfhttp.Responseheader.status_code ).toBe( '403' );
+					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( '403', local.cfhttp.fileContent );
 
 				} );
 
