@@ -1,7 +1,7 @@
 component extends="coldbox.system.testing.BaseTestCase" {
 
 	variables.targetEngine = getUtil().getSystemSetting( "ENGINE", "localhost" );
-	variables.testBucket   = "ortus-s3sdk-bdd-#replace( variables.targetEngine, "@", "-" )#";
+	variables.testBucket   = "ortus2-s3sdk-bdd-#replace( variables.targetEngine, "@", "-" )#";
 
 	function beforeAll(){
 		prepTmpFolder();
