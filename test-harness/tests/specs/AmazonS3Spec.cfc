@@ -17,25 +17,8 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			mock         = createLogStub()
 		);
 
-		try {
-			s3.deleteBucket(
-				bucketName = testBucket,
-				force      = true
-			);
-		} catch ( any e ) {}
 
-		try {
-			s3.putBucket( testBucket );
-		} catch ( any e ) {}
-	}
-
-	function afterAll(){
-		try {
-			s3.deleteBucket(
-				bucketName = testBucket,
-				force      = true
-			);
-		} catch ( any e ) {}
+		s3.putBucket( testBucket );
 	}
 
 	private function prepTmpFolder(){
@@ -67,6 +50,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					s3.deleteObject( testBucket, "example-2.txt" );
 					s3.deleteObject( testBucket, "testFolder/example.txt" );
 					s3.deleteObject( testBucket, "emptyFolder/" );
+					s3.deleteObject( testBucket, "exam%20p   le (fo%2Fo)+,!@##$%^&*()_+~ ;:.txt" );
 
 					// Avoid these on cf11,2016 because their http sucks!
 					if ( !isOldACF() ) {
@@ -100,6 +84,17 @@ component extends="coldbox.system.testing.BaseTestCase" {
 						expect( md ).notToBeEmpty();
 					}
 				);
+
+				it( "can store a new object with special chars in name", function(){
+					s3.putObject(
+						testBucket,
+						"exam%20p   le (fo%2Fo)+,!@##$%^&*()_+~ ;:.txt",
+						"Hello, world!"
+					);
+					var md = s3.getObjectInfo( testBucket, "example.txt" );
+					debug( md );
+					expect( md ).notToBeEmpty();
+				} );
 
 				it( "can list all objects", function(){
 					s3.putObject(
@@ -388,23 +383,139 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					var response = httpSvc.send().getPrefix();
 					expect( response.fileContent ).toBe( testFileContents );
 				} );
+
 			} );
 
 			describe( "buckets", function(){
+
 				it( "returns true if a bucket exists", function(){
 					expect( s3.hasBucket( testBucket ) ).toBeTrue();
 				} );
+
 				it( "can list the buckets associated with the account", function(){
 					expect( arrayLen( s3.listBuckets() ) ).toBeGTE(
 						1,
 						"At least one bucket should be returned"
 					);
 				} );
+
 				it( "can delete a bucket", function(){
 					expect( s3.hasBucket( testBucket ) ).toBeTrue();
 					var results = s3.deleteBucket( testBucket );
 					expect( results ).toBeTrue();
+					s3.putBucket( testBucket );
 				} );
+
+			} );
+
+			describe( "Presigned URL", function(){
+
+				afterEach( function( currentSpec ){
+					// Add any test fixtures here that you create below
+					s3.deleteObject( testBucket, "example.txt" );
+					s3.deleteObject( testBucket, "presignedput.txt" );
+					s3.deleteObject( testBucket, "presignedputfriends.txt" );
+					s3.deleteObject( testBucket, "presignedputacl.txt" );
+				} );
+
+				it( "can access via get", function(){
+					s3.putObject(
+						testBucket,
+						"example.txt",
+						"Hello, world!"
+					);
+					var presignedURL = s3.getAuthenticatedURL( bucketName=testBucket, uri='example.txt' );
+					cfhttp( url="#presignedURL#", result="local.cfhttp" );
+
+					expect( local.cfhttp.Responseheader.status_code ).toBe( '200' );
+					expect( local.cfhttp.fileContent ).toBe( "Hello, world!" );
+				} );
+
+				it( "can expire", function(){
+					s3.putObject(
+						testBucket,
+						"example.txt",
+						"Hello, world!"
+					);
+					var presignedURL = s3.getAuthenticatedURL( bucketName=testBucket, uri='example.txt', minutesValid=1/60 );
+					sleep( 2000 )
+					cfhttp( url="#presignedURL#", result="local.cfhttp" );
+
+					expect( local.cfhttp.Responseheader.status_code ).toBe( '403' );
+					expect( local.cfhttp.fileContent ).toMatch( "expired" );
+				} );
+
+				it( "cannot PUT with a GET URL", function(){
+					s3.putObject(
+						testBucket,
+						"example.txt",
+						"Hello, world!"
+					);
+					var presignedURL = s3.getAuthenticatedURL( bucketName=testBucket, uri='example.txt' );
+
+					cfhttp( url="#presignedURL#", result="local.cfhttp", method="PUT" ) {
+						cfhttpparam( type='body', value='Pre-Signed Put!' );
+					};
+
+					// If a presigned URL is created for a GET operation, it can't be used for anything else!
+					expect( local.cfhttp.Responseheader.status_code ).toBe( '403' );
+				} );
+
+				it( "can put file", function(){
+					var presignedURL = s3.getAuthenticatedURL( bucketName=testBucket, uri='presignedput.txt', method="PUT" );
+					cfhttp( url="#presignedURL#", result="local.cfhttp", method="PUT" ) {
+						cfhttpparam( type='body', value='Pre-Signed Put!' );
+					};
+					expect( local.cfhttp.Responseheader.status_code ).toBe( '200' );
+
+					var get = s3.getObject( testBucket, "presignedput.txt" );
+
+					expect( get.error ).toBeFalse();
+					expect( toString(get.response) ).toBe( "Pre-Signed Put!" );
+
+				} );
+
+				it( "can put file with friends", function(){
+					var presignedURL = s3.getAuthenticatedURL(
+						bucketName=testBucket,
+						uri='presignedputfriends.txt',
+						method="PUT",
+						metaHeaders={ 'custom-header' : 'custom value' },
+						// If the following are left off, they are simply not verfied, meaning there is no issue if the actual CFHTTP call sends them with any value it choses.
+						contentType='text/plain',
+						acl='public-read' );
+
+					cfhttp( url="#presignedURL#", result="local.cfhttp", method="PUT" ) {
+						cfhttpparam( type='body', value='Pre-Signed Put!' );
+						cfhttpparam( type='header', name='content-type', value='text/plain' );
+						cfhttpparam( type='header', name='x-amz-acl', value='public-read' );
+						cfhttpparam( type='header', name='x-amz-meta-custom-header', value='custom value' );
+					};
+					expect( local.cfhttp.Responseheader.status_code ).toBe( '200' );
+
+					var get = s3.getObject( testBucket, "presignedputfriends.txt" );
+
+					expect( get.error ).toBeFalse();
+					expect( get.response ).toBe( "Pre-Signed Put!" );
+
+				} );
+
+				it( "can enforce invalid ACL on PUT", function(){
+					var presignedURL = s3.getAuthenticatedURL(
+						bucketName=testBucket,
+						uri='presignedputacl.txt',
+						method="PUT",
+						acl='public-read' );
+
+					cfhttp( url="#presignedURL#", result="local.cfhttp", method="PUT" ) {
+						cfhttpparam( type='body', value='Pre-Signed Put!' );
+						// ACL doesn't match!
+						cfhttpparam( type='header', name='x-amz-acl', value='public-read-write' );
+					};
+					expect( local.cfhttp.Responseheader.status_code ).toBe( '403' );
+
+				} );
+
 			} );
 		} );
 	}

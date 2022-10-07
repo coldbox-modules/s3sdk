@@ -890,6 +890,10 @@ component accessors="true" singleton {
 	 * @uri              The uri to the object to create a link for.
 	 * @minutesValid     The minutes the link is valid for. Defaults to 60 minutes.
 	 * @useSSL           Use SSL for the returned url.
+	 * @method           HTTP method that will be used
+	 * @acl         	 ACL for the object for PUT. If omitted, any ACL will be allowed when PUTting the file.
+	 * @metaHeaders      Additonal metadata headers to add.
+	 * @contentType      The object content type for PUT.  If omitted, any content-type will be allowed when PUTting the file.
 	 *
 	 * @return           An authenticated url to the resource.
 	 */
@@ -897,18 +901,32 @@ component accessors="true" singleton {
 		required string bucketName = variables.defaultBucketName,
 		required string uri,
 		string minutesValid = 60,
-		boolean useSSL      = variables.ssl
+		boolean useSSL      = variables.ssl,
+		string method      = 'GET',
+		string acl          = '',
+		struct metaHeaders  = {},
+		string contentType
 	){
 		requireBucketName( arguments.bucketName );
+
+		var headers = createMetaHeaders( arguments.metaHeaders );
+
+		if( !isNull( arguments.contentType ) ) {
+			headers[ "content-type" ] = arguments.contentType;
+		}
+
+		if( !isNull( arguments.acl ) ) {
+			headers[ "x-amz-acl" ] = arguments.acl;
+		}
 
 		var hostname = "#bucketName#.#variables.URLEndpointHostname#";
 
 		var sigData = variables.signatureUtil.generateSignatureData(
-			requestMethod      = "GET",
+			requestMethod      = arguments.method,
 			hostName           = hostname,
 			requestURI         = arguments.uri,
 			requestBody        = "",
-			requestHeaders     = {},
+			requestHeaders     = headers,
 			requestParams      = { "X-Amz-Expires" : arguments.minutesValid * 60 },
 			accessKey          = variables.accessKey,
 			secretKey          = variables.secretKey,
@@ -1160,15 +1178,22 @@ component accessors="true" singleton {
 			regionName     = variables.awsRegion,
 			serviceName    = variables.serviceName
 		);
+		var cfhttpAttributes={};
+		if( !isNull( server.lucee ) ) {
+			// Lucee encodes CFHTTP URLs by default which breaks crap.  Adobe doesn't touch it.  Good job, Adobe.
+			// Adobe will, however, fall on the floor sobbing if you include the encodeurl attribute in the code directly as it is a Lucee-only feature.
+			cfhttpAttributes[ 'encodeurl' ] = false;
+		}
 		cfhttp(
 			method      = arguments.method,
-			url         = "#variables.URLEndPoint#/#arguments.resource#",
+			url         = "#variables.URLEndPoint##signatureData.CanonicalURI#",
 			charset     = "utf-8",
 			result      = "HTTPResults",
 			redirect    = true,
 			timeout     = arguments.timeout,
 			getAsBinary = arguments.getAsBinary,
-			useragent   = "ColdFusion-S3SDK"
+			useragent   = "ColdFusion-S3SDK",
+			attributeCollection=cfhttpAttributes
 		) {
 			// Amazon Global Headers
 			cfhttpparam(
