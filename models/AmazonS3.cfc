@@ -419,7 +419,7 @@ component accessors="true" singleton {
 	void function setAccessControlPolicy(
 		required string bucketName = variables.defaultBucketName,
 		string uri                 = "",
-		string acl
+		any acl
 	){
 		requireBucketName( arguments.bucketName );
 
@@ -433,7 +433,7 @@ component accessors="true" singleton {
 			method     = "PUT",
 			resource   = resource,
 			parameters = { "acl" : true },
-			headers = { "x-amz-acl" : arguments.acl }
+			headers = applyACLHeaders( acl=arguments.acl )
 		);
 	}
 
@@ -546,12 +546,14 @@ component accessors="true" singleton {
 	){
 		requireBucketName( arguments.bucketName );
 		var constraintXML = arguments.location == "EU" ? "<CreateBucketConfiguration><LocationConstraint>EU</LocationConstraint></CreateBucketConfiguration>" : "";
+		var headers = { "content-type" : "text/xml" };
+		applyACLHeaders( headers, arguments.acl );
 
 		var results = s3Request(
 			method     = "PUT",
 			resource   = arguments.bucketName,
 			body       = constraintXML,
-			headers    = { "content-type" : "text/xml", "x-amz-acl" : arguments.acl }
+			headers    = headers
 		);
 
 		return results.responseheader.status_code == 200;
@@ -649,7 +651,7 @@ component accessors="true" singleton {
 		numeric HTTPTimeout    = variables.defaultTimeout,
 		string cacheControl    = variables.defaultCacheControl,
 		string expires         = "",
-		string acl             = variables.defaultACL,
+		any acl             = variables.defaultACL,
 		struct metaHeaders     = {},
 		string md5             = variables.autoMD5,
 		string storageClass    = variables.defaultStorageClass
@@ -703,7 +705,7 @@ component accessors="true" singleton {
 		numeric HTTPTimeout        = variables.defaultTimeOut,
 		string cacheControl        = variables.defaultCacheControl,
 		string expires             = "",
-		string acl                 = variables.defaultACL,
+		any acl                 = variables.defaultACL,
 		struct metaHeaders         = {}
 	){
 		requireBucketName( arguments.bucketName );
@@ -763,7 +765,7 @@ component accessors="true" singleton {
 		numeric HTTPTimeout       = variables.defaultTimeOut,
 		string cacheControl       = variables.defaultCacheControl,
 		string expires            = "",
-		string acl                = variables.defaultACL,
+		any acl                = variables.defaultACL,
 		struct metaHeaders        = {},
 		string md5                = variables.autoMD5,
 		string storageClass       = variables.defaultStorageClass
@@ -771,7 +773,7 @@ component accessors="true" singleton {
 		requireBucketName( arguments.bucketName );
 		var headers            = createMetaHeaders( arguments.metaHeaders );
 		headers[ "content-type" ] = arguments.contentType;
-		headers[ "x-amz-acl" ] = arguments.acl;
+		applyACLHeaders( headers, arguments.acl );
 
 		if ( len( arguments.storageClass ) ) {
 			headers[ "x-amz-storage-class" ] = arguments.storageClass;
@@ -852,6 +854,59 @@ component accessors="true" singleton {
 	}
 
 	/**
+	 * Get an object's ACL information.
+	 *
+	 * @bucketName The bucket the object resides in.
+	 * @uri        The object URI to retrieve the info.
+	 * @throwOnError Flag to throw exceptions on any error or not, default is true
+	 *
+	 * @return     The object's ACL information.
+	 */
+	struct function getObjectACL(
+		required string bucketName = variables.defaultBucketName,
+		required string uri,
+		throwOnError = false
+	){
+		requireBucketName( arguments.bucketName );
+		var results = s3Request(
+			method   = "GET",
+			resource = arguments.bucketName & "/" & arguments.uri,
+			parameters={ 'acl' : '' },
+			throwOnError=throwOnError
+		);
+		var ACLs = {
+			'owner' : {
+				'ID' : '',
+				'DisplayName' : ''
+			},
+			'grants' : {
+				'FULL_CONTROL' : [],
+				'WRITE' : [],
+				'WRITE_ACP' : [],
+				'READ' : [],
+				'READ_ACP' : []
+			}
+		};
+		if( !results.error ) {
+			// Set owner
+			for( var child in results.response.AccessControlPolicy.owner.XMLChildren ) {
+				ACLs.owner[ child.XMLName ] = child.XMLText;
+			}
+			for( var child in results.response.AccessControlPolicy.AccessControlList.XMLChildren ) {
+				var grant = {
+					'type' : child.Grantee.XMLAttributes['xsi:type']
+				};
+				for( var grantee in child.Grantee.XMLChildren ) {
+					grant[ grantee.XMLName ] = grantee.XMLText;
+				}
+				ACLs.grants[ child.Permission.XMLText ].append( grant );
+			}
+		}
+
+		return ACLs;
+	}
+
+	/**
 	 * Check if an object exists in the bucket
 	 *
 	 * @bucketName The bucket the object resides in.
@@ -903,7 +958,7 @@ component accessors="true" singleton {
 		string minutesValid = 60,
 		boolean useSSL      = variables.ssl,
 		string method      = 'GET',
-		string acl          = '',
+		any acl          = '',
 		struct metaHeaders  = {},
 		string contentType
 	){
@@ -916,7 +971,7 @@ component accessors="true" singleton {
 		}
 
 		if( !isNull( arguments.acl ) ) {
-			headers[ "x-amz-acl" ] = arguments.acl;
+			applyACLHeaders( headers, arguments.acl );
 		}
 
 		var hostname = "#bucketName#.#variables.URLEndpointHostname#";
@@ -1048,7 +1103,7 @@ component accessors="true" singleton {
 		required string fromURI,
 		required string toBucket = variables.defaultBucketName,
 		required string toURI,
-		string acl          = variables.defaultACL,
+		any acl = variables.defaultACL,
 		struct metaHeaders  = {},
 		string storageClass = variables.defaultStorageClass,
 		string contentType,
@@ -1071,7 +1126,7 @@ component accessors="true" singleton {
 		}
 
 		headers[ "x-amz-copy-source" ] = signatureUtil.urlEncodePath( "/#arguments.fromBucket#/#arguments.fromURI#" );
-		headers[ "x-amz-acl" ]         = arguments.acl;
+		applyACLHeaders( headers, arguments.acl );
 
 		if ( len( arguments.storageClass ) ) {
 			headers[ "x-amz-storage-class" ] = arguments.storageClass;
@@ -1101,23 +1156,36 @@ component accessors="true" singleton {
 	 * @oldFileKey    The source URI.
 	 * @newBucketName The destination bucket.
 	 * @newFileKey    The destination URI.
+	 * @acl           The Amazon security access policy to use.
 	 *
 	 * @return        True if the rename operation is successful.
 	 */
 	boolean function renameObject(
-		required string oldBucketName = variables.defaultBucketName,
+		string oldBucketName = variables.defaultBucketName,
 		required string oldFileKey,
-		required string newBucketName = variables.defaultBucketName,
-		required string newFileKey
+		string newBucketName = variables.defaultBucketName,
+		required string newFileKey,
+		any acl
 	){
 		if ( compare( oldBucketName, newBucketName ) || compare( oldFileKey, newFileKey ) ) {
+			// If no ACL was passed, attempt to look up the old object's ACL (requires s3:GetObjectAcl permissions or READ_ACP access to the object)
+			if( isNull( arguments.acl ) ) {
+				var oldACL = getObjectACL( oldBucketName, oldFileKey );
+				// If this is empty, we did not have permissions to get the ACLs
+				if( len( oldACL.owner.id ) ) {
+					// Set the new ACL to the grants from the old ACL
+					arguments.acl = oldACL.grants;
+				}
+			}
+
 			copyObject(
-				oldBucketName,
-				oldFileKey,
-				newBucketName,
-				newFileKey
+				arguments.oldBucketName,
+				arguments.oldFileKey,
+				arguments.newBucketName,
+				arguments.newFileKey,
+				arguments.acl
 			);
-			deleteObject( oldBucketName, oldFileKey );
+			deleteObject( arguments.oldBucketName, arguments.oldFileKey );
 			return true;
 		}
 
@@ -1384,6 +1452,49 @@ component accessors="true" singleton {
 				"bucketName is required.  Please provide the name of the bucket to access or set a default bucket name in the SDk."
 			);
 		}
+	}
+
+
+	/**
+	 * Helper function to apply grant headers
+	 */
+	private function applyACLHeaders( struct headers={}, required any acl ){
+		if( isSimpleValue( arguments.acl ) ) {
+			if( !len( arguments.acl ) ) {
+				return headers;
+			}
+			headers[ "x-amz-acl" ] = arguments.acl;
+		} else if( isStruct( arguments.acl ) ) {
+			var types = {
+				'FULL_CONTROL' : 'x-amz-grant-full-control',
+				'WRITE' : 'x-amz-grant-write',
+				'WRITE_ACP' : 'x-amz-grant-write-acp',
+				'READ' : 'x-amz-grant-read',
+				'READ_ACP' : 'x-amz-grant-read-acp'
+			};
+			for( var type in types ) {
+				if( structKeyExists( arguments.acl, type ) && isArray( arguments.acl[ type ] ) && arguments.acl[ type ].len() ) {
+					headers[ types[type] ] = arguments.acl[ type ].reduce( (header,grant)=>{
+						if( grant.keyExists( 'ID' ) ) {
+							return header.listAppend( '#(len(header)?' ':'')#id="#grant.ID#"' );
+						} else if( grant.keyExists( 'uri' ) ) {
+							return header.listAppend( '#(len(header)?' ':'')#uri="#grant.uri#"' );
+						} else if( grant.keyExists( 'emailAddress' ) ) {
+							return header.listAppend( '#(len(header)?' ':'')#emailAddress="#grant.emailAddress#"' );
+						} else {
+							dump(grant)
+							return header;
+						}
+					}, '' );
+					if( !len( headers[ types[type] ] ) ) {
+						headers.delete( types[type] );
+					}
+				}
+			}
+		} else {
+			throw( "Invalid acl argument. Must be string or struct." );
+		}
+		return headers;
 	}
 
 	/**

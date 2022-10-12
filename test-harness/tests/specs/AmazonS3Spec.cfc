@@ -294,6 +294,87 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					expect( get.response ).toBe( "Hello, world!" );
 				} );
 
+				it( "can get object ACL", function(){
+					s3.putObject(
+						bucketName=testBucket,
+						uri="example.txt",
+						data="Hello, world!",
+						acl=s3.ACL_PUBLIC_READ
+					);
+					var ACL = s3.getObjectACL( testBucket, "example.txt" );
+					expect( ACL ).toBeStruct();
+					expect( ACL ).toHaveKey( 'owner' );
+					expect( ACL.owner ).toBeStruct();
+					expect( ACL.owner ).toHaveKey( 'ID' );
+					expect( ACL.owner ).toHaveKey( 'DisplayName' );
+					expect( ACL ).toHaveKey( 'grants' );
+					expect( ACL.grants ).toBeStruct();
+					expect( ACL.grants ).toHaveKey( 'FULL_CONTROL' );
+					expect( ACL.grants ).toHaveKey( 'WRITE' );
+					expect( ACL.grants ).toHaveKey( 'WRITE_ACP' );
+					expect( ACL.grants ).toHaveKey( 'READ' );
+					expect( ACL.grants ).toHaveKey( 'READ_ACP' );
+					expect( ACL.grants.FULL_CONTROL ).toBeArray();
+					expect( ACL.grants.WRITE ).toBeArray();
+					expect( ACL.grants.WRITE_ACP ).toBeArray();
+					expect( ACL.grants.READ ).toBeArray();
+					expect( ACL.grants.READ_ACP ).toBeArray();
+				} );
+
+				it( "can translate canned ACL headers", function(){
+					makePublic( s3, 'applyACLHeaders' );
+
+					var ACL = s3.applyACLHeaders( acl='canned-acl' );
+					expect( ACL ).toBeStruct();
+					expect( ACL ).toHaveKey( 'x-amz-acl' );
+					expect( ACL[ 'x-amz-acl' ] ).toBe( 'canned-acl' );
+
+				} );
+
+				it( "can translate complex ACL headers", function(){
+					makePublic( s3, 'applyACLHeaders' );
+
+					var ACL = s3.applyACLHeaders( acl={
+						'FULL_CONTROL' : [
+							{ id : '12345' },
+							{ uri : 'http://acs.amazonaws.com/groups/global/AllUsers' },
+							{ emailAddress : 'xyz@amazon.com' }
+						],
+						'WRITE' : [
+							{ id : '12345' },
+							{ uri : 'http://acs.amazonaws.com/groups/global/AllUsers' },
+							{ emailAddress : 'xyz@amazon.com' }
+						],
+						'WRITE_ACP' : [
+							{ id : '12345' },
+							{ uri : 'http://acs.amazonaws.com/groups/global/AllUsers' },
+							{ emailAddress : 'xyz@amazon.com' }
+						],
+						'READ' : [
+							{ id : '12345' },
+							{ uri : 'http://acs.amazonaws.com/groups/global/AllUsers' },
+							{ emailAddress : 'xyz@amazon.com' }
+						],
+						'READ_ACP' : [
+							{ id : '12345' },
+							{ uri : 'http://acs.amazonaws.com/groups/global/AllUsers' },
+							{ emailAddress : 'xyz@amazon.com' }
+						]
+					} );
+					expect( ACL ).toBeStruct();
+					expect( ACL ).toHaveKey( 'x-amz-grant-full-control' );
+					expect( ACL[ 'x-amz-grant-full-control' ] ).toBe( 'id="12345", uri="http://acs.amazonaws.com/groups/global/AllUsers", emailAddress="xyz@amazon.com"' );
+					expect( ACL ).toHaveKey( 'x-amz-grant-write' );
+					expect( ACL[ 'x-amz-grant-write' ] ).toBe( 'id="12345", uri="http://acs.amazonaws.com/groups/global/AllUsers", emailAddress="xyz@amazon.com"' );
+					expect( ACL ).toHaveKey( 'x-amz-grant-write' );
+					expect( ACL[ 'x-amz-grant-write' ] ).toBe( 'id="12345", uri="http://acs.amazonaws.com/groups/global/AllUsers", emailAddress="xyz@amazon.com"' );
+					expect( ACL ).toHaveKey( 'x-amz-grant-read' );
+					expect( ACL[ 'x-amz-grant-read' ] ).toBe( 'id="12345", uri="http://acs.amazonaws.com/groups/global/AllUsers", emailAddress="xyz@amazon.com"' );
+					expect( ACL ).toHaveKey( 'x-amz-grant-read-acp' );
+					expect( ACL[ 'x-amz-grant-read-acp' ] ).toBe( 'id="12345", uri="http://acs.amazonaws.com/groups/global/AllUsers", emailAddress="xyz@amazon.com"' );
+
+				} );
+
 				it( "can download a file", function(){
 					s3.putObject(
 						testBucket,
