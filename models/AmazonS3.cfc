@@ -1105,9 +1105,9 @@ component accessors="true" singleton {
 	 * @return        True if the rename operation is successful.
 	 */
 	boolean function renameObject(
-		required string oldBucketName,
+		required string oldBucketName = variables.defaultBucketName,
 		required string oldFileKey,
-		required string newBucketName,
+		required string newBucketName = variables.defaultBucketName,
 		required string newFileKey
 	){
 		if ( compare( oldBucketName, newBucketName ) || compare( oldFileKey, newFileKey ) ) {
