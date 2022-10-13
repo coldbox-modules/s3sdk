@@ -411,7 +411,7 @@ component accessors="true" singleton {
 	 *
 	 * @bucketName The bucket to set the ACL.
 	 * @uri        An optional resource uri to set the ACL.
-	 * @acl        A known ACL string.
+	 * @acl          The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL()
 	 *
 	 * @see        https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl_overview.html#permissions
 	 *
@@ -534,7 +534,7 @@ component accessors="true" singleton {
 	 * Create a new bucket.
 	 *
 	 * @bucketName The name for the new bucket.
-	 * @acl        The ACL policy for the new bucket.
+	 * @acl        The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL()
 	 * @location   The bucket location.
 	 *
 	 * @return     True if the bucket was created successfully.
@@ -631,7 +631,7 @@ component accessors="true" singleton {
 	 *                  For more info look here:
 	 *                  http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html##sec14.9
 	 * @expires         Sets the expiration header of the object in days.
-	 * @acl             The Amazon security access policy to use.
+	 * @acl          The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL()
 	 *                  Defaults to public-read.
 	 * @metaHeaders     Additonal metadata headers to add.
 	 * @md5             Set the MD5 hash which allows aws to checksum the object
@@ -692,7 +692,7 @@ component accessors="true" singleton {
 	 *               For more info look here:
 	 *               http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html##sec14.9
 	 * @expires      Sets the expiration header of the object in days.
-	 * @acl          The Amazon security access policy to use.
+	 * @acl          The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL()
 	 *               Defaults to public-read.
 	 * @metaHeaders  Additonal metadata headers to add.
 	 *
@@ -744,7 +744,7 @@ component accessors="true" singleton {
 	 *                     For more info look here:
 	 *                     http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html##sec14.9
 	 * @expires            Sets the expiration header of the object in days.
-	 * @acl                The Amazon security access policy to use.
+	 * @acl          The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL()
 	 *                     Defaults to public-read.
 	 * @metaHeaders        Additonal metadata headers to add.
 	 * @md5                Set the MD5 hash which allows aws to checksum the object
@@ -860,7 +860,9 @@ component accessors="true" singleton {
 	 * @uri        The object URI to retrieve the info.
 	 * @throwOnError Flag to throw exceptions on any error or not, default is true
 	 *
-	 * @return     The object's ACL information.
+	 * @return     The object's ACL information.  A struct containing a top level "owner" key which is a struct with "ID" and "Displayname" keys.
+	 *             Also a top level "grants" key which is a struct containing keys FULL_CONTROL, WRITE, WRITE_ACP, READ, and READ_ACP.  Each
+	 *             of which is an array containing zero or more structs representing a grantee which is represented as a struct with an ID, emailAddress, or URI key based on type.
 	 */
 	struct function getObjectACL(
 		required string bucketName = variables.defaultBucketName,
@@ -946,7 +948,7 @@ component accessors="true" singleton {
 	 * @minutesValid     The minutes the link is valid for. Defaults to 60 minutes.
 	 * @useSSL           Use SSL for the returned url.
 	 * @method           HTTP method that will be used
-	 * @acl         	 ACL for the object for PUT. If omitted, any ACL will be allowed when PUTting the file.
+	 * @acl              The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL(). If omitted, any ACL will be allowed when PUTting the file.
 	 * @metaHeaders      Additonal metadata headers to add.
 	 * @contentType      The object content type for PUT.  If omitted, any content-type will be allowed when PUTting the file.
 	 *
@@ -1087,7 +1089,7 @@ component accessors="true" singleton {
 	 * @fromURI      The source URI
 	 * @toBucket     The destination bucket
 	 * @toURI        The destination URI
-	 * @acl          The Amazon security access policy to use. Defaults to public.
+	 * @acl          The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL()
 	 * @storageClass Sets the S3 storage class which affects cost, access speed and durability.
 	 *               Defaults to STANDARD.
 	 * @metaHeaders  Additonal metadata headers to add.
@@ -1156,7 +1158,7 @@ component accessors="true" singleton {
 	 * @oldFileKey    The source URI.
 	 * @newBucketName The destination bucket.
 	 * @newFileKey    The destination URI.
-	 * @acl           The Amazon security access policy to use.
+	 * @acl          The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL()
 	 *
 	 * @return        True if the rename operation is successful.
 	 */
