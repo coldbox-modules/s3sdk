@@ -81,10 +81,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 		} );
 	}
 
-	private function expectCorrectSignature(
-		required struct config,
-		required struct testData
-	){
+	private function expectCorrectSignature( required struct config, required struct testData ){
 		var sigData = sv4.generateSignatureData(
 			requestMethod  = testData.method,
 			hostName       = testData.host,
@@ -106,12 +103,12 @@ component extends="coldbox.system.testing.BaseTestCase" {
 	}
 
 	private function fixtureData( required string folderName ){
-		var folderPath = expandPath( "./fixtures/#folderName#" );
+		var folderPath = expandPath( "/tests/fixtures/#folderName#" );
 		var data       = {
-			request          : fileRead( "#folderPath#/#folderName#.req" ).replace( chr(13), '', 'all' ),
-			canonicalRequest : fileRead( "#folderPath#/#folderName#.creq" ).replace( chr(13), '', 'all' ),
-			stringToSign     : fileRead( "#folderPath#/#folderName#.sts" ).replace( chr(13), '', 'all' ),
-			authHeader       : fileRead( "#folderPath#/#folderName#.authz" ).replace( chr(13), '', 'all' )
+			request          : fileRead( "#folderPath#/#folderName#.req" ).replace( chr( 13 ), "", "all" ),
+			canonicalRequest : fileRead( "#folderPath#/#folderName#.creq" ).replace( chr( 13 ), "", "all" ),
+			stringToSign     : fileRead( "#folderPath#/#folderName#.sts" ).replace( chr( 13 ), "", "all" ),
+			authHeader       : fileRead( "#folderPath#/#folderName#.authz" ).replace( chr( 13 ), "", "all" )
 		};
 		data.method    = data.request.listToArray( " " )[ 1 ];
 		data.host      = data.request.listToArray( chr( 10 ) )[ 2 ].listToArray( ":" )[ 2 ];

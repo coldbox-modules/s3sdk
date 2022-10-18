@@ -1,4 +1,4 @@
-[![Build Status](https://travis-ci.com/coldbox-modules/s3sdk.svg?branch=master)](https://travis-ci.com/coldbox-modules/s3sdk)
+[![AWS S3 SDK CI](https://github.com/coldbox-modules/s3sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/coldbox-modules/s3sdk/actions/workflows/ci.yml)
 
 # Welcome to the Amazon S3, DigitalOcean Spaces SDK
 
@@ -15,7 +15,7 @@ This SDK allows you to add Amazon S3, Digital Ocean Spaces capabilities to your 
 ## Requirements
 
 * Lucee 5+
-* Adobe 2016+
+* Adobe 2018+
 
 ## Installation
 
