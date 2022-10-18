@@ -1,0 +1,14 @@
+{
+	"cfml.mappings": [
+		{
+			"logicalPath": "/coldbox",
+			"directoryPath": "./test-harness/coldbox",
+			"isPhysicalDirectoryPath": false
+		},
+		{
+			"logicalPath": "/testbox",
+			"directoryPath": "./test-harness/testbox",
+			"isPhysicalDirectoryPath": false
+		}
+	]
+}
