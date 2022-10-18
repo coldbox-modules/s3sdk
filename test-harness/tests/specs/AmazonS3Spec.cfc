@@ -6,10 +6,6 @@ component extends="coldbox.system.testing.BaseTestCase" {
 	function beforeAll(){
 		prepTmpFolder();
 
-		writeDump( var : "1 #getUtil().getSystemSetting( "AWS_REGION" )#", output="console" );
-		writeDump( var : "2 #getUtil().getSystemSetting( "AWS_DOMAIN" )#", output="console" );
-		writeDump( var : "3 #left( getUtil().getSystemSetting( "AWS_ACCESS_KEY" ), 5 )#", output="console" );
-
 		variables.s3 = new s3sdk.models.AmazonS3(
 			accessKey = getUtil().getSystemSetting( "AWS_ACCESS_KEY" ),
 			secretKey = getUtil().getSystemSetting( "AWS_ACCESS_SECRET" ),

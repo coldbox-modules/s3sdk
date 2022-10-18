@@ -6,6 +6,10 @@ on:
     secrets:
       SLACK_WEBHOOK_URL:
         required: false
+      S3SDK_AWS_ACCESS_KEY:
+        required: true
+      S3SDK_AWS_ACCESS_SECRET:
+        required: true
 
 jobs:
   tests:
