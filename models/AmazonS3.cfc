@@ -1308,7 +1308,7 @@ component accessors="true" singleton {
 			HTTPResults.responseHeader.status_code = 0;
 		}
 
-		// Amazon recommends retrying these requests after a deley
+		// Amazon recommends retrying these requests after a delay
 		if (
 			listFindNoCase(
 				"500,503",

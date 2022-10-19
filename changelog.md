@@ -7,13 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ----
 
+## v5.0.0 => 2022-OCT-19
+
+### Changed / Compatibility
+
+* Dropped Adobe 2016 Support
+* Configuration setting: `encryption_charset` changed to `encryptionCharset` for consistency. **Breaking change**
+
+### Added
+
+* Revamp of ACLs to allow any grant to be added to any object.
+* Ability to request `PUT` signed URLs so you don't have to upload to a middle server and then S3.  You can now create a signed PUT operation that you can upload directly to S3.
+* Encoding of signed URLs to avoid issues with weird filenames
+* Preserve content type on copy
+* Ability to choose how many times to retry s3 operations when they fail with a 500 or 503. This can happen due to throttling or rate limiting.  You can configure it with the new setting: `retriesOnError` and it defaults to 3.
+* New ColdBox Module template
+* Add bucket name to test suite
+* Github actions migration
+* Avoid error logs for `objectExists()`
+
+### Fixed
+
+* @bdw429s Fixed tons of issues with filename encodings. :party:
+* 404 is not an "error" status when verifying for errors on requests
+* The argument name in `putObject()` was incorrect "arguments.content" instead of "arguments.data", this only happens when md5 == "auto" so it probably slipped by for some time.
+
+----
+
 ## v4.8.0 => 2021-JUL-06
 
 ### Added
 
 * Migrations to github actions
 * Added new argument to `downloadObject( getAsBinary : 'no' )` so you can get binary or non binary objects. Defaults to non binary.
-  
+
 ----
 
 ## v4.7.0 => 2021-MAR-24

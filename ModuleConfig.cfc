@@ -21,24 +21,24 @@ component {
 		// Settings
 		variables.settings = {
 			accessKey           : "",
-			secretKey           : "",
-			awsDomain           : "amazonaws.com",
-			awsRegion           : "us-east-1",
-			encryptionCharset   : "utf-8",
-			signatureType       : "V4",
-			ssl                 : true,
-			defaultTimeOut      : 300,
-			defaultDelimiter    : "/",
-			defaultBucketName   : "",
-			defaultCacheControl : "no-store, no-cache, must-revalidate",
-			defaultStorageClass : "STANDARD",
-			defaultACL          : "public-read",
-			throwOnRequestError : true,
-			retriesOnError		: 3,
 			autoContentType     : false,
 			autoMD5             : false,
+			awsDomain           : "amazonaws.com",
+			awsRegion           : "us-east-1",
+			debug               : false,
+			defaultACL          : "public-read",
+			defaultBucketName   : "",
+			defaultCacheControl : "no-store, no-cache, must-revalidate",
+			defaultDelimiter    : "/",
+			defaultStorageClass : "STANDARD",
+			defaultTimeOut      : 300,
+			encryptionCharset   : "utf-8",
+			retriesOnError		: 3,
+			secretKey           : "",
 			serviceName         : "s3",
-			debug               : false
+			signatureType       : "V4",
+			ssl                 : true,
+			throwOnRequestError : true
 		};
 	}
 
