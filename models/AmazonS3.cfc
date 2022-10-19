@@ -1380,7 +1380,7 @@ component accessors="true" singleton {
 
 		if ( results.error ) {
 			log.error(
-				"Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#",
+				"Error making Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#",
 				HTTPResults
 			);
 			results.http = HTTPResults;
