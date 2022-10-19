@@ -7,7 +7,7 @@ component singleton {
 	 * Creates a new instance of the utility for generating signatures using the supplied settings
 	 * @returns new instance initalized with specified settings
 	 */
-	Sv2Util function init() {
+	Sv2Util function init(){
 		return this;
 	}
 
@@ -35,7 +35,7 @@ component singleton {
 		array excludeHeaders  = [],
 		string amzDate,
 		string dateStamp
-	) {
+	){
 		var props = {
 			requestHeaders : arguments.requestHeaders,
 			requestParams  : arguments.requestParams,
@@ -86,11 +86,17 @@ component singleton {
 	/**
 	 * NSA SHA-1 Algorithm: RFC 2104HMAC-SHA1
 	 */
-	private binary function HMAC_SHA1( required string signKey, required string signMessage ) {
-		var jMsg = javacast( "string", arguments.signMessage ).getBytes( encryption_charset );
-		var jKey = javacast( "string", arguments.signKey ).getBytes( encryption_charset );
-		var key  = createObject( "java", "javax.crypto.spec.SecretKeySpec" ).init( jKey, "HmacSHA1" );
-		var mac  = createObject( "java", "javax.crypto.Mac" ).getInstance( key.getAlgorithm() );
+	private binary function HMAC_SHA1(
+		required string signKey,
+		required string signMessage
+	){
+		var jMsg = javacast( "string", arguments.signMessage ).getBytes( encryptionCharset );
+		var jKey = javacast( "string", arguments.signKey ).getBytes( encryptionCharset );
+		var key  = createObject(
+			"java",
+			"javax.crypto.spec.SecretKeySpec"
+		).init( jKey, "HmacSHA1" );
+		var mac = createObject( "java", "javax.crypto.Mac" ).getInstance( key.getAlgorithm() );
 
 		mac.init( key );
 		mac.update( jMsg );

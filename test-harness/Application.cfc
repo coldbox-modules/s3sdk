@@ -8,6 +8,7 @@ component{
 
 	// UPDATE THE NAME OF THE MODULE IN TESTING BELOW
 	request.MODULE_NAME = "s3sdk";
+	request.MODULE_PATH = "s3sdk";
 
 	// Application properties
 	this.name              = hash( getCurrentTemplatePath() );

@@ -32,7 +32,7 @@ component accessors="true" singleton {
 	// Properties
 	property name="accessKey";
 	property name="secretKey";
-	property name="encryption_charset";
+	property name="encryptionCharset";
 	property name="ssl";
 	property name="URLEndpoint";
 	property name="awsRegion";
@@ -43,6 +43,8 @@ component accessors="true" singleton {
 	property name="defaultCacheControl";
 	property name="defaultStorageClass";
 	property name="defaultACL";
+	property name="throwOnRequestError";
+	property name="retriesOnError";
 	property name="autoContentType";
 	property name="autoMD5";
 	property name="mimeTypes";
@@ -75,7 +77,7 @@ component accessors="true" singleton {
 	 * @secretKey The Amazon secret key.
 	 * @awsDomain The Domain used S3 Service (amazonws.com, digitalocean.com, storage.googleapis.com). Defaults to amazonws.com
 	 * @awsRegion The Amazon region. Defaults to us-east-1 for amazonaws.com
-	 * @encryption_charset The charset for the encryption. Defaults to UTF-8.
+	 * @encryptionCharset The charset for the encryption. Defaults to UTF-8.
 	 * @signature The signature version to calculate, "V2" is deprecated but more compatible with other endpoints. "V4" requires Sv4Util.cfc & ESAPI on Lucee. Defaults to V4
 	 * @ssl True if the request should use SSL. Defaults to true.
 	 * @defaultTimeOut Default HTTP timeout for all requests. Defaults to 300.
@@ -96,7 +98,7 @@ component accessors="true" singleton {
 		required string secretKey,
 		string awsDomain           = "amazonaws.com",
 		string awsRegion           = "", // us-east-1 default for aws
-		string encryption_charset  = "UTF-8",
+		string encryptionCharset   = "UTF-8",
 		string signatureType       = "V4",
 		boolean ssl                = true,
 		string defaultTimeOut      = 300,
@@ -106,17 +108,25 @@ component accessors="true" singleton {
 		string defaultStorageClass = this.S3_STANDARD,
 		string defaultACL          = this.ACL_PUBLIC_READ,
 		string throwOnRequestError = true,
+		numeric retriesOnError		= 3,
 		boolean autoContentType    = false,
 		boolean autoMD5            = false,
 		string serviceName         = "s3",
 		boolean debug              = false
-	) {
+	){
 		if ( arguments.awsDomain == "amazonaws.com" && arguments.awsRegion == "" ) {
 			arguments.awsRegion = "us-east-1";
 		}
+		/*
+			Add backwards compatability for the previous key name
+			'encryption_charset'. Remove this from the next major release.
+		*/
+		if ( arguments.keyExists( "encryption_charset" ) ) {
+			arguments.encryptionCharset = arguments.encryption_charset;
+		}
 		variables.accessKey           = arguments.accessKey;
 		variables.secretKey           = arguments.secretKey;
-		variables.encryption_charset  = arguments.encryption_charset;
+		variables.encryptionCharset   = arguments.encryptionCharset;
 		variables.signatureType       = arguments.signatureType;
 		variables.awsDomain           = arguments.awsDomain;
 		variables.awsRegion           = arguments.awsRegion;
@@ -127,6 +137,7 @@ component accessors="true" singleton {
 		variables.defaultStorageClass = arguments.defaultStorageClass;
 		variables.defaultACL          = arguments.defaultACL;
 		variables.throwOnRequestError = arguments.throwOnRequestError;
+		variables.retriesOnError	  = arguments.retriesOnError;
 		variables.autoContentType     = arguments.autoContentType;
 		variables.autoMD5             = ( variables.signatureType == "V2" || arguments.autoMD5 ? "auto" : "" );
 		variables.serviceName         = arguments.serviceName;
@@ -178,7 +189,7 @@ component accessors="true" singleton {
 		return this;
 	}
 
-	function createSignatureUtil( required string type ) {
+	function createSignatureUtil( required string type ){
 		if ( arguments.type == "V4" ) {
 			return new Sv4Util();
 		} else if ( arguments.type == "V2" ) {
@@ -194,19 +205,22 @@ component accessors="true" singleton {
 	 *
 	 * @return    The AmazonS3 Instance.
 	 */
-	AmazonS3 function setAuth( required string accessKey, required string secretKey ) {
+	AmazonS3 function setAuth(
+		required string accessKey,
+		required string secretKey
+	){
 		variables.accessKey = arguments.accessKey;
 		variables.secretKey = arguments.secretKey;
 		return this;
 	}
 
-	AmazonS3 function setAWSDomain( required string domain ) {
+	AmazonS3 function setAWSDomain( required string domain ){
 		variables.awsDomain = arguments.domain;
 		buildUrlEndpoint();
 		return this;
 	}
 
-	AmazonS3 function setAWSRegion( required string region ) {
+	AmazonS3 function setAWSRegion( required string region ){
 		variables.awsRegion = arguments.region;
 		buildUrlEndpoint();
 		return this;
@@ -215,20 +229,20 @@ component accessors="true" singleton {
 	/**
 	 * This function builds variables.UrlEndpoint and variables.URLEndpointHostname according to credentials and ssl configuration, usually called after init() for you automatically.
 	 */
-	AmazonS3 function buildUrlEndpoint() {
+	AmazonS3 function buildUrlEndpoint(){
 		// Build accordingly
 		var URLEndPointProtocol = ( variables.ssl ) ? "https://" : "http://";
 
 		var hostnameComponents = [];
-		if( variables.awsDomain contains "amazonaws.com" ) {
+		if ( variables.awsDomain contains "amazonaws.com" ) {
 			hostnameComponents.append( "s3" );
 		}
-		if( Len( variables.awsRegion ) ) {
+		if ( len( variables.awsRegion ) ) {
 			hostnameComponents.append( variables.awsRegion );
 		}
 		hostnameComponents.append( variables.awsDomain );
-		variables.URLEndpointHostname = ArrayToList( hostnameComponents, "." );
-		variables.URLEndpoint = URLEndpointProtocol & variables.URLEndpointHostname;
+		variables.URLEndpointHostname = arrayToList( hostnameComponents, "." );
+		variables.URLEndpoint         = URLEndpointProtocol & variables.URLEndpointHostname;
 
 		return this;
 	}
@@ -241,7 +255,7 @@ component accessors="true" singleton {
 	 *
 	 * @return The AmazonS3 instance.
 	 */
-	AmazonS3 function setSSL( boolean useSSL = true ) {
+	AmazonS3 function setSSL( boolean useSSL = true ){
 		variables.ssl = arguments.useSSL;
 		buildUrlEndpoint();
 		return this;
@@ -252,12 +266,15 @@ component accessors="true" singleton {
 	 *
 	 * @return
 	 */
-	array function listBuckets() {
+	array function listBuckets(){
 		var results = s3Request();
 
-		var bucketsXML = xmlSearch( results.response, "//*[local-name()='Bucket']" );
+		var bucketsXML = xmlSearch(
+			results.response,
+			"//*[local-name()='Bucket']"
+		);
 
-		return arrayMap( bucketsXML, function( node ) {
+		return arrayMap( bucketsXML, function( node ){
 			return {
 				"name"         : trim( node.name.xmlText ),
 				"creationDate" : trim( node.creationDate.xmlText )
@@ -272,12 +289,18 @@ component accessors="true" singleton {
 	 *
 	 * @return     The region code for the bucket.
 	 */
-	string function getBucketLocation( required string bucketName=variables.defaultBucketName ) {
+	string function getBucketLocation( required string bucketName = variables.defaultBucketName ){
 		requireBucketName( arguments.bucketName );
-		var results = S3Request( resource = arguments.bucketname, parameters={ "location" : true } );
+		var results = s3Request(
+			resource   = arguments.bucketname,
+			parameters = { "location" : true }
+		);
 
 		if ( results.error ) {
-			throw( message = "Error making Amazon REST Call", detail = results.message );
+			throw(
+				message = "Error making Amazon REST Call",
+				detail  = results.message
+			);
 		}
 
 		if ( len( results.response.LocationConstraint.XMLText ) ) {
@@ -294,9 +317,12 @@ component accessors="true" singleton {
 	 *
 	 * @return     The bucket version status or an empty string if there is none.
 	 */
-	string function getBucketVersionStatus( required string bucketName=variables.defaultBucketName ) {
+	string function getBucketVersionStatus( required string bucketName = variables.defaultBucketName ){
 		requireBucketName( arguments.bucketName );
-		var results = S3Request( resource = arguments.bucketname, parameters={ "versioning" : true } );
+		var results = s3Request(
+			resource   = arguments.bucketname,
+			parameters = { "versioning" : true }
+		);
 
 		var status = xmlSearch(
 			results.response,
@@ -321,22 +347,21 @@ component accessors="true" singleton {
 	boolean function setBucketVersionStatus(
 		required string bucketName = variables.defaultBucketName,
 		boolean version            = true
-	) {
+	){
 		requireBucketName( arguments.bucketName );
 		var constraintXML = "";
 		var headers       = { "content-type" : "text/plain" };
 
 		if ( arguments.version ) {
 			headers[ "?versioning" ] = "";
-			constraintXML            = '<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"><Status>Enabled</Status></VersioningConfiguration>';
+			constraintXML            = "<VersioningConfiguration xmlns=""http://s3.amazonaws.com/doc/2006-03-01/""><Status>Enabled</Status></VersioningConfiguration>";
 		}
 
 		var results = s3Request(
 			method     = "PUT",
 			resource   = arguments.bucketName,
 			body       = constraintXML,
-			headers    = headers,
-			amzHeaders = {}
+			headers    = headers
 		);
 
 		return results.responseheader.status_code == 200;
@@ -350,7 +375,10 @@ component accessors="true" singleton {
 	 *
 	 * @return     An array containing the ACL for the given resource.
 	 */
-	array function getAccessControlPolicy( required string bucketName=variables.defaultBucketName, string uri = "" ) {
+	array function getAccessControlPolicy(
+		required string bucketName = variables.defaultBucketName,
+		string uri                 = ""
+	){
 		requireBucketName( arguments.bucketName );
 		var resource = arguments.bucketName;
 
@@ -358,15 +386,21 @@ component accessors="true" singleton {
 			resource = resource & "/" & arguments.uri;
 		}
 
-		var results = S3Request( resource = resource, parameters={ "acl" : true } );
+		var results = s3Request(
+			resource   = resource,
+			parameters = { "acl" : true }
+		);
 
-		var grantsXML = xmlSearch( results.response, "//*[local-name()='Grant']" );
-		return arrayMap( grantsXML, function( node ) {
+		var grantsXML = xmlSearch(
+			results.response,
+			"//*[local-name()='Grant']"
+		);
+		return arrayMap( grantsXML, function( node ){
 			return {
-				"type" 		  = node.grantee.XMLAttributes[ "xsi:type" ],
-				"displayName" = "",
-				"permission"  = node.permission.XMLText,
-				"uri"         = node.grantee.XMLAttributes[ "xsi:type" ] == "Group" ? node.grantee.uri.xmlText : node.grantee.displayName.xmlText
+				"type"        : node.grantee.XMLAttributes[ "xsi:type" ],
+				"displayName" : "",
+				"permission"  : node.permission.XMLText,
+				"uri"         : node.grantee.XMLAttributes[ "xsi:type" ] == "Group" ? node.grantee.uri.xmlText : node.grantee.displayName.xmlText
 			};
 		} );
 	}
@@ -377,12 +411,16 @@ component accessors="true" singleton {
 	 *
 	 * @bucketName The bucket to set the ACL.
 	 * @uri        An optional resource uri to set the ACL.
-	 * @acl        A known ACL string.
+	 * @acl          The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL()
 	 *
 	 * @see        https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl_overview.html#permissions
 	 *
 	 */
-	void function setAccessControlPolicy( required string bucketName=variables.defaultBucketName, string uri = "", string acl ){
+	void function setAccessControlPolicy(
+		required string bucketName = variables.defaultBucketName,
+		string uri                 = "",
+		any acl
+	){
 		requireBucketName( arguments.bucketName );
 
 		var resource = arguments.bucketName;
@@ -391,13 +429,12 @@ component accessors="true" singleton {
 			resource = resource & "/" & arguments.uri;
 		}
 
-		S3Request(
+		s3Request(
 			method     = "PUT",
 			resource   = resource,
 			parameters = { "acl" : true },
-			amzHeaders = { "x-amz-acl" = arguments.acl }
+			headers = applyACLHeaders( acl=arguments.acl )
 		);
-
 	}
 
 	/**
@@ -419,12 +456,10 @@ component accessors="true" singleton {
 		string marker              = "",
 		string maxKeys             = "",
 		string delimiter           = variables.defaultDelimiter
-	) {
+	){
 		requireBucketName( arguments.bucketName );
 
-		var parameters = {
-			"list-type" : 2
-		};
+		var parameters = { "list-type" : 2 };
 
 		if ( len( arguments.prefix ) ) {
 			parameters[ "prefix" ] = arguments.prefix;
@@ -442,19 +477,28 @@ component accessors="true" singleton {
 			parameters[ "delimiter" ] = arguments.delimiter;
 		}
 
-		var results = s3Request( resource = arguments.bucketName, parameters = parameters );
+		var results = s3Request(
+			resource   = arguments.bucketName,
+			parameters = parameters
+		);
 
-		var contentsXML = xmlSearch( results.response, "//*[local-name()='Contents']" );
-		var foldersXML  = xmlSearch( results.response, "//*[local-name()='CommonPrefixes']" );
+		var contentsXML = xmlSearch(
+			results.response,
+			"//*[local-name()='Contents']"
+		);
+		var foldersXML = xmlSearch(
+			results.response,
+			"//*[local-name()='CommonPrefixes']"
+		);
 
-		var objectContents = arrayMap( contentsXML, function( node ) {
+		var objectContents = arrayMap( contentsXML, function( node ){
 			return {
 				"key"          : trim( node.key.xmlText ),
 				"lastModified" : trim( node.lastModified.xmlText ),
 				"size"         : trim( node.Size.xmlText ),
 				"eTag"         : replace(
 					trim( node.etag.xmlText ),
-					'"',
+					"""",
 					"",
 					"all"
 				),
@@ -468,7 +512,7 @@ component accessors="true" singleton {
 			};
 		} );
 
-		var folderContents = arrayMap( foldersXML, function( node ) {
+		var folderContents = arrayMap( foldersXML, function( node ){
 			return {
 				"key" : reReplaceNoCase(
 					trim( node.prefix.xmlText ),
@@ -490,7 +534,7 @@ component accessors="true" singleton {
 	 * Create a new bucket.
 	 *
 	 * @bucketName The name for the new bucket.
-	 * @acl        The ACL policy for the new bucket.
+	 * @acl        The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL()
 	 * @location   The bucket location.
 	 *
 	 * @return     True if the bucket was created successfully.
@@ -499,16 +543,17 @@ component accessors="true" singleton {
 		required string bucketName = variables.defaultBucketName,
 		string acl                 = variables.defaultACL,
 		string location            = "USA"
-	) {
+	){
 		requireBucketName( arguments.bucketName );
 		var constraintXML = arguments.location == "EU" ? "<CreateBucketConfiguration><LocationConstraint>EU</LocationConstraint></CreateBucketConfiguration>" : "";
+		var headers = { "content-type" : "text/xml" };
+		applyACLHeaders( headers, arguments.acl );
 
 		var results = s3Request(
 			method     = "PUT",
 			resource   = arguments.bucketName,
 			body       = constraintXML,
-			headers    = { "content-type" : "text/xml" },
-			amzHeaders = { "x-amz-acl" : arguments.acl }
+			headers    = headers
 		);
 
 		return results.responseheader.status_code == 200;
@@ -521,10 +566,10 @@ component accessors="true" singleton {
 	 *
 	 * @return     True if the bucket exists.
 	 */
-	boolean function hasBucket( required string bucketName = variables.defaultBucketName ) {
+	boolean function hasBucket( required string bucketName = variables.defaultBucketName ){
 		requireBucketName( arguments.bucketName );
 		return !arrayIsEmpty(
-			arrayFilter( listBuckets(), function( bucket ) {
+			arrayFilter( listBuckets(), function( bucket ){
 				return bucket.name == bucketName;
 			} )
 		);
@@ -538,7 +583,10 @@ component accessors="true" singleton {
 	 *
 	 * @return     True, if the bucket was deleted successfully.
 	 */
-	boolean function deleteBucket( required string bucketName = variables.defaultBucketName, boolean force = false ) {
+	boolean function deleteBucket(
+		required string bucketName = variables.defaultBucketName,
+		boolean force              = false
+	){
 		requireBucketName( arguments.bucketName );
 		if ( arguments.force && hasBucket( arguments.bucketName ) ) {
 			var bucketContents = getBucket( arguments.bucketName );
@@ -583,7 +631,7 @@ component accessors="true" singleton {
 	 *                  For more info look here:
 	 *                  http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html##sec14.9
 	 * @expires         Sets the expiration header of the object in days.
-	 * @acl             The Amazon security access policy to use.
+	 * @acl          The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL()
 	 *                  Defaults to public-read.
 	 * @metaHeaders     Additonal metadata headers to add.
 	 * @md5             Set the MD5 hash which allows aws to checksum the object
@@ -603,11 +651,11 @@ component accessors="true" singleton {
 		numeric HTTPTimeout    = variables.defaultTimeout,
 		string cacheControl    = variables.defaultCacheControl,
 		string expires         = "",
-		string acl             = variables.defaultACL,
+		any acl             = variables.defaultACL,
 		struct metaHeaders     = {},
 		string md5             = variables.autoMD5,
 		string storageClass    = variables.defaultStorageClass
-	) {
+	){
 		requireBucketName( arguments.bucketName );
 		arguments.data = fileReadBinary( arguments.filepath );
 
@@ -644,7 +692,7 @@ component accessors="true" singleton {
 	 *               For more info look here:
 	 *               http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html##sec14.9
 	 * @expires      Sets the expiration header of the object in days.
-	 * @acl          The Amazon security access policy to use.
+	 * @acl          The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL()
 	 *               Defaults to public-read.
 	 * @metaHeaders  Additonal metadata headers to add.
 	 *
@@ -657,9 +705,9 @@ component accessors="true" singleton {
 		numeric HTTPTimeout        = variables.defaultTimeOut,
 		string cacheControl        = variables.defaultCacheControl,
 		string expires             = "",
-		string acl                 = variables.defaultACL,
+		any acl                 = variables.defaultACL,
 		struct metaHeaders         = {}
-	) {
+	){
 		requireBucketName( arguments.bucketName );
 		arguments.data = "";
 		return putObject( argumentCollection = arguments );
@@ -672,7 +720,7 @@ component accessors="true" singleton {
 	 *
 	 * @return      A struct of Amazon-enabled metadata headers.
 	 */
-	struct function createMetaHeaders( struct metaHeaders = {} ) {
+	struct function createMetaHeaders( struct metaHeaders = {} ){
 		var md = {};
 		for ( var key in arguments.metaHeaders ) {
 			md[ "x-amz-meta-" & key ] = arguments.metaHeaders[ key ];
@@ -696,7 +744,7 @@ component accessors="true" singleton {
 	 *                     For more info look here:
 	 *                     http://www.w3.org/Protocols/rfc2616/rfc2616-sec14.html##sec14.9
 	 * @expires            Sets the expiration header of the object in days.
-	 * @acl                The Amazon security access policy to use.
+	 * @acl          The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL()
 	 *                     Defaults to public-read.
 	 * @metaHeaders        Additonal metadata headers to add.
 	 * @md5                Set the MD5 hash which allows aws to checksum the object
@@ -717,27 +765,30 @@ component accessors="true" singleton {
 		numeric HTTPTimeout       = variables.defaultTimeOut,
 		string cacheControl       = variables.defaultCacheControl,
 		string expires            = "",
-		string acl                = variables.defaultACL,
+		any acl                = variables.defaultACL,
 		struct metaHeaders        = {},
 		string md5                = variables.autoMD5,
 		string storageClass       = variables.defaultStorageClass
-	) {
+	){
 		requireBucketName( arguments.bucketName );
-		var amzHeaders            = createMetaHeaders( arguments.metaHeaders );
-		amzHeaders[ "x-amz-acl" ] = arguments.acl;
+		var headers            = createMetaHeaders( arguments.metaHeaders );
+		headers[ "content-type" ] = arguments.contentType;
+		applyACLHeaders( headers, arguments.acl );
 
 		if ( len( arguments.storageClass ) ) {
-			amzHeaders[ "x-amz-storage-class" ] = arguments.storageClass;
+			headers[ "x-amz-storage-class" ] = arguments.storageClass;
 		}
 
-		var headers = { "content-type" : arguments.contentType };
+		if ( arguments.contentType == "auto" ) {
+			arguments.contentType = getFileMimeType( arguments.uri );
+		}
 
 		if ( len( arguments.cacheControl ) ) {
 			headers[ "cache-control" ] = arguments.cacheControl;
 		};
 
 		if ( arguments.md5 == "auto" ) {
-			headers[ "content-md5" ] = mD5inBase64( arguments.content );
+			headers[ "content-md5" ] = mD5inBase64( arguments.data );
 		} else if ( len( arguments.md5 ) ) {
 			headers[ "content-md5" ] = arguments.md5;
 		}
@@ -751,7 +802,10 @@ component accessors="true" singleton {
 		}
 
 		if ( isNumeric( arguments.expires ) ) {
-			headers[ "expires" ] = "#dateFormat( now() + arguments.expires, "ddd, dd mmm yyyy" )# #timeFormat( now(), "H:MM:SS" )# GMT";
+			headers[ "expires" ] = "#dateFormat(
+				now() + arguments.expires,
+				"ddd, dd mmm yyyy"
+			)# #timeFormat( now(), "H:MM:SS" )# GMT";
 		}
 
 		var results = s3Request(
@@ -759,14 +813,13 @@ component accessors="true" singleton {
 			resource   = arguments.bucketName & "/" & arguments.uri,
 			body       = arguments.data,
 			timeout    = arguments.HTTPTimeout,
-			headers    = headers,
-			amzHeaders = amzHeaders
+			headers    = headers
 		);
 
 		if ( results.responseHeader.status_code == 200 ) {
 			return replace(
 				results.responseHeader.etag,
-				'"',
+				"""",
 				"",
 				"all"
 			);
@@ -783,15 +836,76 @@ component accessors="true" singleton {
 	 *
 	 * @return     The object's metadata information.
 	 */
-	struct function getObjectInfo( required string bucketName = variables.defaultBucketName, required string uri ) {
+	struct function getObjectInfo(
+		required string bucketName = variables.defaultBucketName,
+		required string uri
+	){
 		requireBucketName( arguments.bucketName );
-		var results = s3Request( method = "HEAD", resource = arguments.bucketName & "/" & arguments.uri );
+		var results = s3Request(
+			method   = "HEAD",
+			resource = arguments.bucketName & "/" & arguments.uri
+		);
 
 		var metadata = {};
 		for ( var key in results.responseHeader ) {
 			metadata[ key ] = results.responseHeader[ key ];
 		}
 		return metadata;
+	}
+
+	/**
+	 * Get an object's ACL information.
+	 *
+	 * @bucketName The bucket the object resides in.
+	 * @uri        The object URI to retrieve the info.
+	 * @throwOnError Flag to throw exceptions on any error or not, default is true
+	 *
+	 * @return     The object's ACL information.  A struct containing a top level "owner" key which is a struct with "ID" and "Displayname" keys.
+	 *             Also a top level "grants" key which is a struct containing keys FULL_CONTROL, WRITE, WRITE_ACP, READ, and READ_ACP.  Each
+	 *             of which is an array containing zero or more structs representing a grantee which is represented as a struct with an ID, emailAddress, or URI key based on type.
+	 */
+	struct function getObjectACL(
+		required string bucketName = variables.defaultBucketName,
+		required string uri,
+		throwOnError = false
+	){
+		requireBucketName( arguments.bucketName );
+		var results = s3Request(
+			method   = "GET",
+			resource = arguments.bucketName & "/" & arguments.uri,
+			parameters={ 'acl' : '' },
+			throwOnError=throwOnError
+		);
+		var ACLs = {
+			'owner' : {
+				'ID' : '',
+				'DisplayName' : ''
+			},
+			'grants' : {
+				'FULL_CONTROL' : [],
+				'WRITE' : [],
+				'WRITE_ACP' : [],
+				'READ' : [],
+				'READ_ACP' : []
+			}
+		};
+		if( !results.error ) {
+			// Set owner
+			for( var child in results.response.AccessControlPolicy.owner.XMLChildren ) {
+				ACLs.owner[ child.XMLName ] = child.XMLText;
+			}
+			for( var child in results.response.AccessControlPolicy.AccessControlList.XMLChildren ) {
+				var grant = {
+					'type' : child.Grantee.XMLAttributes['xsi:type']
+				};
+				for( var grantee in child.Grantee.XMLChildren ) {
+					grant[ grantee.XMLName ] = grantee.XMLText;
+				}
+				ACLs.grants[ child.Permission.XMLText ].append( grant );
+			}
+		}
+
+		return ACLs;
 	}
 
 	/**
@@ -802,7 +916,10 @@ component accessors="true" singleton {
 	 *
 	 * @return     True/false whether the object exists
 	 */
-	boolean function objectExists( required string bucketName = variables.defaultBucketName, required string uri ) {
+	boolean function objectExists(
+		required string bucketName = variables.defaultBucketName,
+		required string uri
+	){
 		requireBucketName( arguments.bucketName );
 		var results = s3Request(
 			method       = "HEAD",
@@ -816,7 +933,10 @@ component accessors="true" singleton {
 		} else if ( status_code == 404 ) {
 			return false;
 		} else {
-			throw( message = "Error checking for the existence of [#uri#].", detail = results.message );
+			throw(
+				message = "Error checking for the existence of [#uri#].",
+				detail  = results.message
+			);
 		}
 	}
 
@@ -827,37 +947,53 @@ component accessors="true" singleton {
 	 * @uri              The uri to the object to create a link for.
 	 * @minutesValid     The minutes the link is valid for. Defaults to 60 minutes.
 	 * @useSSL           Use SSL for the returned url.
+	 * @method           HTTP method that will be used
+	 * @acl              The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL(). If omitted, any ACL will be allowed when PUTting the file.
+	 * @metaHeaders      Additonal metadata headers to add.
+	 * @contentType      The object content type for PUT.  If omitted, any content-type will be allowed when PUTting the file.
 	 *
 	 * @return           An authenticated url to the resource.
 	 */
 	string function getAuthenticatedURL(
 		required string bucketName = variables.defaultBucketName,
 		required string uri,
-		string minutesValid      = 60,
-		boolean useSSL           = variables.ssl
-	) {
+		string minutesValid = 60,
+		boolean useSSL      = variables.ssl,
+		string method      = 'GET',
+		any acl          = '',
+		struct metaHeaders  = {},
+		string contentType
+	){
 		requireBucketName( arguments.bucketName );
+
+		var headers = createMetaHeaders( arguments.metaHeaders );
+
+		if( !isNull( arguments.contentType ) ) {
+			headers[ "content-type" ] = arguments.contentType;
+		}
+
+		if( !isNull( arguments.acl ) ) {
+			applyACLHeaders( headers, arguments.acl );
+		}
 
 		var hostname = "#bucketName#.#variables.URLEndpointHostname#";
 
 		var sigData = variables.signatureUtil.generateSignatureData(
-			requestMethod = "GET",
-			hostName = hostname,
-			requestURI = arguments.uri,
-			requestBody = "",
-			requestHeaders = {},
-			requestParams = {
-				"X-Amz-Expires" = arguments.minutesValid * 60
-			},
-			accessKey = variables.accessKey,
-			secretKey = variables.secretKey,
-			regionName = variables.awsRegion,
-			serviceName = variables.serviceName,
+			requestMethod      = arguments.method,
+			hostName           = hostname,
+			requestURI         = arguments.uri,
+			requestBody        = "",
+			requestHeaders     = headers,
+			requestParams      = { "X-Amz-Expires" : arguments.minutesValid * 60 },
+			accessKey          = variables.accessKey,
+			secretKey          = variables.secretKey,
+			regionName         = variables.awsRegion,
+			serviceName        = variables.serviceName,
 			presignDownloadURL = true
 		);
 
 		var HTTPPrefix = arguments.useSSL ? "https://" : "http://";
-		return "#HTTPPrefix##hostname#/#arguments.uri#?#sigData.canonicalQueryString#&X-Amz-Signature=#sigData.signature#";
+		return "#HTTPPrefix##hostname##variables.signatureUtil.buildCanonicalURI( arguments.uri )#?#sigData.canonicalQueryString#&X-Amz-Signature=#sigData.signature#";
 	}
 
 	/**
@@ -868,9 +1004,15 @@ component accessors="true" singleton {
 	 *
 	 * @return     The object's metadata information.
 	 */
-	struct function getObject( required string bucketName = variables.defaultBucketName, required string uri ) {
+	struct function getObject(
+		required string bucketName = variables.defaultBucketName,
+		required string uri
+	){
 		requireBucketName( arguments.bucketName );
-		var results = s3Request( method = "GET", resource = arguments.bucketName & "/" & arguments.uri );
+		var results = s3Request(
+			method   = "GET",
+			resource = arguments.bucketName & "/" & arguments.uri
+		);
 		return results;
 	}
 
@@ -889,9 +1031,9 @@ component accessors="true" singleton {
 		required string bucketName = variables.defaultBucketName,
 		required string uri,
 		required string filepath,
-		numeric HTTPTimeout        = variables.defaultTimeOut,
-		boolean getAsBinary        = "no"
-	) {
+		numeric HTTPTimeout = variables.defaultTimeOut,
+		boolean getAsBinary = "no"
+	){
 		requireBucketName( arguments.bucketName );
 
 		// if filepath is a directory, append filename
@@ -926,10 +1068,16 @@ component accessors="true" singleton {
 	 *
 	 * @return     Returns true if the object is deleted successfully.
 	 */
-	boolean function deleteObject( required string bucketName = variables.defaultBucketName, required string uri ) {
+	boolean function deleteObject(
+		required string bucketName = variables.defaultBucketName,
+		required string uri
+	){
 		requireBucketName( arguments.bucketName );
 
-		var results = s3Request( method = "DELETE", resource = arguments.bucketName & "/" & arguments.uri );
+		var results = s3Request(
+			method   = "DELETE",
+			resource = arguments.bucketName & "/" & arguments.uri
+		);
 
 		return results.responseheader.status_code == 204;
 	}
@@ -941,34 +1089,49 @@ component accessors="true" singleton {
 	 * @fromURI      The source URI
 	 * @toBucket     The destination bucket
 	 * @toURI        The destination URI
-	 * @acl          The Amazon security access policy to use. Defaults to public.
+	 * @acl          The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL()
 	 * @storageClass Sets the S3 storage class which affects cost, access speed and durability.
 	 *               Defaults to STANDARD.
 	 * @metaHeaders  Additonal metadata headers to add.
+	 * @storageClass Sets the S3 storage class which affects cost, access speed and durability.
+	 *               Defaults to STANDARD.
+	 * @contentType  The file content type. Defaults to binary/octet-stream.
+	 * @throwOnError Flag to throw exceptions on any error or not, default is true
 	 *
 	 * @return      True if the object was copied correctly.
 	 */
 	boolean function copyObject(
-		required string fromBucket,
+		required string fromBucket = variables.defaultBucketName,
 		required string fromURI,
-		required string toBucket,
+		required string toBucket = variables.defaultBucketName,
 		required string toURI,
-		string acl          = variables.defaultACL,
+		any acl = variables.defaultACL,
 		struct metaHeaders  = {},
-		string storageClass = variables.defaultStorageClass
-	) {
-		var headers    = { "content-length" : 0 };
-		var amzHeaders = createMetaHeaders( arguments.metaHeaders );
+		string storageClass = variables.defaultStorageClass,
+		string contentType,
+		boolean throwOnError = variables.throwOnRequestError
+	){
+		var headers = createMetaHeaders( arguments.metaHeaders );
+		headers[ "content-length" ] = 0;
 
-		if ( not structIsEmpty( arguments.metaHeaders ) ) {
-			amzHeaders[ "x-amz-metadata-directive" ] = "REPLACE";
+		// If not passed, keep source files content type
+		if( !isNull( arguments.contentType ) ) {
+			if ( arguments.contentType == "auto" ) {
+				arguments.contentType = getFileMimeType( arguments.toURI );
+			}
+			headers[ "content-type" ] = arguments.contentType;
+			headers[ "x-amz-metadata-directive" ] = "REPLACE";
 		}
 
-		amzHeaders[ "x-amz-copy-source" ] = "/#arguments.fromBucket#/#arguments.fromURI#";
-		amzHeaders[ "x-amz-acl" ]         = arguments.acl;
+		if ( not structIsEmpty( arguments.metaHeaders ) ) {
+			headers[ "x-amz-metadata-directive" ] = "REPLACE";
+		}
+
+		headers[ "x-amz-copy-source" ] = signatureUtil.urlEncodePath( "/#arguments.fromBucket#/#arguments.fromURI#" );
+		applyACLHeaders( headers, arguments.acl );
 
 		if ( len( arguments.storageClass ) ) {
-			amzHeaders[ "x-amz-storage-class" ] = arguments.storageClass;
+			headers[ "x-amz-storage-class" ] = arguments.storageClass;
 		}
 
 		// arguments.toURI = urlEncodedFormat( arguments.toURI );
@@ -982,10 +1145,10 @@ component accessors="true" singleton {
 			resource    = arguments.toBucket & "/" & arguments.toURI,
 			metaHeaders = metaHeaders,
 			headers     = headers,
-			amzHeaders  = amzHeaders
+			throwOnError = throwOnError
 		);
 
-		return results.responseheader.status_code == 204;
+		return ( results.responseheader.status_code == 204 || results.responseheader.status_code == 200 );
 	}
 
 	/**
@@ -995,23 +1158,36 @@ component accessors="true" singleton {
 	 * @oldFileKey    The source URI.
 	 * @newBucketName The destination bucket.
 	 * @newFileKey    The destination URI.
+	 * @acl          The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL()
 	 *
 	 * @return        True if the rename operation is successful.
 	 */
 	boolean function renameObject(
-		required string oldBucketName,
+		string oldBucketName = variables.defaultBucketName,
 		required string oldFileKey,
-		required string newBucketName,
-		required string newFileKey
-	) {
+		string newBucketName = variables.defaultBucketName,
+		required string newFileKey,
+		any acl
+	){
 		if ( compare( oldBucketName, newBucketName ) || compare( oldFileKey, newFileKey ) ) {
+			// If no ACL was passed, attempt to look up the old object's ACL (requires s3:GetObjectAcl permissions or READ_ACP access to the object)
+			if( isNull( arguments.acl ) ) {
+				var oldACL = getObjectACL( oldBucketName, oldFileKey );
+				// If this is empty, we did not have permissions to get the ACLs
+				if( len( oldACL.owner.id ) ) {
+					// Set the new ACL to the grants from the old ACL
+					arguments.acl = oldACL.grants;
+				}
+			}
+
 			copyObject(
-				oldBucketName,
-				oldFileKey,
-				newBucketName,
-				newFileKey
+				arguments.oldBucketName,
+				arguments.oldFileKey,
+				arguments.newBucketName,
+				arguments.newFileKey,
+				arguments.acl
 			);
-			deleteObject( oldBucketName, oldFileKey );
+			deleteObject( arguments.oldBucketName, arguments.oldFileKey );
 			return true;
 		}
 
@@ -1025,7 +1201,6 @@ component accessors="true" singleton {
 	 * @resource   The resource to hit in the Amazon S3 service.
 	 * @body       The body content of the request, if passed.
 	 * @headers    A struct of HTTP headers to send.
-	 * @amzHeaders A struct of special Amazon headers to send.
 	 * @parameters A struct of HTTP URL parameters to send.
 	 * @timeout    The default CFHTTP timeout.
 	 * @throwOnError Flag to throw exceptions on any error or not, default is true
@@ -1037,14 +1212,14 @@ component accessors="true" singleton {
 		string resource       = "",
 		any body              = "",
 		struct headers        = {},
-		struct amzHeaders     = {},
 		struct parameters     = {},
 		string filename       = "",
 		numeric timeout       = variables.defaultTimeOut,
 		boolean parseResponse = true,
 		boolean getAsBinary   = "no",
-		boolean throwOnError  = variables.throwOnRequestError
-	) {
+		boolean throwOnError  = variables.throwOnRequestError,
+		numeric tryCount      = 1
+	){
 		var results = {
 			"error"          : false,
 			"response"       : {},
@@ -1054,22 +1229,15 @@ component accessors="true" singleton {
 		var HTTPResults = "";
 		var param       = "";
 		var md5         = "";
-		var sortedAMZ   = listToArray( listSort( structKeyList( arguments.amzHeaders ), "textnocase" ) );
 
 		// Default Content Type
 		if ( NOT structKeyExists( arguments.headers, "content-type" ) ) {
 			arguments.headers[ "Content-Type" ] = "";
 		}
 
-		// Prepare amz headers in sorted order
-		for ( var x = 1; x <= arrayLen( sortedAMZ ); x++ ) {
-			// Create amz signature string
-			arguments.headers[ sortedAMZ[ x ] ] = arguments.amzHeaders[ sortedAMZ[ x ] ];
-		}
-
 		// Create Signature
 		var signatureData = signatureUtil.generateSignatureData(
-			requestMethod = arguments.method,
+			requestMethod  = arguments.method,
 			hostName       = variables.URLEndpointHostname,
 			requestURI     = arguments.resource,
 			requestBody    = arguments.body,
@@ -1080,53 +1248,86 @@ component accessors="true" singleton {
 			regionName     = variables.awsRegion,
 			serviceName    = variables.serviceName
 		);
+		var cfhttpAttributes={};
+		if( !isNull( server.lucee ) ) {
+			// Lucee encodes CFHTTP URLs by default which breaks crap.  Adobe doesn't touch it.  Good job, Adobe.
+			// Adobe will, however, fall on the floor sobbing if you include the encodeurl attribute in the code directly as it is a Lucee-only feature.
+			cfhttpAttributes[ 'encodeurl' ] = false;
+		}
 		cfhttp(
-			method      =arguments.method,
-			url         ="#variables.URLEndPoint#/#arguments.resource#",
-			charset     ="utf-8",
-			result      ="HTTPResults",
-			redirect    =true,
-			timeout     =arguments.timeout,
-			getAsBinary =arguments.getAsBinary,
-			useragent   ="ColdFusion-S3SDK"
+			method      = arguments.method,
+			url         = "#variables.URLEndPoint##signatureData.CanonicalURI#",
+			charset     = "utf-8",
+			result      = "HTTPResults",
+			redirect    = true,
+			timeout     = arguments.timeout,
+			getAsBinary = arguments.getAsBinary,
+			useragent   = "ColdFusion-S3SDK",
+			attributeCollection=cfhttpAttributes
 		) {
 			// Amazon Global Headers
 			cfhttpparam(
-				type ="header",
-				name ="Date",
-				value=signatureData.amzDate
+				type  = "header",
+				name  = "Date",
+				value = signatureData.amzDate
 			);
 
 			cfhttpparam(
-				type ="header",
-				name ="Authorization",
-				value=signatureData.authorizationHeader
+				type  = "header",
+				name  = "Authorization",
+				value = signatureData.authorizationHeader
 			);
 
 			for ( var headerName in signatureData.requestHeaders ) {
 				cfhttpparam(
-					type ="header",
-					name =headerName,
-					value=signatureData.requestHeaders[ headerName ]
+					type  = "header",
+					name  = headerName,
+					value = signatureData.requestHeaders[ headerName ]
 				);
 			}
 
 			for ( var paramName in signatureData.requestParams ) {
 				cfhttpparam(
-					type   ="URL",
-					name   =paramName,
-					encoded=false,
-					value  =signatureData.requestParams[ paramName ]
+					type    = "URL",
+					name    = paramName,
+					encoded = false,
+					value   = signatureData.requestParams[ paramName ]
 				);
 			}
 
 			if ( len( arguments.body ) ) {
-				cfhttpparam( type="body", value=arguments.body );
+				cfhttpparam(
+					type  = "body",
+					value = arguments.body
+				);
 			}
 		}
 
+		// I've seen this variable disappear in Lucee on failed HTTP requests for some reason.
+		if( isNull( HTTPResults.responseHeader.status_code ) ) {
+			HTTPResults.responseHeader.status_code = 0;
+		}
+
+		// Amazon recommends retrying these requests after a delay
+		if (
+			listFindNoCase(
+				"500,503",
+				HTTPResults.responseHeader.status_code
+			) && tryCount < variables.retriesOnError
+		) {
+			log.warn(
+				"AWS call #arguments.method# #variables.URLEndpointHostname#/#arguments.resource# returned #HTTPResults.statusCode#.  Retrying (attempt #tryCount#)"
+			);
+			sleep( 1000 );
+			arguments.tryCount++;
+			return s3Request( argumentCollection = arguments );
+		}
+
 		if ( len( arguments.filename ) ) {
-			fileWrite( arguments.filename, HTTPResults.fileContent );
+			fileWrite(
+				arguments.filename,
+				HTTPResults.fileContent
+			);
 		}
 
 		if ( log.canDebug() ) {
@@ -1140,23 +1341,36 @@ component accessors="true" singleton {
 		results.responseHeader = HTTPResults.responseHeader;
 
 		results.message = HTTPResults.errorDetail;
-		if ( len( HTTPResults.errorDetail ) && HTTPResults.errorDetail neq "302 Found" ) {
+		// Ignore redirects and 404s when getting a HEAD request (exists check)
+		if (
+			len( HTTPResults.errorDetail ) && HTTPResults.errorDetail neq "302 Found" && !(
+				arguments.method == "HEAD" && HTTPResults.errorDetail eq "404 Not Found"
+			)
+		) {
 			results.error = true;
 		}
 
 		// Check XML Parsing?
 		if (
 			arguments.parseResponse &&
-			structKeyExists( HTTPResults.responseHeader, "content-type" ) &&
+			structKeyExists(
+				HTTPResults.responseHeader,
+				"content-type"
+			) &&
 			HTTPResults.responseHeader[ "content-type" ] == "application/xml" &&
 			isXML( HTTPResults.fileContent )
 		) {
 			results.response = xmlParse( HTTPResults.fileContent );
 			// Check for Errors
-			if ( NOT listFindNoCase( "200,204,302", HTTPResults.responseHeader.status_code ) ) {
+			if (
+				NOT listFindNoCase(
+					"200,404,204,302",
+					HTTPResults.responseHeader.status_code
+				)
+			) {
 				results.error   = true;
 				results.message = arrayToList(
-					arrayMap( results.response.error.XmlChildren, function( node ) {
+					arrayMap( results.response.error.XmlChildren, function( node ){
 						return "#node.XmlName#: #node.XmlText#";
 					} ),
 					"\n"
@@ -1166,7 +1380,7 @@ component accessors="true" singleton {
 
 		if ( results.error ) {
 			log.error(
-				"Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#",
+				"Error making Amazon Rest Call ->Arguments: #arguments.toString()#, ->Encoded Signature=#signatureData.signature#",
 				HTTPResults
 			);
 			results.http = HTTPResults;
@@ -1194,11 +1408,17 @@ component accessors="true" singleton {
 	/**
 	 * NSA SHA-1 Algorithm: RFC 2104HMAC-SHA1
 	 */
-	private binary function HMAC_SHA1( required string signKey, required string signMessage ) {
-		var jMsg = javacast( "string", arguments.signMessage ).getBytes( encryption_charset );
-		var jKey = javacast( "string", arguments.signKey ).getBytes( encryption_charset );
-		var key  = createObject( "java", "javax.crypto.spec.SecretKeySpec" ).init( jKey, "HmacSHA1" );
-		var mac  = createObject( "java", "javax.crypto.Mac" ).getInstance( key.getAlgorithm() );
+	private binary function HMAC_SHA1(
+		required string signKey,
+		required string signMessage
+	){
+		var jMsg = javacast( "string", arguments.signMessage ).getBytes( encryptionCharset );
+		var jKey = javacast( "string", arguments.signKey ).getBytes( encryptionCharset );
+		var key  = createObject(
+			"java",
+			"javax.crypto.spec.SecretKeySpec"
+		).init( jKey, "HmacSHA1" );
+		var mac = createObject( "java", "javax.crypto.Mac" ).getInstance( key.getAlgorithm() );
 
 		mac.init( key );
 		mac.update( jMsg );
@@ -1209,10 +1429,13 @@ component accessors="true" singleton {
 	/**
 	 * @description Generate RSA MD5 hash
 	 */
-	string function MD5inBase64( required content ) {
+	string function MD5inBase64( required content ){
 		var result = 0;
-		var digest = createObject( "java", "java.security.MessageDigest" );
-		digest     = digest.getInstance( "MD5" );
+		var digest = createObject(
+			"java",
+			"java.security.MessageDigest"
+		);
+		digest = digest.getInstance( "MD5" );
 		if ( isSimpleValue( arguments.content ) ) {
 			result = digest.digest( arguments.content.getBytes() );
 		} else {
@@ -1225,7 +1448,7 @@ component accessors="true" singleton {
 	/**
 	 * Helper function to catch missing bucket name
 	 */
-	private function requireBucketName( bucketName ) {
+	private function requireBucketName( bucketName ){
 		if ( isNull( arguments.bucketName ) || !len( arguments.bucketName ) ) {
 			throw(
 				"bucketName is required.  Please provide the name of the bucket to access or set a default bucket name in the SDk."
@@ -1233,10 +1456,53 @@ component accessors="true" singleton {
 		}
 	}
 
+
+	/**
+	 * Helper function to apply grant headers
+	 */
+	private function applyACLHeaders( struct headers={}, required any acl ){
+		if( isSimpleValue( arguments.acl ) ) {
+			if( !len( arguments.acl ) ) {
+				return headers;
+			}
+			headers[ "x-amz-acl" ] = arguments.acl;
+		} else if( isStruct( arguments.acl ) ) {
+			var types = {
+				'FULL_CONTROL' : 'x-amz-grant-full-control',
+				'WRITE' : 'x-amz-grant-write',
+				'WRITE_ACP' : 'x-amz-grant-write-acp',
+				'READ' : 'x-amz-grant-read',
+				'READ_ACP' : 'x-amz-grant-read-acp'
+			};
+			for( var type in types ) {
+				if( structKeyExists( arguments.acl, type ) && isArray( arguments.acl[ type ] ) && arguments.acl[ type ].len() ) {
+					headers[ types[type] ] = arguments.acl[ type ].reduce( (header,grant)=>{
+						if( grant.keyExists( 'ID' ) ) {
+							return header.listAppend( '#(len(header)?' ':'')#id="#grant.ID#"' );
+						} else if( grant.keyExists( 'uri' ) ) {
+							return header.listAppend( '#(len(header)?' ':'')#uri="#grant.uri#"' );
+						} else if( grant.keyExists( 'emailAddress' ) ) {
+							return header.listAppend( '#(len(header)?' ':'')#emailAddress="#grant.emailAddress#"' );
+						} else {
+							dump(grant)
+							return header;
+						}
+					}, '' );
+					if( !len( headers[ types[type] ] ) ) {
+						headers.delete( types[type] );
+					}
+				}
+			}
+		} else {
+			throw( "Invalid acl argument. Must be string or struct." );
+		}
+		return headers;
+	}
+
 	/**
 	 * Determine mime type from the file extension
 	 * */
-	string function getFileMimeType( required string filePath ) {
+	string function getFileMimeType( required string filePath ){
 		var contentType = "binary/octet-stream";
 		if ( len( arguments.filePath ) ) {
 			var ext = listLast( arguments.filePath, "." );
@@ -1244,9 +1510,7 @@ component accessors="true" singleton {
 				contentType = variables.mimeTypes[ ext ];
 			} else {
 				try {
-					contentType = getPageContext()
-						.getServletContext()
-						.getMimeType( arguments.filePath );
+					contentType = getPageContext().getServletContext().getMimeType( arguments.filePath );
 				} catch ( any cfcatch ) {
 				}
 				if ( !isDefined( "contentType" ) ) {
