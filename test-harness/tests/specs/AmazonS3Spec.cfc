@@ -61,10 +61,21 @@ component extends="coldbox.system.testing.BaseTestCase" {
 				} );
 
 				it( "can store a new object", function(){
-					s3.putObject( testBucket, "example.txt", "Hello, world!" );
+					s3.putObject( bucketName=testBucket, uri="example.txt", data="Hello, world!", contentType="auto" );
 					var md = s3.getObjectInfo( testBucket, "example.txt" );
 					debug( md );
 					expect( md ).notToBeEmpty();
+					expect( md[ 'Content-Type' ] ).toBe( 'text/plain' );
+				} );
+
+				it( "can store a new object from file", function(){
+					var filePath = expandPath( "/tests/tmp/example.txt" );
+					fileWrite( filePath, "file contents" );
+					s3.putObject( bucketName=testBucket, uri="example.txt", filepath=filePath, contentType="auto" );
+					var md = s3.getObjectInfo( testBucket, "example.txt" );
+					//debug( md );
+					expect( md ).notToBeEmpty();
+					expect( md[ 'Content-Type' ] ).toBe( 'text/plain' );
 				} );
 
 				it(
@@ -77,7 +88,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 							"Hello, space world!"
 						);
 						var md = s3.getObjectInfo( testBucket, "Word Doc Tests.txt" );
-						debug( md );
+						//debug( md );
 						expect( md ).notToBeEmpty();
 					}
 				);

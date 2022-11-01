@@ -772,7 +772,6 @@ component accessors="true" singleton {
 	){
 		requireBucketName( arguments.bucketName );
 		var headers            = createMetaHeaders( arguments.metaHeaders );
-		headers[ "content-type" ] = arguments.contentType;
 		applyACLHeaders( headers, arguments.acl );
 
 		if ( len( arguments.storageClass ) ) {
@@ -782,6 +781,7 @@ component accessors="true" singleton {
 		if ( arguments.contentType == "auto" ) {
 			arguments.contentType = getFileMimeType( arguments.uri );
 		}
+		headers[ "content-type" ] = arguments.contentType;
 
 		if ( len( arguments.cacheControl ) ) {
 			headers[ "cache-control" ] = arguments.cacheControl;
