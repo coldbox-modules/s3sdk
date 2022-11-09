@@ -51,6 +51,8 @@ This SDK will be installed into a directory called `s3sdk` and then the SDK can 
  * @autoContentType Tries to determine content type of file by file extension. Defaults to false.
  * @autoMD5 Calculates MD5 hash of content automatically. Defaults to false.
  * @debug Used to turn debugging on or off outside of logbox. Defaults to false.
+ * @defaultEncryptionAlgorithm The default server side encryption algorithm to use.  Usually "AES256". Not needed if using custom defaultEncryptionKey
+ * @defaultEncryptionKey	The default base64 encoded AES 356 bit key for server side encryption.
  *
  * @return An AmazonS3 instance.
  */
@@ -70,7 +72,9 @@ public AmazonS3 function init(
 	string defaultACL= "public-read",
 	boolean autoContentType= false,
 	boolean autoMD5= false,
-	boolean debug= false
+	boolean debug= false,
+	string defaultEncryptionAlgorithm = "",
+	string defaultEncryptionKey = "",
 )
 ```
 

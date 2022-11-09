@@ -49,6 +49,8 @@ component accessors="true" singleton {
 	property name="autoMD5";
 	property name="mimeTypes";
 	property name="serviceName";
+	property name="defaultEncryptionAlgorithm";
+	property name="defaultEncryptionKey";
 
 	// STATIC Contsants
 	this.ACL_PRIVATE           = "private";
@@ -90,6 +92,8 @@ component accessors="true" singleton {
 	 * @autoContentType Tries to determine content type of file by file extension. Defaults to false.
 	 * @autoMD5 Calculates MD5 hash of content automatically. Defaults to false.
 	 * @debug Used to turn debugging on or off outside of logbox. Defaults to false.
+	 * @defaultEncryptionAlgorithm The default server side encryption algorithm to use.  Usually "AES256". Not needed if using custom defaultEncryptionKey
+	 * @defaultEncryptionKey	The default base64 encoded AES 356 bit key for server side encryption.
 	 *
 	 * @return An AmazonS3 instance.
 	 */
@@ -112,7 +116,9 @@ component accessors="true" singleton {
 		boolean autoContentType    = false,
 		boolean autoMD5            = false,
 		string serviceName         = "s3",
-		boolean debug              = false
+		boolean debug              = false,
+		string defaultEncryptionAlgorithm = "",
+		string defaultEncryptionKey = ""
 	){
 		if ( arguments.awsDomain == "amazonaws.com" && arguments.awsRegion == "" ) {
 			arguments.awsRegion = "us-east-1";
@@ -141,6 +147,8 @@ component accessors="true" singleton {
 		variables.autoContentType     = arguments.autoContentType;
 		variables.autoMD5             = ( variables.signatureType == "V2" || arguments.autoMD5 ? "auto" : "" );
 		variables.serviceName         = arguments.serviceName;
+		variables.defaultEncryptionAlgorithm = arguments.defaultEncryptionAlgorithm;
+		variables.defaultEncryptionKey = arguments.defaultEncryptionKey;
 
 		// Construct the SSL Domain
 		setSSL( arguments.ssl );
@@ -639,6 +647,8 @@ component accessors="true" singleton {
 	 *                  Set to "auto" to calculate the md5 in the client.
 	 * @storageClass    Sets the S3 storage class which affects cost, access speed and durability.
 	 *                  Defaults to STANDARD.
+	 * @encryptionAlgorithm The server side encryption algorithm to use.  Usually "AES256". Not needed if using custom encryptionKey
+	 * @encryptionKey	The base64 encoded AES 356 bit key for server side encryption.
 	 *
 	 * @return          The file's eTag
 	 */
@@ -654,7 +664,9 @@ component accessors="true" singleton {
 		any acl             = variables.defaultACL,
 		struct metaHeaders     = {},
 		string md5             = variables.autoMD5,
-		string storageClass    = variables.defaultStorageClass
+		string storageClass    = variables.defaultStorageClass,
+		string encryptionAlgorithm= variables.defaultEncryptionAlgorithm,
+		string encryptionKey	  = variables.defaultEncryptionKey
 	){
 		requireBucketName( arguments.bucketName );
 		arguments.data = fileReadBinary( arguments.filepath );
@@ -669,12 +681,6 @@ component accessors="true" singleton {
 		if ( arguments.contentType == "auto" ) {
 			arguments.contentType = getFileMimeType( arguments.filepath );
 		}
-
-		// arguments.uri = urlEncodedFormat( arguments.uri );
-		// arguments.uri = replaceNoCase( arguments.uri, "%2F", "/", "all" );
-		// arguments.uri = replaceNoCase( arguments.uri, "%2E", ".", "all" );
-		// arguments.uri = replaceNoCase( arguments.uri, "%2D", "-", "all" );
-		// arguments.uri = replaceNoCase( arguments.uri, "%5F", "_", "all" );
 
 		return putObject( argumentCollection = arguments );
 	}
@@ -752,6 +758,8 @@ component accessors="true" singleton {
 	 *                     Set to "auto" to calculate the md5 in the client.
 	 * @storageClass       Sets the S3 storage class which affects cost, access speed and durability.
 	 *                     Defaults to STANDARD.
+	 * @encryptionAlgorithm The server side encryption algorithm to use.  Usually "AES256". Not needed if using custom encryptionKey
+	 * @encryptionKey	The base64 encoded AES 356 bit key for server side encryption.
 	 *
 	 * @return             The object's eTag.
 	 */
@@ -765,14 +773,17 @@ component accessors="true" singleton {
 		numeric HTTPTimeout       = variables.defaultTimeOut,
 		string cacheControl       = variables.defaultCacheControl,
 		string expires            = "",
-		any acl                = variables.defaultACL,
+		any acl                	  = variables.defaultACL,
 		struct metaHeaders        = {},
 		string md5                = variables.autoMD5,
-		string storageClass       = variables.defaultStorageClass
+		string storageClass       = variables.defaultStorageClass,
+		string encryptionAlgorithm= variables.defaultEncryptionAlgorithm,
+		string encryptionKey	  = variables.defaultEncryptionKey
 	){
 		requireBucketName( arguments.bucketName );
 		var headers            = createMetaHeaders( arguments.metaHeaders );
 		applyACLHeaders( headers, arguments.acl );
+		applyEncryptionHeaders( headers, arguments );
 
 		if ( len( arguments.storageClass ) ) {
 			headers[ "x-amz-storage-class" ] = arguments.storageClass;
@@ -833,17 +844,23 @@ component accessors="true" singleton {
 	 *
 	 * @bucketName The bucket the object resides in.
 	 * @uri        The object URI to retrieve the info.
+	 * @encryptionAlgorithm The server side encryption algorithm to use.  Usually "AES256". Not needed if using custom encryptionKey
+	 * @encryptionKey	The base64 encoded AES 356 bit key for server side encryption.
 	 *
 	 * @return     The object's metadata information.
 	 */
 	struct function getObjectInfo(
 		required string bucketName = variables.defaultBucketName,
-		required string uri
+		required string uri,
+		string encryptionAlgorithm= variables.defaultEncryptionAlgorithm,
+		string encryptionKey	  = variables.defaultEncryptionKey
 	){
 		requireBucketName( arguments.bucketName );
+		var headers = applyEncryptionHeaders( {}, arguments );
 		var results = s3Request(
 			method   = "HEAD",
-			resource = arguments.bucketName & "/" & arguments.uri
+			resource = arguments.bucketName & "/" & arguments.uri,
+			headers    = headers
 		);
 
 		var metadata = {};
@@ -951,6 +968,8 @@ component accessors="true" singleton {
 	 * @acl              The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL(). If omitted, any ACL will be allowed when PUTting the file.
 	 * @metaHeaders      Additonal metadata headers to add.
 	 * @contentType      The object content type for PUT.  If omitted, any content-type will be allowed when PUTting the file.
+	 * @encryptionAlgorithm The server side encryption algorithm to use.  Usually "AES256". Not needed if using custom encryptionKey
+	 * @encryptionKey	The base64 encoded AES 356 bit key for server side encryption.
 	 *
 	 * @return           An authenticated url to the resource.
 	 */
@@ -962,11 +981,14 @@ component accessors="true" singleton {
 		string method      = 'GET',
 		any acl          = '',
 		struct metaHeaders  = {},
-		string contentType
+		string contentType,
+		string encryptionAlgorithm= variables.defaultEncryptionAlgorithm,
+		string encryptionKey	  = variables.defaultEncryptionKey
 	){
 		requireBucketName( arguments.bucketName );
 
 		var headers = createMetaHeaders( arguments.metaHeaders );
+		applyEncryptionHeaders( headers, arguments );
 
 		if( !isNull( arguments.contentType ) ) {
 			headers[ "content-type" ] = arguments.contentType;
@@ -1001,16 +1023,24 @@ component accessors="true" singleton {
 	 *
 	 * @bucketName The bucket the object resides in.
 	 * @uri        The object URI to retrieve the info.
+	 * @encryptionAlgorithm The server side encryption algorithm to use.  Usually "AES256". Not needed if using custom encryptionKey
+	 * @encryptionKey	The base64 encoded AES 356 bit key for server side encryption.
 	 *
 	 * @return     The object's metadata information.
 	 */
 	struct function getObject(
 		required string bucketName = variables.defaultBucketName,
-		required string uri
+		required string uri,
+		string encryptionAlgorithm= variables.defaultEncryptionAlgorithm,
+		string encryptionKey	  = variables.defaultEncryptionKey
 	){
 		requireBucketName( arguments.bucketName );
+
+		var headers = applyEncryptionHeaders( {}, arguments );
+
 		var results = s3Request(
 			method   = "GET",
+			headers     = headers,
 			resource = arguments.bucketName & "/" & arguments.uri
 		);
 		return results;
@@ -1024,6 +1054,8 @@ component accessors="true" singleton {
 	 * @filepath           The file path write the object to, if no filename given filename from uri is used.
 	 * @HTTPTimeout        The HTTP timeout to use.
 	 * @getAsBinary        Treat the response body as binary instead of text.
+	 * @encryptionAlgorithm The server side encryption algorithm to use.  Usually "AES256". Not needed if using custom encryptionKey
+	 * @encryptionKey	The base64 encoded AES 356 bit key for server side encryption.
 	 *
 	 * @return             The object's eTag.
 	 */
@@ -1032,7 +1064,9 @@ component accessors="true" singleton {
 		required string uri,
 		required string filepath,
 		numeric HTTPTimeout = variables.defaultTimeOut,
-		boolean getAsBinary = "no"
+		boolean getAsBinary = "no",
+		string encryptionAlgorithm= variables.defaultEncryptionAlgorithm,
+		string encryptionKey	  = variables.defaultEncryptionKey
 	){
 		requireBucketName( arguments.bucketName );
 
@@ -1041,8 +1075,10 @@ component accessors="true" singleton {
 			arguments.filepath &= listLast( arguments.uri, "/\" );
 		}
 
+		var headers = applyEncryptionHeaders( {}, arguments );
 		var results = s3Request(
 			method        = "GET",
+			headers       = headers,
 			resource      = arguments.bucketName & "/" & arguments.uri,
 			filename      = arguments.filepath,
 			timeout       = arguments.HTTPTimeout,
@@ -1097,6 +1133,10 @@ component accessors="true" singleton {
 	 *               Defaults to STANDARD.
 	 * @contentType  The file content type. Defaults to binary/octet-stream.
 	 * @throwOnError Flag to throw exceptions on any error or not, default is true
+	 * @encryptionAlgorithm The server side encryption algorithm to use.  Usually "AES256". Not needed if using custom encryptionKey
+	 * @encryptionKey	The base64 encoded AES 356 bit key for server side encryption.
+	 * @encryptionAlgorithmSource The server side encryption algorithm to use for the source file.  Usually "AES256". Not needed if using custom encryptionKeySource
+	 * @encryptionKeySource	The base64 encoded AES 356 bit key used to encrypt the source file
 	 *
 	 * @return      True if the object was copied correctly.
 	 */
@@ -1109,9 +1149,14 @@ component accessors="true" singleton {
 		struct metaHeaders  = {},
 		string storageClass = variables.defaultStorageClass,
 		string contentType,
-		boolean throwOnError = variables.throwOnRequestError
+		boolean throwOnError = variables.throwOnRequestError,
+		string encryptionAlgorithm= variables.defaultEncryptionAlgorithm,
+		string encryptionKey	  = variables.defaultEncryptionKey,
+		string encryptionAlgorithmSource= variables.defaultEncryptionAlgorithm,
+		string encryptionKeySource	  = variables.defaultEncryptionKey
 	){
 		var headers = createMetaHeaders( arguments.metaHeaders );
+		applyEncryptionHeaders( headers, arguments );
 		headers[ "content-length" ] = 0;
 
 		// If not passed, keep source files content type
@@ -1134,12 +1179,6 @@ component accessors="true" singleton {
 			headers[ "x-amz-storage-class" ] = arguments.storageClass;
 		}
 
-		// arguments.toURI = urlEncodedFormat( arguments.toURI );
-		// arguments.toURI = replaceNoCase( arguments.toURI, "%2F", "/", "all" );
-		// arguments.toURI = replaceNoCase( arguments.toURI, "%2E", ".", "all" );
-		// arguments.toURI = replaceNoCase( arguments.toURI, "%2D", "-", "all" );
-		// arguments.toURI = replaceNoCase( arguments.toURI, "%5F", "_", "all" );
-
 		var results = s3Request(
 			method      = "PUT",
 			resource    = arguments.toBucket & "/" & arguments.toURI,
@@ -1159,6 +1198,8 @@ component accessors="true" singleton {
 	 * @newBucketName The destination bucket.
 	 * @newFileKey    The destination URI.
 	 * @acl          The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL()
+	 * @encryptionAlgorithm The server side encryption algorithm to use.  Usually "AES256". Not needed if using custom encryptionKey
+	 * @encryptionKey	The base64 encoded AES 356 bit key for server side encryption.
 	 *
 	 * @return        True if the rename operation is successful.
 	 */
@@ -1167,7 +1208,9 @@ component accessors="true" singleton {
 		required string oldFileKey,
 		string newBucketName = variables.defaultBucketName,
 		required string newFileKey,
-		any acl
+		any acl,
+		string encryptionAlgorithm= variables.defaultEncryptionAlgorithm,
+		string encryptionKey	  = variables.defaultEncryptionKey
 	){
 		if ( compare( oldBucketName, newBucketName ) || compare( oldFileKey, newFileKey ) ) {
 			// If no ACL was passed, attempt to look up the old object's ACL (requires s3:GetObjectAcl permissions or READ_ACP access to the object)
@@ -1181,11 +1224,15 @@ component accessors="true" singleton {
 			}
 
 			copyObject(
-				arguments.oldBucketName,
-				arguments.oldFileKey,
-				arguments.newBucketName,
-				arguments.newFileKey,
-				arguments.acl
+				fromBucket = arguments.oldBucketName,
+				fromURI = arguments.oldFileKey,
+				toBucket = arguments.newBucketName,
+				toURI = arguments.newFileKey,
+				acl = arguments.acl,
+				encryptionAlgorithm = arguments.encryptionAlgorithm,
+				encryptionKey = arguments.encryptionKey,
+				encryptionAlgorithmSource = arguments.encryptionAlgorithm,
+				encryptionKeySource = arguments.encryptionKey
 			);
 			deleteObject( arguments.oldBucketName, arguments.oldFileKey );
 			return true;
@@ -1496,6 +1543,35 @@ component accessors="true" singleton {
 		} else {
 			throw( "Invalid acl argument. Must be string or struct." );
 		}
+		return headers;
+	}
+
+	function applyEncryptionHeaders( headers, args ) {
+		if( len( args.encryptionKey ) ) {
+			if( len( args.encryptionAlgorithm ) ) {
+				headers[ "x-amz-server-side-encryption-customer-algorithm" ] = args.encryptionAlgorithm;
+			} else {
+				headers[ "x-amz-server-side-encryption-customer-algorithm" ] = 'AES256';
+			}
+			headers[ "x-amz-server-side-encryption-customer-key" ] = args.encryptionKey;
+			// Convert base64 key to bytes, and then MD5 hash with base64 output encoding instead of hex
+			headers[ "x-amz-server-side-encryption-customer-key-MD5" ] = tobase64( binaryDecode( hash( toBinary( args.encryptionKey ) ),'hex') );
+		} else if( len( args.encryptionAlgorithm ) ) {
+			headers[ "x-amz-server-side-encryption" ] = args.encryptionAlgorithm;
+		}
+		args.encryptionKeySource = args.encryptionKeySource ?: '';
+		args.encryptionAlgorithmSource = args.encryptionAlgorithmSource ?: '';
+		if( len( args.encryptionKeySource ) ) {
+			if( len( args.encryptionAlgorithmSource ) ) {
+				headers[ "x-amz-copy-source-server-side-encryption-customer-algorithm" ] = args.encryptionAlgorithmSource;
+			} else {
+				headers[ "x-amz-copy-source-server-side-encryption-customer-algorithm" ] = 'AES256';
+			}
+			headers[ "x-amz-copy-source-server-side-encryption-customer-key" ] = args.encryptionKeySource;
+			// Convert base64 key to bytes, and then MD5 hash with base64 output encoding instead of hex
+			headers[ "x-amz-copy-source-server-side-encryption-customer-key-MD5" ] = tobase64( binaryDecode( hash( toBinary( args.encryptionKeySource ) ),'hex') );
+		}
+
 		return headers;
 	}
 

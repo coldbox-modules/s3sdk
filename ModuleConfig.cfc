@@ -38,7 +38,9 @@ component {
 			serviceName         : "s3",
 			signatureType       : "V4",
 			ssl                 : true,
-			throwOnRequestError : true
+			throwOnRequestError : true,
+			defaultEncryptionAlgorithm : "",
+			defaultEncryptionKey : ""
 		};
 	}
 
@@ -120,8 +122,15 @@ component {
 			.initArg(
 				name  = "debug",
 				value = variables.settings.debug
+			)
+			.initArg(
+				name  = "defaultEncryptionAlgorithm",
+				value = variables.settings.defaultEncryptionAlgorithm
+			)
+			.initArg(
+				name  = "defaultEncryptionKey",
+				value = variables.settings.defaultEncryptionKey
 			);
-
 		binder.map( "Sv4Util@s3sdk" ).to( "#moduleMapping#.models.AmazonS3" );
 
 		binder.map( "Sv2Util@s3sdk" ).to( "#moduleMapping#.models.AmazonS3" );
