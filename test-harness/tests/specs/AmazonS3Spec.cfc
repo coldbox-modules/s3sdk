@@ -862,7 +862,8 @@ component extends="coldbox.system.testing.BaseTestCase" {
 		return createStub()
 			.$( "canDebug", false )
 			.$( "debug" )
-			.$( "error" );
+			.$( "error" )
+			.$( "warn" );
 	}
 
 }
