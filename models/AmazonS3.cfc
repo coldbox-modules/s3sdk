@@ -844,7 +844,6 @@ component accessors="true" singleton {
 	 *
 	 * @bucketName The bucket the object resides in.
 	 * @uri        The object URI to retrieve the info.
-	 * @encryptionAlgorithm The server side encryption algorithm to use.  Usually "AES256". Not needed if using custom encryptionKey
 	 * @encryptionKey	The base64 encoded AES 356 bit key for server side encryption.
 	 *
 	 * @return     The object's metadata information.
@@ -852,7 +851,6 @@ component accessors="true" singleton {
 	struct function getObjectInfo(
 		required string bucketName = variables.defaultBucketName,
 		required string uri,
-		string encryptionAlgorithm= variables.defaultEncryptionAlgorithm,
 		string encryptionKey	  = variables.defaultEncryptionKey
 	){
 		requireBucketName( arguments.bucketName );
@@ -968,7 +966,6 @@ component accessors="true" singleton {
 	 * @acl              The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL(). If omitted, any ACL will be allowed when PUTting the file.
 	 * @metaHeaders      Additonal metadata headers to add.
 	 * @contentType      The object content type for PUT.  If omitted, any content-type will be allowed when PUTting the file.
-	 * @encryptionAlgorithm The server side encryption algorithm to use.  Usually "AES256". Not needed if using custom encryptionKey
 	 * @encryptionKey	The base64 encoded AES 356 bit key for server side encryption.
 	 *
 	 * @return           An authenticated url to the resource.
@@ -982,7 +979,6 @@ component accessors="true" singleton {
 		any acl          = '',
 		struct metaHeaders  = {},
 		string contentType,
-		string encryptionAlgorithm= variables.defaultEncryptionAlgorithm,
 		string encryptionKey	  = variables.defaultEncryptionKey
 	){
 		requireBucketName( arguments.bucketName );
@@ -1023,7 +1019,6 @@ component accessors="true" singleton {
 	 *
 	 * @bucketName The bucket the object resides in.
 	 * @uri        The object URI to retrieve the info.
-	 * @encryptionAlgorithm The server side encryption algorithm to use.  Usually "AES256". Not needed if using custom encryptionKey
 	 * @encryptionKey	The base64 encoded AES 356 bit key for server side encryption.
 	 *
 	 * @return     The object's metadata information.
@@ -1031,7 +1026,6 @@ component accessors="true" singleton {
 	struct function getObject(
 		required string bucketName = variables.defaultBucketName,
 		required string uri,
-		string encryptionAlgorithm= variables.defaultEncryptionAlgorithm,
 		string encryptionKey	  = variables.defaultEncryptionKey
 	){
 		requireBucketName( arguments.bucketName );
@@ -1444,7 +1438,7 @@ component accessors="true" singleton {
 
 			throw(
 				type    = "S3SDKError",
-				message = "Error making Amazon REST Call: #results.message#",
+				message = "Error making Amazon REST Call: #results.message# status code: #HTTPResults.responseHeader.status_code# body:  #serializeJSON( results.response )#",
 				detail  = serializeJSON( results.response )
 			);
 		}
@@ -1547,6 +1541,7 @@ component accessors="true" singleton {
 	}
 
 	function applyEncryptionHeaders( headers, args ) {
+		args.encryptionAlgorithm = args.encryptionAlgorithm ?: '';
 		if( len( args.encryptionKey ) ) {
 			if( len( args.encryptionAlgorithm ) ) {
 				headers[ "x-amz-server-side-encryption-customer-algorithm" ] = args.encryptionAlgorithm;

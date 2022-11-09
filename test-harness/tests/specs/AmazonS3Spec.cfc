@@ -541,6 +541,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 				// Add any test fixtures here that you create below
 				s3.deleteObject( testBucket, "encrypted.txt" );
 				s3.deleteObject( testBucket, "encrypted-copy.txt" );
+				s3.deleteObject( testBucket, "encrypted2.txt" );
 			} );
 
 			it( "can put encrypted file", function(){
@@ -730,6 +731,127 @@ component extends="coldbox.system.testing.BaseTestCase" {
 				expect( o.responseHeader[ 'x-amz-server-side-encryption-customer-key-MD5' ] ).toBe( keyMD5 );
 
 				expect( fileRead( filePath ) ).toBe( data );
+			} );
+
+
+			it( "can use default encryption algorithm", function(){
+				var data = "Hello, encrypted world!";
+				s3.setDefaultEncryptionAlgorithm( 'AES256' );
+
+				s3.putObject( bucketName=testBucket, uri="encrypted.txt", data=data );
+				var o = s3.getObject( bucketName=testBucket, uri="encrypted.txt" );
+
+				expect( o.error ).toBe( false );
+				expect( o.response ).toBe( data );
+				expect( o.responseHeader ).toHaveKey( 'x-amz-server-side-encryption' );
+				expect( o.responseHeader[ 'x-amz-server-side-encryption' ] ).toBe( 'AES256' );
+
+				var o = s3.getObjectInfo( bucketName=testBucket, uri="encrypted.txt" );
+				expect( o ).toHaveKey( 'x-amz-server-side-encryption' );
+				expect( o[ 'x-amz-server-side-encryption' ] ).toBe( 'AES256' );
+
+
+				var presignedURL = s3.getAuthenticatedURL( bucketName = testBucket, uri = "encrypted.txt" );
+				cfhttp( url = "#presignedURL#", result = "local.cfhttp" );
+
+				expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "200", local.cfhttp.fileContent );
+				expect( local.cfhttp.fileContent ).toBe( data );
+
+				var o = s3.copyObject(
+					fromBucket=testBucket,
+					fromURI="encrypted.txt",
+					toBucket=testBucket,
+					toURI="encrypted-copy.txt"
+				);
+				var o = s3.getObject( bucketName=testBucket, uri="encrypted-copy.txt" );
+
+				expect( o.error ).toBe( false );
+				expect( o.response ).toBe( data );
+				expect( o.responseHeader ).toHaveKey( 'x-amz-server-side-encryption' );
+				expect( o.responseHeader[ 'x-amz-server-side-encryption' ] ).toBe( 'AES256' );
+
+				var o = s3.renameObject(
+					oldBucketName=testBucket,
+					oldFileKey="encrypted.txt",
+					newBucketName=testBucket,
+					newFileKey="encrypted2.txt"
+				);
+				var o = s3.getObject( bucketName=testBucket, uri="encrypted2.txt" );
+
+				expect( o.error ).toBe( false );
+				expect( o.response ).toBe( data );
+				expect( o.responseHeader ).toHaveKey( 'x-amz-server-side-encryption' );
+				expect( o.responseHeader[ 'x-amz-server-side-encryption' ] ).toBe( 'AES256' );
+
+				s3.setDefaultEncryptionAlgorithm( '' );
+			} );
+
+
+
+			it( "can use default encryption key", function(){
+				var data = "Hello, encrypted world!";
+				var key = generateSecretKey( 'AES', 256 );
+				var keyMD5 = tobase64( binaryDecode( hash( toBinary( key ) ),'hex') );
+				s3.setDefaultEncryptionKey( key );
+
+				s3.putObject( bucketName=testBucket, uri="encrypted.txt", data=data );
+				var o = s3.getObject( bucketName=testBucket, uri="encrypted.txt" );
+
+				expect( o.error ).toBe( false );
+				expect( o.response ).toBe( data );
+				expect( o.responseHeader ).toHaveKey( 'x-amz-server-side-encryption-customer-algorithm' );
+				expect( o.responseHeader[ 'x-amz-server-side-encryption-customer-algorithm' ] ).toBe( 'AES256' );
+				expect( o.responseHeader ).toHaveKey( 'x-amz-server-side-encryption-customer-key-MD5' );
+				expect( o.responseHeader[ 'x-amz-server-side-encryption-customer-key-MD5' ] ).toBe( keyMD5 );
+
+				var o = s3.getObjectInfo( bucketName=testBucket, uri="encrypted.txt" );
+				expect( o ).toHaveKey( 'x-amz-server-side-encryption-customer-algorithm' );
+				expect( o[ 'x-amz-server-side-encryption-customer-algorithm' ] ).toBe( 'AES256' );
+				expect( o ).toHaveKey( 'x-amz-server-side-encryption-customer-key-MD5' );
+				expect( o[ 'x-amz-server-side-encryption-customer-key-MD5' ] ).toBe( keyMD5 );
+
+
+				var presignedURL = s3.getAuthenticatedURL( bucketName = testBucket, uri = "encrypted.txt" );
+				cfhttp( url = "#presignedURL#", result = "local.cfhttp" ) {
+					cfhttpparam( type='header', name='x-amz-server-side-encryption-customer-algorithm', value='AES256' );
+					cfhttpparam( type='header', name='x-amz-server-side-encryption-customer-key', value=key );
+					cfhttpparam( type='header', name='x-amz-server-side-encryption-customer-key-MD5', value=keyMD5 );
+				};
+
+				expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "200", local.cfhttp.fileContent );
+				expect( local.cfhttp.fileContent ).toBe( data );
+
+				var o = s3.copyObject(
+					fromBucket=testBucket,
+					fromURI="encrypted.txt",
+					toBucket=testBucket,
+					toURI="encrypted-copy.txt"
+				);
+				var o = s3.getObject( bucketName=testBucket, uri="encrypted-copy.txt" );
+
+				expect( o.error ).toBe( false );
+				expect( o.response ).toBe( data );
+				expect( o.responseHeader ).toHaveKey( 'x-amz-server-side-encryption-customer-algorithm' );
+				expect( o.responseHeader[ 'x-amz-server-side-encryption-customer-algorithm' ] ).toBe( 'AES256' );
+				expect( o.responseHeader ).toHaveKey( 'x-amz-server-side-encryption-customer-key-MD5' );
+				expect( o.responseHeader[ 'x-amz-server-side-encryption-customer-key-MD5' ] ).toBe( keyMD5 );
+
+				var o = s3.renameObject(
+					oldBucketName=testBucket,
+					oldFileKey="encrypted.txt",
+					newBucketName=testBucket,
+					newFileKey="encrypted2.txt"
+				);
+				var o = s3.getObject( bucketName=testBucket, uri="encrypted2.txt" );
+
+				expect( o.error ).toBe( false );
+				expect( o.response ).toBe( data );
+				expect( o.responseHeader ).toHaveKey( 'x-amz-server-side-encryption-customer-algorithm' );
+				expect( o.responseHeader[ 'x-amz-server-side-encryption-customer-algorithm' ] ).toBe( 'AES256' );
+				expect( o.responseHeader ).toHaveKey( 'x-amz-server-side-encryption-customer-key-MD5' );
+				expect( o.responseHeader[ 'x-amz-server-side-encryption-customer-key-MD5' ] ).toBe( keyMD5 );
+
+				s3.setDefaultEncryptionKey( '' );
 			} );
 
 		} );
