@@ -1438,7 +1438,7 @@ component accessors="true" singleton {
 
 			throw(
 				type    = "S3SDKError",
-				message = "Error making Amazon REST Call: #results.message# status code: #HTTPResults.responseHeader.status_code# body:  #serializeJSON( results.response )#",
+				message = "Error making Amazon REST Call: #results.message#",
 				detail  = serializeJSON( results.response )
 			);
 		}
