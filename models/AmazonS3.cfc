@@ -1352,7 +1352,7 @@ component accessors="true" singleton {
 		// Amazon recommends retrying these requests after a delay
 		if (
 			listFindNoCase(
-				"500,503",
+				"500,503,0",
 				HTTPResults.responseHeader.status_code
 			) && tryCount < variables.retriesOnError
 		) {
