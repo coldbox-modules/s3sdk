@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ----
+## v5.1.3 => Unreleased
+### Added
+* Add support for server side encryption
+* Add retry support for S3 connection failures
 ## v5.1.2 => 2022-OCT-19
 ### Added
 * Added property to ensure URLEndpointHostname can be retreived
