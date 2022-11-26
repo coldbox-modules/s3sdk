@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ----
+## v5.1.2 => 2022-OCT-19
+### Added
+* Added property to ensure URLEndpointHostname can be retreived
+## v5.1.1 => 2022-NOV-1
+### Fixed
+* Fixes an issue when header content types were not present in the arguments scope
 
 ## v5.0.0 => 2022-OCT-19
 

@@ -35,6 +35,7 @@ component accessors="true" singleton {
 	property name="encryptionCharset";
 	property name="ssl";
 	property name="URLEndpoint";
+	property name="URLEndpointHostname";
 	property name="awsRegion";
 	property name="awsDomain";
 	property name="defaultTimeOut";
