@@ -27,7 +27,7 @@
 component accessors="true" singleton {
 
 	// DI
-	property name="log"           inject="logbox:logger:{this}";
+	property name="log" inject="logbox:logger:{this}";
 
 	// Properties
 	property name="accessKey";
