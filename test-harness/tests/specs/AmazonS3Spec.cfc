@@ -1,7 +1,7 @@
 component extends="coldbox.system.testing.BaseTestCase" {
 
 	variables.targetEngine = getUtil().getSystemSetting( "ENGINE", "localhost" );
-	variables.testBucket   = "ortus2-s3sdk-bdd-#replace( variables.targetEngine, "@", "-" )#";
+	variables.testBucket   = getUtil().getSystemSetting( "AWS_DEFAULT_BUCKET_NAME", "ortus2-s3sdk-bdd-#replace( variables.targetEngine, "@", "-" )#" );
 
 	function beforeAll(){
 		prepTmpFolder();
@@ -10,7 +10,8 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			accessKey = getUtil().getSystemSetting( "AWS_ACCESS_KEY" ),
 			secretKey = getUtil().getSystemSetting( "AWS_ACCESS_SECRET" ),
 			awsRegion = getUtil().getSystemSetting( "AWS_REGION" ),
-			awsDomain = getUtil().getSystemSetting( "AWS_DOMAIN" )
+			awsDomain = getUtil().getSystemSetting( "AWS_DOMAIN" ),
+			defaultBucketName = variables.testBucket
 		);
 		prepareMock( s3 );
 		s3.$property( propertyName = "log", mock = createLogStub() );
@@ -71,8 +72,20 @@ component extends="coldbox.system.testing.BaseTestCase" {
 				it( "can store a new object from file", function(){
 					var filePath = expandPath( "/tests/tmp/example.txt" );
 					fileWrite( filePath, "file contents" );
-					s3.putObject( bucketName=testBucket, uri="example.txt", filepath=filePath, contentType="auto" );
+					s3.putObjectFile( bucketName=testBucket, uri="example.txt", filepath=filePath, contentType="auto" );
 					var md = s3.getObjectInfo( testBucket, "example.txt" );
+					//debug( md );
+					expect( md ).notToBeEmpty();
+					expect( md[ 'Content-Type' ] ).toBe( 'text/plain' );
+				} );
+
+				it ( "can perform a multi-part upload on a file over 5MB", function(){
+					var testFile = expandPath( "/tests/tmp/big_file.txt" );
+					fileWrite(  testFile, repeatString( randRange( 0, 9 ), round( s3.getMultiPartByteThreshold() * 1.2 ) ), "utf-8" );
+					var uploadFileName = "big_file_#createUUID()#.txt";
+					var resp = s3.putObjectFile( bucketName=testBucket, uri=uploadFileName, filepath=testFile, contentType="auto" );
+					expect( resp.contains( "multipart" ) ).toBeTrue();
+					var md = s3.getObjectInfo( testBucket, uploadFileName );
 					//debug( md );
 					expect( md ).notToBeEmpty();
 					expect( md[ 'Content-Type' ] ).toBe( 'text/plain' );

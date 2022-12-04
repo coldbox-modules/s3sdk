@@ -28,6 +28,7 @@ component accessors="true" singleton {
 
 	// DI
 	property name="log" inject="logbox:logger:{this}";
+	property name="streamBuilder" inject="StreamBuilder@cbstreams";
 
 	// Properties
 	property name="accessKey";
@@ -52,6 +53,7 @@ component accessors="true" singleton {
 	property name="serviceName";
 	property name="defaultEncryptionAlgorithm";
 	property name="defaultEncryptionKey";
+	property name="multiPartByteThreshold";
 
 	// STATIC Contsants
 	this.ACL_PRIVATE           = "private";
@@ -101,25 +103,26 @@ component accessors="true" singleton {
 	AmazonS3 function init(
 		required string accessKey,
 		required string secretKey,
-		string awsDomain           = "amazonaws.com",
-		string awsRegion           = "", // us-east-1 default for aws
-		string encryptionCharset   = "UTF-8",
-		string signatureType       = "V4",
-		boolean ssl                = true,
-		string defaultTimeOut      = 300,
-		string defaultDelimiter    = "/",
-		string defaultBucketName   = "",
-		string defaultCacheControl = "no-store, no-cache, must-revalidate",
-		string defaultStorageClass = this.S3_STANDARD,
-		string defaultACL          = this.ACL_PUBLIC_READ,
-		string throwOnRequestError = true,
-		numeric retriesOnError		= 3,
-		boolean autoContentType    = false,
-		boolean autoMD5            = false,
-		string serviceName         = "s3",
-		boolean debug              = false,
-		string defaultEncryptionAlgorithm = "",
-		string defaultEncryptionKey = ""
+		string  awsDomain                  = "amazonaws.com",
+		string  awsRegion                  = "",        //        us-east-1 default for aws
+		string  encryptionCharset          = "UTF-8",
+		string  signatureType              = "V4",
+		boolean ssl                        = true,
+		string  defaultTimeOut             = 300,
+		string  defaultDelimiter           = "/",
+		string  defaultBucketName          = "",
+		string  defaultCacheControl        = "no-store, no-cache, must-revalidate",
+		string  defaultStorageClass        = this.S3_STANDARD,
+		string  defaultACL                 = this.ACL_PUBLIC_READ,
+		string  throwOnRequestError        = true,
+		numeric retriesOnError		           = 3,
+		boolean autoContentType            = false,
+		boolean autoMD5                    = false,
+		string  serviceName                = "s3",
+		boolean debug                      = false,
+		string  defaultEncryptionAlgorithm = "",
+		string  defaultEncryptionKey       = "",
+		numeric multiPartByteThreshold     = 5242880    // 5.2MB is the AWS default minimum size for multipart uploads
 	){
 		if ( arguments.awsDomain == "amazonaws.com" && arguments.awsRegion == "" ) {
 			arguments.awsRegion = "us-east-1";
@@ -150,6 +153,7 @@ component accessors="true" singleton {
 		variables.serviceName         = arguments.serviceName;
 		variables.defaultEncryptionAlgorithm = arguments.defaultEncryptionAlgorithm;
 		variables.defaultEncryptionKey = arguments.defaultEncryptionKey;
+		variables.multiPartByteThreshold  = arguments.multiPartByteThreshold;
 
 		// Construct the SSL Domain
 		setSSL( arguments.ssl );
@@ -670,7 +674,6 @@ component accessors="true" singleton {
 		string encryptionKey	  = variables.defaultEncryptionKey
 	){
 		requireBucketName( arguments.bucketName );
-		arguments.data = fileReadBinary( arguments.filepath );
 
 		if ( NOT len( arguments.uri ) ) {
 			arguments.uri = getFileFromPath( arguments.filePath );
@@ -683,7 +686,90 @@ component accessors="true" singleton {
 			arguments.contentType = getFileMimeType( arguments.filepath );
 		}
 
-		return putObject( argumentCollection = arguments );
+		var jFiles = createObject( "java", "java.nio.file.Files" );
+		var jPath = createObject( "java", "java.nio.file.Paths" ).get( javacast( "string", arguments.filePath ), javacast( "java.lang.String[]", [] ) );
+		var inputStream = jFiles.newInputStream( jPath ,  [] );
+		var byteCount = inputStream.available();
+
+		if( byteCount <= variables.multiPartByteThreshold ){
+			arguments.data = fileReadBinary( arguments.filepath );
+			return putObject( argumentCollection = arguments );
+		} else {
+			try{
+				var multipartResponse = createMultiPartUpload( argumentCollection=arguments );
+				var uploadId = xmlParse( multipartResponse.response ).InitiateMultipartUploadResult.UploadId.xmlText;
+				var partNumber = 1;
+				var parts = [];
+
+				// If any part of our upload fails, fall back to the default
+				try{
+					for( var i = 0; i <= byteCount; i+=variables.multiPartByteThreshold ){
+						var remaining = inputStream.available();
+						var max = remaining >= variables.multiPartByteThreshold ? variables.multiPartByteThreshold : remaining;
+						var buffer = createObject( "java", "java.nio.ByteBuffer" ).allocate( max );
+						inputStream.read( buffer.array(), javacast( "int", 0 ), javacast( "int", max ) );
+							parts.append(
+								s3Request(
+									method     = "PUT",
+									resource   = arguments.bucketName & "/" & arguments.uri,
+									body       = buffer.array(),
+									timeout    = arguments.HTTPTimeout,
+									parameters = { "uploadId" : uploadId, "partNumber" : partNumber }
+								)
+							);
+
+						partNumber++;
+					}
+
+					var finalizeBody = '<?xml version="1.0" encoding="UTF-8"?><CompleteMultipartUpload xmlns="http://s3.amazonaws.com/doc/2006-03-01/">';
+
+					parts.each(
+						function( part, index ){
+							finalizeBody &= '
+							<Part>
+								<ETag>#replace( part.responseHeader.etag, '"', '', 'all' )#</ETag>
+								<PartNumber>#index#</PartNumber>
+							</Part>
+							';
+						}
+					);
+
+					finalizeBody &= '</CompleteMultipartUpload>';
+
+					var finalized = s3Request(
+						method     = "POST",
+						resource   = arguments.bucketName & "/" & arguments.uri,
+						timeout    = arguments.HTTPTimeout,
+						parameters  = { "uploadId" : uploadId },
+						body       = finalizeBody
+					);
+
+					return replace(
+						"multipart:" & finalized.response.CompleteMultipartUploadResult.ETag.xmlText,
+						"""",
+						"",
+						"all"
+					);
+
+				} catch( any e ){
+					s3Request(
+						method     = "DELETE",
+						resource   = arguments.bucketName & "/" & arguments.uri,
+						timeout    = arguments.HTTPTimeout,
+						parameters  = { "uploadId" : uploadId }
+					);
+					rethrow;
+				}
+
+			} catch( any e ){
+				log.error( "MultiPart Upload failed to process. The response received was #e.message#", { "exception" : e } );
+				arguments.data = fileReadBinary( arguments.filepath );
+				return putObject( argumentCollection = arguments );
+			}
+
+
+		}
+
 	}
 
 	/**
@@ -1015,6 +1101,87 @@ component accessors="true" singleton {
 		return "#HTTPPrefix##hostname##variables.signatureUtil.buildCanonicalURI( arguments.uri )#?#sigData.canonicalQueryString#&X-Amz-Signature=#sigData.signature#";
 	}
 
+	struct function createMultiPartUpload(
+		required string bucketName,
+		required string uri,
+		string  contentType          = "",
+		string  contentEncoding      = "",
+		string contentDisposition = "",
+		numeric HTTPTimeout          = variables.defaultTimeout,
+		string  cacheControl         = variables.defaultCacheControl,
+		string  expires              = 120,
+		any     acl             	    = variables.defaultACL,
+		struct  metaHeaders          = {},
+		string  md5                  = variables.autoMD5,
+		string  storageClass         = variables.defaultStorageClass,
+		string  encryptionAlgorithm  = variables.defaultEncryptionAlgorithm,
+		string  encryptionKey	     = variables.defaultEncryptionKey
+
+	 ){
+		requireBucketName( arguments.bucketName );
+		var headers            = createMetaHeaders( arguments.metaHeaders );
+		applyACLHeaders( headers, arguments.acl );
+		applyEncryptionHeaders( headers, arguments );
+
+		if ( len( arguments.storageClass ) ) {
+			headers[ "x-amz-storage-class" ] = arguments.storageClass;
+		}
+
+		if ( arguments.contentType == "auto" ) {
+			arguments.contentType = getFileMimeType( arguments.uri );
+		}
+
+		headers[ "accept" ] = "text/xml";
+		headers[ "content-type" ] = arguments.contentType;
+
+		if ( len( arguments.cacheControl ) ) {
+			headers[ "cache-control" ] = arguments.cacheControl;
+		};
+
+		if ( arguments.md5 == "auto" ) {
+			headers[ "content-md5" ] = mD5inBase64( arguments.data );
+		} else if ( len( arguments.md5 ) ) {
+			headers[ "content-md5" ] = arguments.md5;
+		}
+
+		if ( len( arguments.contentEncoding ) ) {
+			headers[ "content-encoding" ] = arguments.contentEncoding;
+		}
+
+		if ( len( arguments.contentDisposition ) ) {
+			headers[ "content-disposition" ] = arguments.contentDisposition;
+		}
+
+		if ( isNumeric( arguments.expires ) ) {
+			headers[ "expires" ] = "#dateFormat(
+				now() + arguments.expires,
+				"ddd, dd mmm yyyy"
+			)# #timeFormat( now(), "H:MM:SS" )# GMT";
+		}
+
+		return s3Request(
+			method     = "POST",
+			resource   = arguments.bucketName & "/" & arguments.uri,
+			timeout    = arguments.HTTPTimeout,
+			headers    = headers,
+			parameters  = { "uploads" : true },
+			parseResponse = true
+		);
+
+		if ( results.responseHeader.status_code == 200 ) {
+			return replace(
+				results.responseHeader.etag,
+				"""",
+				"",
+				"all"
+			);
+		}
+
+		return "";
+
+
+	}
+
 	/**
 	 * Get an object's metadata information.
 	 *
@@ -1296,9 +1463,10 @@ component accessors="true" singleton {
 			// Adobe will, however, fall on the floor sobbing if you include the encodeurl attribute in the code directly as it is a Lucee-only feature.
 			cfhttpAttributes[ 'encodeurl' ] = false;
 		}
+
 		cfhttp(
 			method      = arguments.method,
-			url         = "#variables.URLEndPoint##signatureData.CanonicalURI#",
+			url         = "#variables.URLEndpoint##signatureData.CanonicalURI#",
 			charset     = "utf-8",
 			result      = "HTTPResults",
 			redirect    = true,
