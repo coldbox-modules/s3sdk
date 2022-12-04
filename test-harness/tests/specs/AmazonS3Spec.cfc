@@ -53,6 +53,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					// Add any test fixtures here that you create below
 					s3.deleteObject( testBucket, "example.txt" );
 					s3.deleteObject( testBucket, "example-2.txt" );
+					s3.deleteObject( testBucket, "big_file.txt" );
 					s3.deleteObject( testBucket, "testFolder/example.txt" );
 					s3.deleteObject( testBucket, "emptyFolder/" );
 					s3.deleteObject( testBucket, "exam%20p   le (fo%2Fo)+,!@##$%^&*()_+~ ;:.txt" );
@@ -99,7 +100,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 						repeatString( randRange( 0, 9 ), round( s3.getMultiPartByteThreshold() * 1.2 ) ),
 						"utf-8"
 					);
-					var uploadFileName = "big_file_#createUUID()#.txt";
+					var uploadFileName = "big_file.txt";
 					var resp           = s3.putObjectFile(
 						bucketName  = testBucket,
 						uri         = uploadFileName,
