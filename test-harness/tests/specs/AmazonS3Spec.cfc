@@ -51,9 +51,9 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			describe( "objects", function(){
 				afterEach( function( currentSpec ){
 					// Add any test fixtures here that you create below
-					s3.getBucket( testBucket )
-						.filter( ( obj ) => !obj.isDirectory )
-						.each( ( obj ) => s3.deleteObject( testBucket, obj.key ) );
+					var contents = s3.getBucket( testBucket );
+					contents.filter.( ( obj ) => !obj.isDirectory ).each( ( obj ) => s3.deleteObject( testBucket, obj.key ) );
+					contents.filter.( ( obj ) => obj.isDirectory ).each( ( obj ) => s3.deleteObject( testBucket, obj.key ) );
 					s3.setDefaultBucketName( testBucket );
 				} );
 
