@@ -23,7 +23,8 @@ component singleton {
 
 	/**
 	 * Creates a new instance of the utility for generating signatures using the supplied settings
-	 * @returns new instance initalized with specified settings
+	 *
+	 * @return new instance initalized with specified settings
 	 */
 	Sv4Util function init(){
 		// Algorithms used in calculating the signature
@@ -37,20 +38,20 @@ component singleton {
 	/**
 	 *  Generates Signature 4 properties for the supplied request settings.
 	 *
-	 *  @requestMethod   - Request operation, ie PUT, GET, POST, etcetera.
-	 *  @hostName        - Target host name, example: bucketname.s3.amazonaws.com
-	 *  @requestURI      - Absolute path of the URI. Portion of the URL after the host, to the "?" beginning the query string
-	 *  @requestBody     - Body of the request. Either a string or binary value.
-	 *  @requestHeaders  - Structure of http headers for used the request. Mandatory host and date headers are automatically generated.
-	 *  @requestParams   - Structure containing any url parameters for the request. Mandatory parameters are automatically generated.
-	 *  @excludeHeaders  - (Optional) List of header names AWS can exclude from the signing process. Default is an empty array, which means all headers should be "signed"
-	 *  @amzDate         - (Optional) Override the automatic X-Amz-Date calculation with this value. Current UTC date. If supplied, @dateStamp is required.  Format: yyyyMMddTHHnnssZ
-	 *  @regionName      - (Optional) Override the instance region name with this value. Example "us-east-1"
-	 *  @serviceName     - (Optional) Override the instance service name with this value. Example "s3"
-	 *  @dateStamp       - (Optional) Override the automatic dateStamp calculation with this value. Current UTC date (only). If supplied, @amzDate is required. Format: yyyyMMdd
-	 *  @presigningDownloadURL - (Optional) Generates a signed request with all required parameters in the query string, and no headers except for Host.
-	 *  @returns  Signature value, authorization header and all properties part of the signature calculation: ALGORITHM,AMZDATE,AUTHORIZATIONHEADER,CANONICALHEADERS,CANONICALQUERYSTRING,CANONICALREQUEST,CANONICALURI,CREDENTIALSCOPE,DATESTAMP,EXCLUDEHEADERS,HOSTNAME,REGIONNAME,REQUESTHEADERS,REQUESTMETHOD,REQUESTPARAMS,REQUESTPAYLOAD,SERVICENAME,SIGNATURE,SIGNEDHEADERS,SIGNKEYBYTES,STRINGTOSIGN
+	 * @requestMethod         - Request operation, ie PUT, GET, POST, etcetera.
+	 * @hostName              - Target host name, example: bucketname.s3.amazonaws.com
+	 * @requestURI            - Absolute path of the URI. Portion of the URL after the host, to the "?" beginning the query string
+	 * @requestBody           - Body of the request. Either a string or binary value.
+	 * @requestHeaders        - Structure of http headers for used the request. Mandatory host and date headers are automatically generated.
+	 * @requestParams         - Structure containing any url parameters for the request. Mandatory parameters are automatically generated.
+	 * @excludeHeaders        - (Optional) List of header names AWS can exclude from the signing process. Default is an empty array, which means all headers should be "signed"
+	 * @amzDate               - (Optional) Override the automatic X-Amz-Date calculation with this value. Current UTC date. If supplied, @dateStamp is required.  Format: yyyyMMddTHHnnssZ
+	 * @regionName            - (Optional) Override the instance region name with this value. Example "us-east-1"
+	 * @serviceName           - (Optional) Override the instance service name with this value. Example "s3"
+	 * @dateStamp             - (Optional) Override the automatic dateStamp calculation with this value. Current UTC date (only). If supplied, @amzDate is required. Format: yyyyMMdd
+	 * @presigningDownloadURL - (Optional) Generates a signed request with all required parameters in the query string, and no headers except for Host.
 	 *
+	 * @return Signature value, authorization header and all properties part of the signature calculation: ALGORITHM,AMZDATE,AUTHORIZATIONHEADER,CANONICALHEADERS,CANONICALQUERYSTRING,CANONICALREQUEST,CANONICALURI,CREDENTIALSCOPE,DATESTAMP,EXCLUDEHEADERS,HOSTNAME,REGIONNAME,REQUESTHEADERS,REQUESTMETHOD,REQUESTPARAMS,REQUESTPAYLOAD,SERVICENAME,SIGNATURE,SIGNEDHEADERS,SIGNKEYBYTES,STRINGTOSIGN
 	 */
 	public struct function generateSignatureData(
 		required string requestMethod,
@@ -176,13 +177,7 @@ component singleton {
 		props.stringToSign = generateStringToSign( argumentCollection = props );
 		props.signKeyBytes = generateSignatureKey( argumentCollection = props );
 		props.signature    = lCase(
-			binaryEncode(
-				hmacBinary(
-					message = props.stringToSign,
-					key     = props.signKeyBytes
-				),
-				"hex"
-			)
+			binaryEncode( hmacBinary( message = props.stringToSign, key = props.signKeyBytes ), "hex" )
 		);
 		props.authorizationHeader = buildAuthorizationHeader( argumentCollection = props );
 
@@ -195,10 +190,11 @@ component singleton {
 	/**
 	 *  Generates request string to sign
 	 *
-	 *  @amzDate          - Current timestamp in UTC. Format yyyyMMddTHHnnssZ
-	 *  @credentialScope  - String defining scope of request. See buildCredentialScope().
-	 *  @canonicalRequest - Canonical request string
-	 *  @returns          - String to be signed
+	 * @amzDate          - Current timestamp in UTC. Format yyyyMMddTHHnnssZ
+	 * @credentialScope  - String defining scope of request. See buildCredentialScope().
+	 * @canonicalRequest - Canonical request string
+	 *
+	 * @return - String to be signed
 	 */
 	private string function generateStringToSign(
 		required string amzDate,
@@ -219,12 +215,12 @@ component singleton {
 	/**
 	 *  Generate canonical request string
 	 *
-	 *  @requestMethod           - Request operation, ie PUT, GET, POST, etcetera.
-	 *  @canonicalURI            - Canonical URL string. See buildCanonicalURI
-	 *  @canonicalHeaders        - Canonical header string. See buildCanonicalHeaders
-	 *  @canonicalQueryString    - Canonical query string. See buildCanonicalQueryString
-	 *  @signedHeaders           - List of signed headers. See buildSignedHeaders
-	 *  @requestPayload          - For signed requests, this is the hash of the request body. Otherwise, the raw request body
+	 * @requestMethod        - Request operation, ie PUT, GET, POST, etcetera.
+	 * @canonicalURI         - Canonical URL string. See buildCanonicalURI
+	 * @canonicalHeaders     - Canonical header string. See buildCanonicalHeaders
+	 * @canonicalQueryString - Canonical query string. See buildCanonicalQueryString
+	 * @signedHeaders        - List of signed headers. See buildSignedHeaders
+	 * @requestPayload       - For signed requests, this is the hash of the request body. Otherwise, the raw request body
 	 */
 	private string function buildCanonicalRequest(
 		required string requestMethod,
@@ -260,13 +256,11 @@ component singleton {
 	 *  </ul>
 	 *
 	 * @requestParams Structure containing all parameters passed via the query string.
-	 * @isEncoded If true, the supplied parameters are already url encoded
-	 * @returns canonical query string
+	 * @isEncoded     If true, the supplied parameters are already url encoded
+	 *
+	 * @return canonical query string
 	 */
-	private string function buildCanonicalQueryString(
-		required struct requestParams,
-		boolean isEncoded = true
-	){
+	private string function buildCanonicalQueryString( required struct requestParams, boolean isEncoded = true ){
 		var encodedParams = "";
 		var paramNames    = "";
 		var paramPairs    = "";
@@ -281,10 +275,7 @@ component singleton {
 		// Build array of sorted name/value pairs
 		paramPairs = [];
 		arrayEach( paramNames, function( string param ){
-			arrayAppend(
-				paramPairs,
-				arguments.param & "=" & encodedParams[ arguments.param ]
-			);
+			arrayAppend( paramPairs, arguments.param & "=" & encodedParams[ arguments.param ] );
 		} );
 
 		// Finally, generate sorted list of parameters, delimited by "&"
@@ -300,13 +291,11 @@ component singleton {
 	 * additional headers added by a proxy) for purposes of validating the request."</p>
 	 *
 	 * @requestHeaders Raw headers to be included in request
-	 * @excludeNames Names of any headers AWS should ignore for the signing process
-	 * @returns Sorted list of signed header names, delimited by semi-colon ";"
+	 * @excludeNames   Names of any headers AWS should ignore for the signing process
+	 *
+	 * @return Sorted list of signed header names, delimited by semi-colon ";"
 	 */
-	private string function buildSignedHeaders(
-		required struct requestHeaders,
-		required array excludeNames
-	){
+	private string function buildSignedHeaders( required struct requestHeaders, required array excludeNames ){
 		var name        = "";
 		var headerNames = [];
 		var allHeaders  = !arrayLen( arguments.excludeNames );
@@ -327,8 +316,10 @@ component singleton {
 
 	/**
 	 * Generates a list of canonical headers
+	 *
 	 * @requestHeaders Structure containing headers to be included in request hash
-	 * @returns Sorted list of header pairs, delimited by new lines
+	 *
+	 * @return Sorted list of header pairs, delimited by new lines
 	 */
 	private string function buildCanonicalHeaders( required struct requestHeaders ){
 		var pairs   = "";
@@ -345,10 +336,7 @@ component singleton {
 		// Build array of sorted header name and value pairs
 		pairs = [];
 		arrayEach( names, function( string key ){
-			arrayAppend(
-				pairs,
-				arguments.key & ":" & headers[ arguments.key ]
-			);
+			arrayAppend( pairs, arguments.key & ":" & headers[ arguments.key ] );
 		} );
 
 		// Generate list. Note: List must END WITH a new line character
@@ -362,9 +350,10 @@ component singleton {
 	 * that begins the query string parameters (if any)
 	 *
 	 * @uriPath URI or path. If empty, "/" will be used
-	 * @returns URL encoded path
+	 *
+	 * @return URL encoded path
 	 */
-	public string function buildCanonicalURI( required string requestURI ) {
+	public string function buildCanonicalURI( required string requestURI ){
 		var path = arguments.requestURI;
 		// Return "/" for empty path
 		if ( !len( trim( path ) ) ) {
@@ -385,11 +374,12 @@ component singleton {
 	 *
 	 * <p>Source: http://stackoverflow.com/questions/32513197/how-to-derive-a-sign-in-key-for-aws-signature-version-4-in-coldfusion</p>
 	 *
-	 * @dateStamp Date stamp in yyyymmdd format. Example: 20150830
+	 * @dateStamp   Date stamp in yyyymmdd format. Example: 20150830
 	 * @regionName  Region name that is part of the service's endpoint (alphanumeric). Example: "us-east-1"
 	 * @serviceName Service name that is part of the service's endpoint (alphanumeric). Example: "s3"
-	 * @algorithm HMAC algorithm. Default is "HMACSHA256"
-	 * @returns signing key in binary
+	 * @algorithm   HMAC algorithm. Default is "HMACSHA256"
+	 *
+	 * @return signing key in binary
 	 */
 	private binary function generateSignatureKey(
 		required string dateStamp,
@@ -398,18 +388,12 @@ component singleton {
 		required string secretKey,
 		string algorithm = "HMACSHA256"
 	){
-		var kSecret = charsetDecode(
-			"AWS4" & arguments.secretKey,
-			"UTF-8"
-		);
+		var kSecret  = charsetDecode( "AWS4" & arguments.secretKey, "UTF-8" );
 		var kDate    = hmacBinary( arguments.dateStamp, kSecret );
 		// Region information as a lowercase alphanumeric string
 		var kRegion  = hmacBinary( lCase( arguments.regionName ), kDate );
 		// Service name information as a lowercase alphanumeric string
-		var kService = hmacBinary(
-			lCase( arguments.serviceName ),
-			kRegion
-		);
+		var kService = hmacBinary( lCase( arguments.serviceName ), kRegion );
 		// A special termination string: aws4_request
 		var kSigning = hmacBinary( "aws4_request", kService );
 
@@ -423,10 +407,11 @@ component singleton {
 	 *
 	 *         dateStamp / regionName / serviceName / terminationString
 	 *
-	 *  @dateStamp   - Current date in UTC (must be same as X-Amz-Date date). Format yyyyMMdd
-	 *  @regionName  - Name of the target region, UTF-8 encoded. Example "us-east-1"
-	 *  @serviceName - Name of the target service, UTF-8 encoded. Example "s3"
-	 *  @returns     - formatted string. Example:  20150830/us-east-1/iam/aws4_request
+	 * @dateStamp   - Current date in UTC (must be same as X-Amz-Date date). Format yyyyMMdd
+	 * @regionName  - Name of the target region, UTF-8 encoded. Example "us-east-1"
+	 * @serviceName - Name of the target service, UTF-8 encoded. Example "s3"
+	 *
+	 * @return - formatted string. Example:  20150830/us-east-1/iam/aws4_request
 	 */
 	private string function buildCredentialScope(
 		required string dateStamp,
@@ -443,10 +428,11 @@ component singleton {
 	 *                   + ', ' +  'SignedHeaders=' + signed_headers + ', '
 	 *                   + 'Signature=' + signature
 	 *
-	 *  @dateStamp   - Current date in UTC (must be same as X-Amz-Date date). Format yyyyMMdd
-	 *  @regionName  - Name of the target region, UTF-8 encoded. Example "us-east-1"
-	 *  @serviceName - Name of the target service, UTF-8 encoded. Example "s3"
-	 *  @returns     - formatted string. Example:  20150830/us-east-1/iam/aws4_request
+	 * @dateStamp   - Current date in UTC (must be same as X-Amz-Date date). Format yyyyMMdd
+	 * @regionName  - Name of the target region, UTF-8 encoded. Example "us-east-1"
+	 * @serviceName - Name of the target service, UTF-8 encoded. Example "s3"
+	 *
+	 * @return - formatted string. Example:  20150830/us-east-1/iam/aws4_request
 	 */
 	private string function buildAuthorizationHeader(
 		required struct requestHeaders,
@@ -468,11 +454,12 @@ component singleton {
 	/**
 	 * Convenience method which generates a (binary) HMAC code for the specified message
 	 *
-	 * @message Message to sign
-	 * @key HMAC key in binary form
+	 * @message   Message to sign
+	 * @key       HMAC key in binary form
 	 * @algorithm Signing algorithm. [ Default is "HMACSHA256" ]
-	 * @encoding Character encoding of message string. [ Default is UTF-8 ]
-	 * @returns HMAC value for the specified message as binary (currently unsupported in CF11)
+	 * @encoding  Character encoding of message string. [ Default is UTF-8 ]
+	 *
+	 * @return HMAC value for the specified message as binary (currently unsupported in CF11)
 	 */
 	private binary function hmacBinary(
 		required string message,
@@ -495,8 +482,10 @@ component singleton {
 
 	/**
 	 * Convenience method that hashes the supplied value, with SHA256
+	 *
 	 * @text value to hash
-	 * @returns hashed value, in lower case
+	 *
+	 * @return hashed value, in lower case
 	 */
 	private string function hash256( required any text ){
 		return lCase( hash( arguments.text, "SHA-256" ) );
@@ -505,8 +494,10 @@ component singleton {
 
 	/**
 	 * URL encode query parameters and names
+	 *
 	 * @params Structure containing all query parameters for the request
-	 * @returns new structure with all parameter names and values encoded
+	 *
+	 * @return new structure with all parameter names and values encoded
 	 */
 	private struct function encodeQueryParams( required struct queryParams ){
 		// First encode parameter names and values
@@ -524,8 +515,10 @@ component singleton {
 	 *    <li>Converts sequential spaces to single space in names and values</li>
 	 *    <li>Converts all header names to lower case</li>
 	 * </ul>
+	 *
 	 * @headers Header names and values to scrub
-	 * @returns structure of parsed header names and values
+	 *
+	 * @return structure of parsed header names and values
 	 */
 	private struct function cleanHeaders( required struct headers ){
 		var headerName  = "";
@@ -548,18 +541,17 @@ component singleton {
 	 *    <li>Converts sequential spaces to single space</li>
 	 *    <li>Converts all names to lower case</li>
 	 * </ul>
+	 *
 	 * @headers Header names to scrub
-	 * @returns array of parsed header names
+	 *
+	 * @return array of parsed header names
 	 */
 	private array function cleanHeaderNames( required array names ){
 		var headerName = "";
 
 		var cleaned = [];
 		arrayEach( names, function( string headerName ){
-			arrayAppend(
-				cleaned,
-				cleanHeader( arguments.headerName )
-			);
+			arrayAppend( cleaned, cleanHeader( arguments.headerName ) );
 		} );
 
 		return cleaned;
@@ -574,8 +566,10 @@ component singleton {
 	 *    <li>Removes leading and trailing spaces</li>
 	 *    <li>Converts sequential spaces to single space</li>
 	 * </ul>
+	 *
 	 * @text Text to scrub
-	 * @returns parsed text
+	 *
+	 * @return parsed text
 	 */
 	private string function cleanHeader( required string text ){
 		return reReplace(
@@ -594,21 +588,17 @@ component singleton {
 	 * A-Z, a-z, 0-9, hyphen ( - ), underscore ( _ ), period ( . ), and tilde ( ~ ).
 	 *
 	 * @value string to encode
-	 * @returns URI encoded string
+	 *
+	 * @return URI encoded string
 	 */
 	private string function urlEncodeForAWS( string value ){
 		var encodedValue = encodeForURL( arguments.value );
 		// Reverse encoding of tilde "~"
-		encodedValue     = replace(
-			encodedValue,
-			encodeForURL( "~" ),
-			"~",
-			"all"
-		);
+		encodedValue     = replace( encodedValue, encodeForURL( "~" ), "~", "all" );
 		// Fix encoding of spaces, ie replace '+' into "%20"
-		encodedValue = replace( encodedValue, "+", "%20", "all" );
+		encodedValue     = replace( encodedValue, "+", "%20", "all" );
 		// Asterisk "*" should be encoded
-		encodedValue = replace( encodedValue, "*", "%2A", "all" );
+		encodedValue     = replace( encodedValue, "*", "%2A", "all" );
 
 		return encodedValue;
 	}
@@ -621,23 +611,19 @@ component singleton {
 	 * A-Z, a-z, 0-9, hyphen ( - ), underscore ( _ ), period ( . ), and tilde ( ~ ).
 	 *
 	 * @value string to encode
-	 * @returns URI encoded string
+	 *
+	 * @return URI encoded string
 	 */
 	public string function urlEncodePath( string value ){
 		var encodedValue = encodeForURL( arguments.value );
 		// Reverse encoding of tilde "~"
-		encodedValue     = replace(
-			encodedValue,
-			encodeForURL( "~" ),
-			"~",
-			"all"
-		);
+		encodedValue     = replace( encodedValue, encodeForURL( "~" ), "~", "all" );
 		// Fix encoding of spaces, ie replace '+' into "%20"
-		encodedValue = replace( encodedValue, "+", "%20", "all" );
+		encodedValue     = replace( encodedValue, "+", "%20", "all" );
 		// Asterisk "*" should be encoded
-		encodedValue = replace( encodedValue, "*", "%2A", "all" );
+		encodedValue     = replace( encodedValue, "*", "%2A", "all" );
 		// Forward slash "/" should NOT be encoded
-		encodedValue = replace( encodedValue, "%2F", "/", "all" );
+		encodedValue     = replace( encodedValue, "%2F", "/", "all" );
 
 		return encodedValue;
 	}
@@ -646,7 +632,8 @@ component singleton {
 	 * Returns current UTC date and time in the following formats:
 	 *   - dateStamp - Current UTC date, format: yyyymmdd
 	 *   - timeStamp - Current UTC date and time, format: yyyymmddTHHnnssZ
-	 * @returns structure containing date and time strings
+	 *
+	 * @return structure containing date and time strings
 	 */
 	public struct function getUTCStrings(){
 		var utcDateTime = dateConvert( "local2UTC", now() );

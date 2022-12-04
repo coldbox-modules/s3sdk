@@ -5,7 +5,8 @@ component singleton {
 
 	/**
 	 * Creates a new instance of the utility for generating signatures using the supplied settings
-	 * @returns new instance initalized with specified settings
+	 *
+	 * @return new instance initalized with specified settings
 	 */
 	Sv2Util function init(){
 		return this;
@@ -14,11 +15,11 @@ component singleton {
 	/**
 	 * Generates a version 2 signature and returns headers for the request
 	 *
-	 *  @requestMethod   - Request operation, ie PUT, GET, POST, etcetera.
-	 *  @requestURI      - Absolute path of the URI. Portion of the URL after the host, to the "?" beginning the query string
-	 *  @requestHeaders  - Structure of http headers for used the request.
-	 *  @requestParams   - Structure containing any url parameters for the request.
-	 *  @amzHeaders      - Structure containing any amazon headers used to build the signature.
+	 * @requestMethod  - Request operation, ie PUT, GET, POST, etcetera.
+	 * @requestURI     - Absolute path of the URI. Portion of the URL after the host, to the "?" beginning the query string
+	 * @requestHeaders - Structure of http headers for used the request.
+	 * @requestParams  - Structure containing any url parameters for the request.
+	 * @amzHeaders     - Structure containing any amazon headers used to build the signature.
 	 */
 	public struct function generateSignatureData(
 		required string requestMethod,
@@ -86,17 +87,11 @@ component singleton {
 	/**
 	 * NSA SHA-1 Algorithm: RFC 2104HMAC-SHA1
 	 */
-	private binary function HMAC_SHA1(
-		required string signKey,
-		required string signMessage
-	){
+	private binary function HMAC_SHA1( required string signKey, required string signMessage ){
 		var jMsg = javacast( "string", arguments.signMessage ).getBytes( encryptionCharset );
 		var jKey = javacast( "string", arguments.signKey ).getBytes( encryptionCharset );
-		var key  = createObject(
-			"java",
-			"javax.crypto.spec.SecretKeySpec"
-		).init( jKey, "HmacSHA1" );
-		var mac = createObject( "java", "javax.crypto.Mac" ).getInstance( key.getAlgorithm() );
+		var key  = createObject( "java", "javax.crypto.spec.SecretKeySpec" ).init( jKey, "HmacSHA1" );
+		var mac  = createObject( "java", "javax.crypto.Mac" ).getInstance( key.getAlgorithm() );
 
 		mac.init( key );
 		mac.update( jMsg );
