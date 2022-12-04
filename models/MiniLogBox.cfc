@@ -18,10 +18,7 @@ component {
 	}
 
 	function error( required string msg, data ){
-		arrayAppend(
-			variables.logs,
-			"Error: " & arguments.msg
-		);
+		arrayAppend( variables.logs, "Error: " & arguments.msg );
 		if ( structKeyExists( arguments, "data" ) ) {
 			arrayAppend( variables.logs, arguments.data );
 		}
