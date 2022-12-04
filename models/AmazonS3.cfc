@@ -28,7 +28,6 @@ component accessors="true" singleton {
 
 	// DI
 	property name="log" inject="logbox:logger:{this}";
-	property name="streamBuilder" inject="StreamBuilder@cbstreams";
 
 	// Properties
 	property name="accessKey";
