@@ -159,7 +159,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					);
 					var bucketContents = s3.getBucket( bucketName = testBucket, delimiter = "/" );
 					expect( bucketContents ).toBeArray();
-					expect( bucketContents ).toHaveLength( 3 );
+					expect( bucketContents ).toHaveLength( 2 );
 					for ( var item in bucketContents ) {
 						if ( item.key == "testFolder" ) {
 							expect( item.isDirectory ).toBeTrue();
@@ -214,7 +214,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					// With no delimiter, there is no concept of folders, so all keys just show up and everything is a "file"
 					var bucketContents = s3.getBucket( bucketName = testBucket, delimiter = "" );
 					expect( bucketContents ).toBeArray();
-					expect( bucketContents ).toHaveLength( 3 );
+					expect( bucketContents ).toHaveLength( 2 );
 
 					bucketContents.each( function( item ){
 						expect( item.isDirectory ).toBeFalse();
