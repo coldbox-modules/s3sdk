@@ -6,7 +6,11 @@ component extends="coldbox.system.testing.BaseTestCase" {
 		"ortus2-s3sdk-bdd-#replace( variables.targetEngine, "@", "-" )#"
 	);
 
+	this.loadColdbox = true;
+	this.unloadColdbox = false;
+
 	function beforeAll(){
+		super.beforeAll();
 		prepTmpFolder();
 
 		variables.s3 = new s3sdk.models.AmazonS3(
@@ -14,9 +18,11 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			secretKey         = getUtil().getSystemSetting( "AWS_ACCESS_SECRET" ),
 			awsRegion         = getUtil().getSystemSetting( "AWS_REGION" ),
 			awsDomain         = getUtil().getSystemSetting( "AWS_DOMAIN" ),
+			ssl               = getUtil().getSystemSetting( "AWS_SSL", true ),
 			defaultBucketName = variables.testBucket
 		);
-		prepareMock( s3 );
+		getWirebox().autowire( s3 );
+		prepareMock(  s3 );
 		s3.$property( propertyName = "log", mock = createLogStub() );
 
 		try {
@@ -54,7 +60,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					var contents = s3.getBucket( testBucket );
 					contents.filter( ( obj ) => !obj.isDirectory ).each( ( obj ) => s3.deleteObject( testBucket, obj.key ) );
 					contents.filter( ( obj ) => obj.isDirectory ).each( ( obj ) => s3.deleteObject( testBucket, obj.key ) );
-					s3.setDefaultBucketName( testBucket );
+					s3.setDefaultBucketName( "" );
 				} );
 
 				it( "can store a new object", function(){
@@ -87,9 +93,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
 				it( "can perform a multi-part upload on a file over 5MB", function(){
 					var testFile = expandPath( "/tests/tmp/big_file.txt" );
+					var fileSize = round( s3.getMultiPartByteThreshold() * 1.2 )
 					fileWrite(
 						testFile,
-						repeatString( randRange( 0, 9 ), round( s3.getMultiPartByteThreshold() * 1.2 ) ),
+						repeatString( randRange( 0, 9 ), fileSize ),
 						"utf-8"
 					);
 					var uploadFileName = "big_file.txt";
@@ -103,6 +110,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					var md = s3.getObjectInfo( testBucket, uploadFileName );
 					// debug( md );
 					expect( md ).notToBeEmpty();
+					expect( md[ "Content-Length" ] ).toBe( fileSize );
 					expect( md[ "Content-Type" ] ).toBe( "text/plain" );
 				} );
 
@@ -141,7 +149,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					);
 					var bucketContents = s3.getBucket( bucketName = testBucket, delimiter = "/" );
 					expect( bucketContents ).toBeArray();
-					expect( bucketContents ).toHaveLength( 2 );
+					expect( bucketContents ).toHaveLength( 3 );
 					for ( var item in bucketContents ) {
 						if ( item.key == "testFolder" ) {
 							expect( item.isDirectory ).toBeTrue();
@@ -196,7 +204,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					// With no delimiter, there is no concept of folders, so all keys just show up and everything is a "file"
 					var bucketContents = s3.getBucket( bucketName = testBucket, delimiter = "" );
 					expect( bucketContents ).toBeArray();
-					expect( bucketContents ).toHaveLength( 2 );
+					expect( bucketContents ).toHaveLength( 3 );
 
 					bucketContents.each( function( item ){
 						expect( item.isDirectory ).toBeFalse();
@@ -438,12 +446,11 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			} );
 
 			describe( "Presigned URL", function(){
+
 				afterEach( function( currentSpec ){
-					// Add any test fixtures here that you create below
-					s3.deleteObject( testBucket, "example.txt" );
-					s3.deleteObject( testBucket, "presignedput.txt" );
-					s3.deleteObject( testBucket, "presignedputfriends.txt" );
-					s3.deleteObject( testBucket, "presignedputacl.txt" );
+					var contents = s3.getBucket( testBucket );
+					contents.filter( ( obj ) => !obj.isDirectory ).each( ( obj ) => s3.deleteObject( testBucket, obj.key ) );
+					contents.filter( ( obj ) => obj.isDirectory ).each( ( obj ) => s3.deleteObject( testBucket, obj.key ) );
 				} );
 
 				it( "can access via get", function(){

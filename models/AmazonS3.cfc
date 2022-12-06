@@ -28,6 +28,7 @@ component accessors="true" singleton {
 
 	// DI
 	property name="log" inject="logbox:logger:{this}";
+	property name="asyncManager" inject="AsyncManager@coldbox";
 
 	// Properties
 	property name="accessKey";
@@ -649,8 +650,8 @@ component accessors="true" singleton {
 			javacast( "string", arguments.filePath ),
 			javacast( "java.lang.String[]", [] )
 		);
-		var inputStream = jFiles.newInputStream( jPath, [] );
-		var byteCount   = inputStream.available();
+		var byteChannel = jFiles.newByteChannel( jPath, [] );
+		var byteCount   = byteChannel.size();
 
 		if ( byteCount <= variables.multiPartByteThreshold ) {
 			arguments.data = fileReadBinary( arguments.filepath );
@@ -661,38 +662,50 @@ component accessors="true" singleton {
 				var uploadId          = xmlParse( multipartResponse.response ).InitiateMultipartUploadResult.UploadId.xmlText;
 				var partNumber        = 1;
 				var parts             = [];
-
-				// If any part of our upload fails, fall back to the default
+				var numberOfUploads   = ceiling( byteCount / variables.multiPartByteThreshold );
+				for( var i = 1; i <= numberOfUploads; i++ ){
+					var remaining = byteCount - ( ( i - 1 ) * variables.multiPartByteThreshold );
+					 parts.append(
+						{
+							"uploadId" : uploadId,
+							"partNumber" : i,
+							"offset" : i * variables.multiPartByteThreshold,
+							"limit" : remaining <= variables.multiPartByteThreshold ? remaining : variables.multiPartByteThreshold,
+							"byteChannel" : byteChannel,
+							"timeout" : arguments.HTTPTimeout
+						}
+					);
+				}
 				try {
-					for ( var i = 0; i <= byteCount; i += variables.multiPartByteThreshold ) {
-						var remaining = inputStream.available();
-						var max       = remaining >= variables.multiPartByteThreshold ? variables.multiPartByteThreshold : remaining;
-						var buffer    = createObject( "java", "java.nio.ByteBuffer" ).allocate( max );
-						inputStream.read(
-							buffer.array(),
-							javacast( "int", 0 ),
-							javacast( "int", max )
-						);
-						parts.append(
-							s3Request(
-								method     = "PUT",
-								resource   = arguments.bucketName & "/" & arguments.uri,
-								body       = buffer.array(),
-								timeout    = arguments.HTTPTimeout,
-								parameters = { "uploadId" : uploadId, "partNumber" : partNumber }
-							)
-						);
+					parts = variables.asyncManager.allApply(
+						parts,
+						function( part ){
+							var channel = part.byteChannel;
+							channel.position( part.offset );
+							var buffer = createObject( "java", "java.nio.ByteBuffer" ).allocate( part.limit );
+							channel.read( buffer );
 
-						partNumber++;
-					}
+							return {
+								"partNumber" : part.partNumber,
+								"size" : part.limit,
+								"response" : s3Request(
+									method     = "PUT",
+									resource   = bucketName & "/" & uri,
+									body       = buffer.array(),
+									timeout    = part.timeout,
+									parameters = { "uploadId" : part.uploadId, "partNumber" : part.partNumber }
+								)
+							};
+						}
+					);
 
 					var finalizeBody = "<?xml version=""1.0"" encoding=""UTF-8""?><CompleteMultipartUpload xmlns=""http://s3.amazonaws.com/doc/2006-03-01/"">";
 
 					parts.each( function( part, index ){
 						finalizeBody &= "
 							<Part>
-								<ETag>#replace( part.responseHeader.etag, """", "", "all" )#</ETag>
-								<PartNumber>#index#</PartNumber>
+								<ETag>#replace( part.response.responseHeader.etag, """", "", "all" )#</ETag>
+								<PartNumber>#part.partNumber#</PartNumber>
 							</Part>
 							";
 					} );
@@ -713,6 +726,8 @@ component accessors="true" singleton {
 						"",
 						"all"
 					);
+
+				// If any part of our upload fails, fall back to the default
 				} catch ( any e ) {
 					s3Request(
 						method     = "DELETE",
