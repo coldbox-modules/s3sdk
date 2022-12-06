@@ -57,13 +57,19 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			describe( "objects", function(){
 				afterEach( function( currentSpec ){
 					// Add any test fixtures here that you create below
+					s3.deleteObject( testBucket, "example.txt" );
+					s3.deleteObject( testBucket, "example-2.txt" );
+					s3.deleteObject( testBucket, "testFolder/example.txt" );
+					s3.deleteObject( testBucket, "testFolder/" );
+					s3.deleteObject( testBucket, "emptyFolder/" );
+					s3.deleteObject( testBucket, "big_file.txt" );
+					s3.deleteObject( testBucket, "exam%20p   le (fo%2Fo)+,!@##$%^&*()_+~ ;:.txt" );
+
+					// Avoid these on cf11,2016 because their http sucks!
+					if ( !isOldACF() ) {
+						s3.deleteObject( testBucket, "Word Doc Tests.txt" );
+					}
 					var contents = s3.getBucket( testBucket );
-					contents
-						.filter( ( obj ) => !obj.isDirectory )
-						.each( ( obj ) => s3.deleteObject( testBucket, obj.key ) );
-					contents
-						.filter( ( obj ) => obj.isDirectory )
-					contents.filter( ( obj ) => obj.isDirectory ).each( ( obj ) => s3.deleteObject( testBucket, obj.key ) );
 					s3.setDefaultBucketName( "" );
 				} );
 
