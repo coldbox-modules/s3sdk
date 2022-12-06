@@ -6,7 +6,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 		"ortus2-s3sdk-bdd-#replace( variables.targetEngine, "@", "-" )#"
 	);
 
-	this.loadColdbox = true;
+	this.loadColdbox   = true;
 	this.unloadColdbox = false;
 
 	function beforeAll(){
@@ -22,7 +22,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			defaultBucketName = variables.testBucket
 		);
 		getWirebox().autowire( s3 );
-		prepareMock(  s3 );
+		prepareMock( s3 );
 		s3.$property( propertyName = "log", mock = createLogStub() );
 
 		try {
@@ -61,9 +61,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					contents
 						.filter( ( obj ) => !obj.isDirectory )
 						.each( ( obj ) => s3.deleteObject( testBucket, obj.key ) );
+					contents.filter( ( obj ) => obj.isDirectory )
 					contents
 						.filter( ( obj ) => obj.isDirectory )
-					contents.filter( ( obj ) => obj.isDirectory ).each( ( obj ) => s3.deleteObject( testBucket, obj.key ) );
+						.each( ( obj ) => s3.deleteObject( testBucket, obj.key ) );
 					s3.setDefaultBucketName( "" );
 				} );
 
@@ -450,11 +451,14 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			} );
 
 			describe( "Presigned URL", function(){
-
 				afterEach( function( currentSpec ){
 					var contents = s3.getBucket( testBucket );
-					contents.filter( ( obj ) => !obj.isDirectory ).each( ( obj ) => s3.deleteObject( testBucket, obj.key ) );
-					contents.filter( ( obj ) => obj.isDirectory ).each( ( obj ) => s3.deleteObject( testBucket, obj.key ) );
+					contents
+						.filter( ( obj ) => !obj.isDirectory )
+						.each( ( obj ) => s3.deleteObject( testBucket, obj.key ) );
+					contents
+						.filter( ( obj ) => obj.isDirectory )
+						.each( ( obj ) => s3.deleteObject( testBucket, obj.key ) );
 				} );
 
 				it( "can access via get", function(){
