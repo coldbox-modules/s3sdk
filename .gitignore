@@ -14,6 +14,8 @@ test-harness/docbox/**
 test-harness/testbox/**
 test-harness/logs/**
 test-harness/modules/**
+test-harness/tests/tmp/**
+!test-harness/tests/tmp/.gitkeep
 
 # modules
 modules/**

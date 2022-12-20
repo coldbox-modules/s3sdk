@@ -21,11 +21,7 @@ component {
 	this.mappings[ "/tests" ] = getDirectoryFromPath( getCurrentTemplatePath() );
 
 	// The application root
-	rootPath = reReplaceNoCase(
-		this.mappings[ "/tests" ],
-		"tests(\\|/)",
-		""
-	);
+	rootPath                 = reReplaceNoCase( this.mappings[ "/tests" ], "tests(\\|/)", "" );
 	this.mappings[ "/root" ] = rootPath;
 
 	// The module root path
@@ -39,15 +35,14 @@ component {
 
 	// request start
 	public boolean function onRequestStart( String targetPage ){
-
 		// Set a high timeout for long running tests
-		setting requestTimeout="9999";
+		setting requestTimeout   ="9999";
 		// New ColdBox Virtual Application Starter
-		request.coldBoxVirtualApp = new coldbox.system.testing.VirtualApp( appMapping = "/root" );
+		request.coldBoxVirtualApp= new coldbox.system.testing.VirtualApp( appMapping = "/root" );
 
 		// ORM Reload for fresh results
-		if( structKeyExists( url, "fwreinit" ) ){
-			if( structKeyExists( server, "lucee" ) ){
+		if ( structKeyExists( url, "fwreinit" ) ) {
+			if ( structKeyExists( server, "lucee" ) ) {
 				pagePoolClear();
 			}
 			request.coldBoxVirtualApp.shutdown();
