@@ -1621,7 +1621,6 @@ component accessors="true" singleton {
 								"#( len( header ) ? " " : "" )#emailAddress=""#grant.emailAddress#"""
 							);
 						} else {
-							dump( grant )
 							return header;
 						}
 					}, "" );
