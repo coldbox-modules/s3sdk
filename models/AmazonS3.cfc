@@ -1384,7 +1384,6 @@ component accessors="true" singleton {
 			"message"        : "",
 			"responseheader" : {}
 		};
-		var HTTPResults = "";
 		var param       = "";
 		var md5         = "";
 
@@ -1413,11 +1412,24 @@ component accessors="true" singleton {
 			cfhttpAttributes[ "encodeurl" ] = false;
 		}
 
+		cfhttpAttributes[ "result" ] = "local.HTTPResults";
+		if ( len( arguments.filename ) ) {
+			// Let the CF engine directly save the file so it can stream large files to disk and not eat up memory
+			cfhttpAttributes[ "file" ] = getFileFromPath( arguments.filename );
+			cfhttpAttributes[ "path" ] = getDirectoryFromPath( arguments.filename );
+			if ( !isNull( server.lucee ) ) {
+				// Crummy workaround in Lucee due to lack of compat with Adobe CF.  See...
+				// https://luceeserver.atlassian.net/browse/LDEV-3377
+				// https://luceeserver.atlassian.net/browse/LDEV-4357
+				cfhttpAttributes[ "result" ] = "";
+			}
+
+		}
+
 		cfhttp(
 			method              = arguments.method,
 			url                 = "#variables.URLEndpoint##signatureData.CanonicalURI#",
 			charset             = "utf-8",
-			result              = "HTTPResults",
 			redirect            = true,
 			timeout             = arguments.timeout,
 			getAsBinary         = arguments.getAsBinary,
@@ -1459,6 +1471,12 @@ component accessors="true" singleton {
 			}
 		}
 
+		// Lucee behavior mentioned above regarding file download incompat with Adobe
+		// When Lucee direct-downnloads a file, it doesn't return ANY details from the HTTP request :/
+		if( isNull( local.HTTPResults ) || !isStruct( local.HTTPResults ) ) {
+			return results;
+		}
+
 		// I've seen this variable disappear in Lucee on failed HTTP requests for some reason.
 		if ( isNull( HTTPResults.responseHeader.status_code ) ) {
 			HTTPResults.responseHeader.status_code = 0;
@@ -1474,10 +1492,6 @@ component accessors="true" singleton {
 			sleep( 1000 );
 			arguments.tryCount++;
 			return s3Request( argumentCollection = arguments );
-		}
-
-		if ( len( arguments.filename ) ) {
-			fileWrite( arguments.filename, HTTPResults.fileContent );
 		}
 
 		if ( log.canDebug() ) {

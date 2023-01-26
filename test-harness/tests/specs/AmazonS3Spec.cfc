@@ -869,11 +869,17 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					encryptionAlgorithm = "AES256"
 				);
 
-				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-algorithm" );
-				expect( o.responseHeader[ "x-amz-server-side-encryption-customer-algorithm" ] ).toBe( "AES256" );
-				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-key-MD5" );
-				expect( o.responseHeader[ "x-amz-server-side-encryption-customer-key-MD5" ] ).toBe( keyMD5 );
+				expect( o ).toHaveKey( "error" );
+				expect( o.error ).toBe( false );
 
+				// Lucee doesn't return headers AND direct download a file because it's dumb
+				// https://luceeserver.atlassian.net/browse/LDEV-4357
+				if ( isNull( server.lucee ) ) {
+					expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-algorithm" );
+					expect( o.responseHeader[ "x-amz-server-side-encryption-customer-algorithm" ] ).toBe( "AES256" );
+					expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-key-MD5" );
+					expect( o.responseHeader[ "x-amz-server-side-encryption-customer-key-MD5" ] ).toBe( keyMD5 );
+				}
 				expect( fileRead( filePath ) ).toBe( data );
 			} );
 
