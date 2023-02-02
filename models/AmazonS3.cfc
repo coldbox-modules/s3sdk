@@ -28,7 +28,7 @@ component accessors="true" singleton {
 
 	// DI
 	property name="log"          inject="logbox:logger:{this}";
-	property name="asyncManager" inject="AsyncManager@box";
+	property name="asyncManager" inject="box:AsyncManager";
 
 	// Properties
 	property name="accessKey";
