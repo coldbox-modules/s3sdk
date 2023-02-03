@@ -647,7 +647,8 @@ component accessors="true" singleton {
 
 		var jFiles = createObject( "java", "java.nio.file.Files" );
 		var jPath  = createObject( "java", "java.nio.file.Paths" ).get(
-			javacast( "string", arguments.filePath ),
+			// Java is less lax on slashes than CF, so getCanonicalPath() cleans that up
+			javacast( "string", getCanonicalPath( arguments.filePath ) ),
 			javacast( "java.lang.String[]", [] )
 		);
 		var byteChannel = jFiles.newByteChannel( jPath, [] );
@@ -1417,6 +1418,9 @@ component accessors="true" singleton {
 			// Let the CF engine directly save the file so it can stream large files to disk and not eat up memory
 			cfhttpAttributes[ "file" ] = getFileFromPath( arguments.filename );
 			cfhttpAttributes[ "path" ] = getDirectoryFromPath( arguments.filename );
+			if( !directoryExists( cfhttpAttributes[ "path" ] ) ) {
+				directoryCreate( cfhttpAttributes[ "path" ] );
+			}
 			if ( !isNull( server.lucee ) ) {
 				// Crummy workaround in Lucee due to lack of compat with Adobe CF.  See...
 				// https://luceeserver.atlassian.net/browse/LDEV-3377
