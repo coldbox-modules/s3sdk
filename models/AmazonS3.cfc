@@ -645,46 +645,47 @@ component accessors="true" singleton {
 			arguments.contentType = getFileMimeType( arguments.filepath );
 		}
 
-		var jFiles = createObject( "java", "java.nio.file.Files" );
-		var jPath  = createObject( "java", "java.nio.file.Paths" ).get(
-			// Java is less lax on slashes than CF, so getCanonicalPath() cleans that up
-			javacast( "string", getCanonicalPath( arguments.filePath ) ),
-			javacast( "java.lang.String[]", [] )
-		);
-		var byteChannel = jFiles.newByteChannel( jPath, [] );
-		var byteCount   = byteChannel.size();
+		var byteCount   = getFileInfo( arguments.filepath ).size;
 
 		if ( byteCount <= variables.multiPartByteThreshold ) {
 			arguments.data = fileReadBinary( arguments.filepath );
 			return putObject( argumentCollection = arguments );
 		} else {
+
+			var jFiles = createObject( "java", "java.nio.file.Files" );
+			var jPath  = createObject( "java", "java.nio.file.Paths" ).get(
+				// Java is less lax on slashes than CF, so getCanonicalPath() cleans that up
+				javacast( "string", getCanonicalPath( arguments.filePath ) ),
+				javacast( "java.lang.String[]", [] )
+			);
+
+			var parts = [];
 			try {
 				var multipartResponse = createMultiPartUpload( argumentCollection = arguments );
 				var uploadId          = xmlParse( multipartResponse.response ).InitiateMultipartUploadResult.UploadId.xmlText;
 				var partNumber        = 1;
-				var parts             = [];
 				var numberOfUploads   = ceiling( byteCount / variables.multiPartByteThreshold );
 				for ( var i = 1; i <= numberOfUploads; i++ ) {
 					var remaining = byteCount - ( ( i - 1 ) * variables.multiPartByteThreshold );
 					parts.append( {
 						"uploadId"    : uploadId,
 						"partNumber"  : i,
-						"offset"      : i * variables.multiPartByteThreshold,
+						"offset"      : (i-1) * variables.multiPartByteThreshold,
 						"limit"       : remaining <= variables.multiPartByteThreshold ? remaining : variables.multiPartByteThreshold,
-						"byteChannel" : byteChannel,
-						"timeout"     : arguments.HTTPTimeout
+						"timeout"     : arguments.HTTPTimeout,
+						"channel"	  : jFiles.newByteChannel( jPath, [] )
 					} );
 				}
 				try {
 					parts = variables.asyncManager.allApply( parts, function( part ){
-						var channel = part.byteChannel;
-						channel.position( part.offset );
+						var channel = part.channel.position( part.offset );
 						var buffer = createObject( "java", "java.nio.ByteBuffer" ).allocate( part.limit );
 						channel.read( buffer );
 
 						return {
 							"partNumber" : part.partNumber,
 							"size"       : part.limit,
+							"channel"	 : part.channel,
 							"response"   : s3Request(
 								method     = "PUT",
 								resource   = bucketName & "/" & uri,
@@ -693,6 +694,9 @@ component accessors="true" singleton {
 								parameters = {
 									"uploadId"   : part.uploadId,
 									"partNumber" : part.partNumber
+								},
+								headers = {
+									"content-type" : "binary/octet-stream"
 								}
 							)
 						};
@@ -748,6 +752,12 @@ component accessors="true" singleton {
 				);
 				arguments.data = fileReadBinary( arguments.filepath );
 				return putObject( argumentCollection = arguments );
+			} finally {
+				parts.each( (p)=>{
+					try{
+						p.channel.close()
+					} catch( any e ) {}
+				} );
 			}
 		}
 	}

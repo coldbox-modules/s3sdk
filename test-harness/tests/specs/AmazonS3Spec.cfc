@@ -122,6 +122,15 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					expect( md ).notToBeEmpty();
 					expect( md[ "Content-Length" ] ).toBe( fileSize );
 					expect( md[ "Content-Type" ] ).toBe( "text/plain" );
+
+					// Download the uploaded file
+					s3.downloadObject(
+						testBucket,
+						"big_file.txt",
+						expandPath( "/tests/tmp/big_file2.txt" )
+					);
+					// And confirm a hash of both file contents still matches
+					expect( hash( fileRead( expandPath( "/tests/tmp/big_file2.txt" ) ) ) ).toBe( hash( fileRead( expandPath( "/tests/tmp/big_file.txt" ) ) ) )
 				} );
 
 				it(
