@@ -6,7 +6,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ----
-## v5.1.3 => Unreleased
+## v5.5.2 => 2023-FEB-07
+### Fixed
+* Multi-part upload concurrency fixes
+## v5.5.1 => 2023-FEB-03
+### Added
+* Support for multi-part file uploads to conserve memory usage
+
+## v5.4.1 => 2023-FEB-02
+
+## v5.3.1 => 2023-FEB-02
+## v5.2.0 => 2023-JAN-26
 ### Added
 * Add support for server side encryption
 * Add retry support for S3 connection failures
