@@ -695,7 +695,9 @@ component accessors="true" singleton {
 									"uploadId"   : part.uploadId,
 									"partNumber" : part.partNumber
 								},
-								"headers"	 : [ "content-type" : "binary/octet-stream" ]
+								headers = {
+									"content-type" : "binary/octet-stream"
+								}
 							)
 						};
 					} );
