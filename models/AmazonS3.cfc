@@ -1719,8 +1719,12 @@ component accessors="true" singleton {
 	}
 
 	/**
-	 * Determine mime type from the file extension
-	 * */
+	 * Determines mime type from the file extension
+	 *
+	 * @filePath The path to the file stored in S3.
+	 *  
+	 * @return string
+	 */
 	string function getFileMimeType( required string filePath ){
 		var contentType = "binary/octet-stream";
 		if ( len( arguments.filePath ) ) {
