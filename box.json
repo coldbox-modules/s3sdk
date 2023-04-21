@@ -46,9 +46,6 @@
         "format":"cfformat run models,test-harness/tests/**/*.cfc,*.cfc --overwrite",
         "format:watch":"cfformat watch models,test-harness/tests/**/*.cfc,*.cfc ./.cfformat.json",
         "format:check":"cfformat check models,test-harness/tests/**/*.cfc,*.cfc",
-        "cfpm":"echo '\".engine/adobe2021/WEB-INF/cfusion/bin/cfpm.sh\"' | run",
-        "cfpm:install":"echo '\".engine/adobe2021/WEB-INF/cfusion/bin/cfpm.sh\" install ${1}' | run",
-        "install:2021":"run-script cfpm:install zip,debugger,mysql",
-        "install:dependencies":"install && cd test-harness && install"
+        "install:dependencies":"install --force && cd test-harness && install --force"
     }
 }

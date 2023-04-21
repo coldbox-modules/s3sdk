@@ -20,10 +20,26 @@ jobs:
       DB_PASSWORD: root
       AWS_DOMAIN: amazonaws.com
       AWS_REGION: us-east-1
+    continue-on-error: ${{ matrix.experimental }}
     strategy:
       fail-fast: false
       matrix:
-        cfengine: [ "lucee@5", "adobe@2018", "adobe@2021" ]
+        cfengine:  [ "lucee@5", "adobe@2018", "adobe@2021" ]
+        coldboxVersion: [ "^6.0.0" ]
+        experimental: [ false ]
+        include:
+          - cfengine: "adobe@2023"
+            coldboxVersion: "^6.0.0"
+            experimental: true
+          - coldboxVersion: "be"
+            cfengine: "lucee@5"
+            experimental: true
+          - coldboxVersion: "be"
+            cfengine: "adobe@2018"
+            experimental: true
+          - coldboxVersion: "be"
+            cfengine: "adobe@2021"
+            experimental: true
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
@@ -57,17 +73,16 @@ jobs:
       - name: Setup CommandBox CLI
         uses: Ortus-Solutions/setup-commandbox@v2.0.1
 
-      - name: Install Dependencies
+      - name: Install Test Harness with ColdBox ${{ matrix.coldboxVersion }}
         run: |
-          box run-script install:dependencies
+          box install
+          cd test-harness
+          box package set dependencies.coldbox=${{ matrix.coldboxVersion }}
+          box install
 
       - name: Start ${{ matrix.cfengine }} Server
         run: |
           box server start serverConfigFile="server-${{ matrix.cfengine }}.json" --noSaveSettings --debug
-          # Install Adobe 2021 cfpm modules
-          if [[ "${{ matrix.cfengine }}" == "adobe@2021" ]] ; then
-            box run-script install:2021
-          fi
           curl http://127.0.0.1:60299
 
       - name: Run Tests

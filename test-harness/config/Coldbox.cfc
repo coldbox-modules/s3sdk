@@ -33,6 +33,10 @@
 			eventCaching			= false
 		};
 
+		settings = {
+			"targetEngine" : getSystemSetting( "ENGINE", "localhost" )
+		};
+
 		// environment settings, create a detectEnvironment() method to detect it yourself.
 		// create a function with the name of the environment so it can be executed if that environment is detected
 		// the value of the environment is a list of regex patterns to match the cgi.http_host.
@@ -75,21 +79,23 @@
 			s3sdk = {
 				// Settings
 				accessKey          : getSystemSetting( "AWS_ACCESS_KEY" ),
-				secretKey          : getSystemSetting( "AWS_ACCESS_SECRET" )
+				secretKey          : getSystemSetting( "AWS_ACCESS_SECRET" ),
+				defaultBucketName  : getSystemSetting(
+										"AWS_DEFAULT_BUCKET_NAME",
+										"ortus2-s3sdk-bdd-#replace( settings.targetEngine, "@", "-" )#"
+									),
+				awsRegion         	: getSystemSetting( "AWS_REGION" ),
+				awsDomain         	: getSystemSetting( "AWS_DOMAIN" ),
+				ssl               	: getSystemSetting( "AWS_SSL", true )
 			}
 		};
 
 	}
 
-	/**
-	 * Load the Module you are testing
-	 */
-	function afterAspectsLoad( event, interceptData, rc, prc ){
-		controller.getModuleService()
-			.registerAndActivateModule(
-				moduleName 		= request.MODULE_NAME,
-				invocationPath 	= "moduleroot"
-			);
+	function afterAspectsLoad( event, interceptData ){
+		controller
+			.getModuleService()
+			.registerModule( moduleName = request.MODULE_NAME, invocationPath = "moduleroot" );
 	}
 
 }

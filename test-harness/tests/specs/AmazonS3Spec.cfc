@@ -1,26 +1,26 @@
 component extends="coldbox.system.testing.BaseTestCase" {
 
-	variables.targetEngine = getUtil().getSystemSetting( "ENGINE", "localhost" );
-	variables.testBucket   = getUtil().getSystemSetting(
-		"AWS_DEFAULT_BUCKET_NAME",
-		"ortus2-s3sdk-bdd-#replace( variables.targetEngine, "@", "-" )#"
-	);
-
 	this.loadColdbox   = true;
 	this.unloadColdbox = false;
 
 	function beforeAll(){
 		super.beforeAll();
+
 		prepTmpFolder();
 
+		var moduleSettings = getController().getModuleSettings( "s3sdk" );
+
+		variables.testBucket = moduleSettings.defaultBucketName;
+
 		variables.s3 = new s3sdk.models.AmazonS3(
-			accessKey         = getUtil().getSystemSetting( "AWS_ACCESS_KEY" ),
-			secretKey         = getUtil().getSystemSetting( "AWS_ACCESS_SECRET" ),
-			awsRegion         = getUtil().getSystemSetting( "AWS_REGION" ),
-			awsDomain         = getUtil().getSystemSetting( "AWS_DOMAIN" ),
-			ssl               = getUtil().getSystemSetting( "AWS_SSL", true ),
-			defaultBucketName = variables.testBucket
+			accessKey         = moduleSettings.accessKey,
+			secretKey         = moduleSettings.secretKey,
+			awsRegion         = moduleSettings.awsRegion,
+			awsDomain         = moduleSettings.awsDomain,
+			ssl               = moduleSettings.ssl,
+			defaultBucketName = moduleSettings.defaultBucketName
 		);
+
 		getWirebox().autowire( s3 );
 		prepareMock( s3 );
 		s3.$property( propertyName = "log", mock = createLogStub() );
