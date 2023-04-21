@@ -8,7 +8,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
 		prepTmpFolder();
 
-		var moduleSettings = getController().getModuleSettings( "s3sdk" );
+		var moduleSettings = getWirebox().getInstance( "coldbox:moduleSettings:s3sdk" );
 
 		variables.testBucket = moduleSettings.defaultBucketName;
 
