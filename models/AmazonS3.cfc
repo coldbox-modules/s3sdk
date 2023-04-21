@@ -645,13 +645,12 @@ component accessors="true" singleton {
 			arguments.contentType = getFileMimeType( arguments.filepath );
 		}
 
-		var byteCount   = getFileInfo( arguments.filepath ).size;
+		var byteCount = getFileInfo( arguments.filepath ).size;
 
 		if ( byteCount <= variables.multiPartByteThreshold ) {
 			arguments.data = fileReadBinary( arguments.filepath );
 			return putObject( argumentCollection = arguments );
 		} else {
-
 			var jFiles = createObject( "java", "java.nio.file.Files" );
 			var jPath  = createObject( "java", "java.nio.file.Paths" ).get(
 				// Java is less lax on slashes than CF, so getCanonicalPath() cleans that up
@@ -668,24 +667,24 @@ component accessors="true" singleton {
 				for ( var i = 1; i <= numberOfUploads; i++ ) {
 					var remaining = byteCount - ( ( i - 1 ) * variables.multiPartByteThreshold );
 					parts.append( {
-						"uploadId"    : uploadId,
-						"partNumber"  : i,
-						"offset"      : (i-1) * variables.multiPartByteThreshold,
-						"limit"       : remaining <= variables.multiPartByteThreshold ? remaining : variables.multiPartByteThreshold,
-						"timeout"     : arguments.HTTPTimeout,
-						"channel"	  : jFiles.newByteChannel( jPath, [] )
+						"uploadId"   : uploadId,
+						"partNumber" : i,
+						"offset"     : ( i - 1 ) * variables.multiPartByteThreshold,
+						"limit"      : remaining <= variables.multiPartByteThreshold ? remaining : variables.multiPartByteThreshold,
+						"timeout"    : arguments.HTTPTimeout,
+						"channel"    : jFiles.newByteChannel( jPath, [] )
 					} );
 				}
 				try {
 					parts = variables.asyncManager.allApply( parts, function( part ){
 						var channel = part.channel.position( part.offset );
-						var buffer = createObject( "java", "java.nio.ByteBuffer" ).allocate( part.limit );
+						var buffer  = createObject( "java", "java.nio.ByteBuffer" ).allocate( part.limit );
 						channel.read( buffer );
 
 						return {
 							"partNumber" : part.partNumber,
 							"size"       : part.limit,
-							"channel"	 : part.channel,
+							"channel"    : part.channel,
 							"response"   : s3Request(
 								method     = "PUT",
 								resource   = bucketName & "/" & uri,
@@ -695,9 +694,7 @@ component accessors="true" singleton {
 									"uploadId"   : part.uploadId,
 									"partNumber" : part.partNumber
 								},
-								headers = {
-									"content-type" : "binary/octet-stream"
-								}
+								headers = { "content-type" : "binary/octet-stream" }
 							)
 						};
 					} );
@@ -753,10 +750,11 @@ component accessors="true" singleton {
 				arguments.data = fileReadBinary( arguments.filepath );
 				return putObject( argumentCollection = arguments );
 			} finally {
-				parts.each( (p)=>{
-					try{
+				parts.each( ( p ) => {
+					try {
 						p.channel.close()
-					} catch( any e ) {}
+					} catch ( any e ) {
+					}
 				} );
 			}
 		}
@@ -1019,15 +1017,16 @@ component accessors="true" singleton {
 	/**
 	 * Returns a query string authenticated URL to an object in S3.
 	 *
-	 * @bucketName    The bucket the object resides in.
-	 * @uri           The uri to the object to create a link for.
-	 * @minutesValid  The minutes the link is valid for. Defaults to 60 minutes.
-	 * @useSSL        Use SSL for the returned url.
-	 * @method        HTTP method that will be used
-	 * @acl           The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL(). If omitted, any ACL will be allowed when PUTting the file.
-	 * @metaHeaders   Additonal metadata headers to add.
-	 * @contentType   The object content type for PUT.  If omitted, any content-type will be allowed when PUTting the file.
-	 * @encryptionKey The base64 encoded AES 356 bit key for server side encryption.
+	 * @bucketName      The bucket the object resides in.
+	 * @uri             The uri to the object to create a link for.
+	 * @minutesValid    The minutes the link is valid for. Defaults to 60 minutes.
+	 * @useSSL          Use SSL for the returned url.
+	 * @method          HTTP method that will be used
+	 * @acl             The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL(). If omitted, any ACL will be allowed when PUTting the file.
+	 * @metaHeaders     Additonal metadata headers to add.
+	 * @contentType     The object content type for PUT.  If omitted, any content-type will be allowed when PUTting the file.
+	 * @encryptionKey   The base64 encoded AES 356 bit key for server side encryption.
+	 * @responseHeaders A struct of headers to be forced for the HTTP response of GET requests.  Valid options are content-type, content-language, expires, cache-control, content-disposition, content-encoding
 	 *
 	 * @return An authenticated url to the resource.
 	 */
@@ -1040,7 +1039,8 @@ component accessors="true" singleton {
 		any acl             = "",
 		struct metaHeaders  = {},
 		string contentType,
-		string encryptionKey = variables.defaultEncryptionKey
+		string encryptionKey   = variables.defaultEncryptionKey,
+		struct responseHeaders = {}
 	){
 		requireBucketName( arguments.bucketName );
 
@@ -1057,13 +1057,35 @@ component accessors="true" singleton {
 
 		var hostname = "#bucketName#.#variables.URLEndpointHostname#";
 
+		var requestParams        = { "X-Amz-Expires" : arguments.minutesValid * 60 };
+		var validResponseHeaders = [
+			"content-type",
+			"content-language",
+			"expires",
+			"cache-control",
+			"content-disposition",
+			"content-encoding"
+		];
+		responseHeaders.each( ( header, value ) => {
+			if ( !validResponseHeaders.findNoCase( header ) ) {
+				throw(
+					message = "Invalid Reponse Header for signed URL: [#header#].",
+					detail  = "Valid options are: [#validResponseHeaders.toList()#]"
+				);
+			}
+			if ( header == "content-type" && value == "auto" ) {
+				value = getFileMimeType( uri );
+			}
+			requestParams[ "response-" & header ] = value;
+		} );
+
 		var sigData = variables.signatureUtil.generateSignatureData(
 			requestMethod      = arguments.method,
 			hostName           = hostname,
 			requestURI         = arguments.uri,
 			requestBody        = "",
 			requestHeaders     = headers,
-			requestParams      = { "X-Amz-Expires" : arguments.minutesValid * 60 },
+			requestParams      = requestParams,
 			accessKey          = variables.accessKey,
 			secretKey          = variables.secretKey,
 			regionName         = variables.awsRegion,
@@ -1395,8 +1417,8 @@ component accessors="true" singleton {
 			"message"        : "",
 			"responseheader" : {}
 		};
-		var param       = "";
-		var md5         = "";
+		var param = "";
+		var md5   = "";
 
 		// Default Content Type
 		if ( NOT structKeyExists( arguments.headers, "content-type" ) ) {
@@ -1428,7 +1450,7 @@ component accessors="true" singleton {
 			// Let the CF engine directly save the file so it can stream large files to disk and not eat up memory
 			cfhttpAttributes[ "file" ] = getFileFromPath( arguments.filename );
 			cfhttpAttributes[ "path" ] = getDirectoryFromPath( arguments.filename );
-			if( !directoryExists( cfhttpAttributes[ "path" ] ) ) {
+			if ( !directoryExists( cfhttpAttributes[ "path" ] ) ) {
 				directoryCreate( cfhttpAttributes[ "path" ] );
 			}
 			if ( !isNull( server.lucee ) ) {
@@ -1437,7 +1459,6 @@ component accessors="true" singleton {
 				// https://luceeserver.atlassian.net/browse/LDEV-4357
 				cfhttpAttributes[ "result" ] = "";
 			}
-
 		}
 
 		cfhttp(
@@ -1487,7 +1508,7 @@ component accessors="true" singleton {
 
 		// Lucee behavior mentioned above regarding file download incompat with Adobe
 		// When Lucee direct-downnloads a file, it doesn't return ANY details from the HTTP request :/
-		if( isNull( local.HTTPResults ) || !isStruct( local.HTTPResults ) ) {
+		if ( isNull( local.HTTPResults ) || !isStruct( local.HTTPResults ) ) {
 			return results;
 		}
 

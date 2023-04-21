@@ -130,7 +130,9 @@ component extends="coldbox.system.testing.BaseTestCase" {
 						expandPath( "/tests/tmp/big_file2.txt" )
 					);
 					// And confirm a hash of both file contents still matches
-					expect( hash( fileRead( expandPath( "/tests/tmp/big_file2.txt" ) ) ) ).toBe( hash( fileRead( expandPath( "/tests/tmp/big_file.txt" ) ) ) )
+					expect( hash( fileRead( expandPath( "/tests/tmp/big_file2.txt" ) ) ) ).toBe(
+						hash( fileRead( expandPath( "/tests/tmp/big_file.txt" ) ) )
+					)
 				} );
 
 				it(
@@ -599,6 +601,61 @@ component extends="coldbox.system.testing.BaseTestCase" {
 						);
 					};
 					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "403", local.cfhttp.fileContent );
+				} );
+
+				it( "Can use presigned URL with forced response headers", function(){
+					s3.putObject( testBucket, "example.txt", "Hello, world!" );
+					var presignedURL = s3.getAuthenticatedURL(
+						bucketName      = testBucket,
+						uri             = "example.txt",
+						responseHeaders = {
+							"content-type"        : "custom-type",
+							"content-language"    : "custom-language",
+							"expires"             : "custom-expires",
+							"cache-control"       : "custom-cache",
+							"content-disposition" : "custom-disposition",
+							"content-encoding"    : "custom-encoding"
+						}
+					);
+					cfhttp( url = "#presignedURL#", result = "local.cfhttp" );
+
+					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "200", local.cfhttp.fileContent );
+					expect( local.cfhttp.fileContent ).toBe( "Hello, world!" );
+					expect( local.cfhttp.Responseheader[ "content-type" ] ).toBe( "custom-type" );
+					expect( local.cfhttp.Responseheader[ "content-language" ] ).toBe( "custom-language" );
+					expect( local.cfhttp.Responseheader[ "expires" ] ).toBe( "custom-expires" );
+					expect( local.cfhttp.Responseheader[ "cache-control" ] ).toBe( "custom-cache" );
+					expect( local.cfhttp.Responseheader[ "content-disposition" ] ).toBe( "custom-disposition" );
+					expect( local.cfhttp.Responseheader[ "content-encoding" ] ).toBe( "custom-encoding" );
+				} );
+
+				it( "Can use presigned URL with auto response content type", function(){
+					s3.putObject(
+						testBucket,
+						"example.txt",
+						"Hello, world!",
+						"",
+						"wacky-content-type"
+					);
+					var presignedURL = s3.getAuthenticatedURL(
+						bucketName      = testBucket,
+						uri             = "example.txt",
+						responseHeaders = { "content-type" : "auto" }
+					);
+					cfhttp( url = "#presignedURL#", result = "local.cfhttp" );
+
+					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "200", local.cfhttp.fileContent );
+					expect( local.cfhttp.fileContent ).toBe( "Hello, world!" );
+					// Our explicit content type when storing the file is ignored and the corret type is automatically returned based on MIME type
+					expect( local.cfhttp.Responseheader[ "content-type" ] ).toBe( "text/plain" );
+				} );
+
+				it( "Creating presigned URL with invalid response header throws error", function(){
+					expect( () => s3.getAuthenticatedURL(
+						bucketName      = testBucket,
+						uri             = "example.txt",
+						responseHeaders = { "fake" : "" }
+					) ).toThrow();
 				} );
 			} );
 		} );
