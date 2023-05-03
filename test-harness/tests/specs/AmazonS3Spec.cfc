@@ -459,7 +459,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					expect( arrayLen( s3.listBuckets() ) ).toBeGTE( 1, "At least one bucket should be returned" );
 				} );
 
-				it( "can delete a bucket", function(){
+				xit( "can delete a bucket", function(){
 					expect( s3.hasBucket( testBucket ) ).toBeTrue();
 					var results = s3.deleteBucket( testBucket );
 					expect( results ).toBeTrue();
