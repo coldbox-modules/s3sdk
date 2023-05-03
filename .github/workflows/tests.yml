@@ -69,6 +69,8 @@ jobs:
           printf "AWS_REGION=${{ env.AWS_REGION }}\n" >> .env
           printf "AWS_DOMAIN=${{ env.AWS_DOMAIN }}\n" >> .env
           printf "ENGINE=${{ matrix.cfengine }}\n" >> .env
+          printf "COLDBOX_VERSION=${{ matrix.coldboxVersion }}\n" >> .env
+
 
       - name: Setup CommandBox CLI
         uses: Ortus-Solutions/setup-commandbox@v2.0.1

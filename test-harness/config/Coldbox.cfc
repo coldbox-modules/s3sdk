@@ -34,7 +34,8 @@
 		};
 
 		settings = {
-			"targetEngine" : getSystemSetting( "ENGINE", "localhost" )
+			"targetEngine" : getSystemSetting( "ENGINE", "localhost" ),
+			"coldBoxVersion" : getSystemSetting( "COLDBOX_VERSION", "" )
 		};
 
 		// environment settings, create a detectEnvironment() method to detect it yourself.
@@ -82,7 +83,7 @@
 				secretKey          		: getSystemSetting( "AWS_ACCESS_SECRET" ),
 				defaultBucketName  		: getSystemSetting(
 											"AWS_DEFAULT_BUCKET_NAME",
-											"ortus2-s3sdk-bdd-#replace( settings.targetEngine, "@", "-" )#"
+											"ortus3-s3sdk-bdd-#replace( settings.targetEngine, "@", "-" )#-#replace( settings.coldBoxVersion, '^', '' )#"
 										),
 				awsRegion         		: getSystemSetting( "AWS_REGION" ),
 				awsDomain         		: getSystemSetting( "AWS_DOMAIN" ),
