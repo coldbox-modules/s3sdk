@@ -26,14 +26,14 @@ component extends="coldbox.system.testing.BaseTestCase" {
 		prepareMock( s3 );
 		s3.$property( propertyName = "log", mock = createLogStub() );
 
-		try {
+		//try {
 			s3.putBucket( testBucket );
-		} catch ( any e ) {
-			writeDump(
-				var    = "Error putting test bucket, maybe cached: #e.message# #e.detail#",
-				output = "console"
-			);
-		}
+		//} catch ( any e ) {
+		//	writeDump(
+		//		var    = "Error putting test bucket, maybe cached: #e.message# #e.detail#",
+		//		output = "console"
+		//	);
+		//}
 	}
 
 	private function prepTmpFolder(){
