@@ -20,27 +20,32 @@ component {
 	function configure(){
 		// Settings
 		variables.settings = {
-			accessKey                  : "",
-			autoContentType            : false,
-			autoMD5                    : false,
-			awsDomain                  : "amazonaws.com",
-			awsRegion                  : "us-east-1",
-			debug                      : false,
-			defaultACL                 : "public-read",
-			defaultBucketName          : "",
-			defaultCacheControl        : "no-store, no-cache, must-revalidate",
-			defaultDelimiter           : "/",
-			defaultStorageClass        : "STANDARD",
-			defaultTimeOut             : 300,
-			encryptionCharset          : "utf-8",
-			retriesOnError             : 3,
-			secretKey                  : "",
-			serviceName                : "s3",
-			signatureType              : "V4",
-			ssl                        : true,
-			throwOnRequestError        : true,
-			defaultEncryptionAlgorithm : "",
-			defaultEncryptionKey       : ""
+			accessKey                    : "",
+			autoContentType              : false,
+			autoMD5                      : false,
+			awsDomain                    : "amazonaws.com",
+			awsRegion                    : "us-east-1",
+			debug                        : false,
+			defaultACL                   : "public-read",
+			defaultBucketName            : "",
+			defaultCacheControl          : "no-store, no-cache, must-revalidate",
+			defaultDelimiter             : "/",
+			defaultStorageClass          : "STANDARD",
+			defaultTimeOut               : 300,
+			encryptionCharset            : "utf-8",
+			retriesOnError               : 3,
+			secretKey                    : "",
+			serviceName                  : "s3",
+			signatureType                : "V4",
+			ssl                          : true,
+			throwOnRequestError          : true,
+			defaultEncryptionAlgorithm   : "",
+			defaultEncryptionKey         : "",
+			defaultObjectOwnership       : "ObjectWriter",
+			defaultBlockPublicAcls       : false,
+			defaultIgnorePublicAcls      : false,
+			defaultBlockPublicPolicy     : false,
+			defaultRestrictPublicBuckets : false
 		};
 	}
 
@@ -70,7 +75,15 @@ component {
 			.initArg( name = "serviceName", value = variables.settings.serviceName )
 			.initArg( name = "debug", value = variables.settings.debug )
 			.initArg( name = "defaultEncryptionAlgorithm", value = variables.settings.defaultEncryptionAlgorithm )
-			.initArg( name = "defaultEncryptionKey", value = variables.settings.defaultEncryptionKey );
+			.initArg( name = "defaultEncryptionKey", value = variables.settings.defaultEncryptionKey )
+			.initArg( name = "defaultObjectOwnership", value = variables.settings.defaultObjectOwnership )
+			.initArg( name = "defaultBlockPublicAcls", value = variables.settings.defaultBlockPublicAcls )
+			.initArg( name = "defaultIgnorePublicAcls", value = variables.settings.defaultIgnorePublicAcls )
+			.initArg( name = "defaultBlockPublicPolicy", value = variables.settings.defaultBlockPublicPolicy )
+			.initArg(
+				name  = "defaultRestrictPublicBuckets",
+				value = variables.settings.defaultRestrictPublicBuckets
+			);
 		binder.map( "Sv4Util@s3sdk" ).to( "#moduleMapping#.models.AmazonS3" );
 
 		binder.map( "Sv2Util@s3sdk" ).to( "#moduleMapping#.models.AmazonS3" );

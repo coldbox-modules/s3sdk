@@ -8,17 +8,18 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
 		prepTmpFolder();
 
-		var moduleSettings = getWirebox().getInstance( "coldbox:moduleSettings:s3sdk" );
+		var moduleSettings = getWirebox().getInstance( "box:moduleSettings:s3sdk" );
 
 		variables.testBucket = moduleSettings.defaultBucketName;
 
 		variables.s3 = new s3sdk.models.AmazonS3(
-			accessKey         = moduleSettings.accessKey,
-			secretKey         = moduleSettings.secretKey,
-			awsRegion         = moduleSettings.awsRegion,
-			awsDomain         = moduleSettings.awsDomain,
-			ssl               = moduleSettings.ssl,
-			defaultBucketName = moduleSettings.defaultBucketName
+			accessKey              = moduleSettings.accessKey,
+			secretKey              = moduleSettings.secretKey,
+			awsRegion              = moduleSettings.awsRegion,
+			awsDomain              = moduleSettings.awsDomain,
+			ssl                    = moduleSettings.ssl,
+			defaultBucketName      = moduleSettings.defaultBucketName,
+			defaultObjectOwnership = moduleSettings.defaultObjectOwnership
 		);
 
 		getWirebox().autowire( s3 );
@@ -458,11 +459,46 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					expect( arrayLen( s3.listBuckets() ) ).toBeGTE( 1, "At least one bucket should be returned" );
 				} );
 
-				xit( "can delete a bucket", function(){
+				it( "can delete a bucket", function(){
 					expect( s3.hasBucket( testBucket ) ).toBeTrue();
 					var results = s3.deleteBucket( testBucket );
 					expect( results ).toBeTrue();
 					s3.putBucket( testBucket );
+				} );
+
+				it( "can get bucketPublicAccess", function(){
+					var results = s3.getBucketPublicAccess( testBucket );
+					expect( results ).toHaveKey( "BlockPublicAcls" );
+					expect( results ).toHaveKey( "IgnorePublicAcls" );
+					expect( results ).toHaveKey( "BlockPublicPolicy" );
+					expect( results ).toHaveKey( "RestrictPublicBuckets" );
+
+					expect( results.BlockPublicAcls ).toBeBoolean();
+					expect( results.IgnorePublicAcls ).toBeBoolean();
+					expect( results.BlockPublicPolicy ).toBeBoolean();
+					expect( results.RestrictPublicBuckets ).toBeBoolean();
+				} );
+
+				it( "can set bucketPublicAccess", function(){
+					s3.putBucketPublicAccess( testBucket, true, true, true, true );
+					var results = s3.getBucketPublicAccess( testBucket );
+
+					expect( results.BlockPublicAcls ).toBeTrue();
+					expect( results.IgnorePublicAcls ).toBeTrue();
+					expect( results.BlockPublicPolicy ).toBeTrue();
+					expect( results.RestrictPublicBuckets ).toBeTrue();
+
+					s3.putBucketPublicAccess( testBucket, false, false, false, false );
+					var results = s3.getBucketPublicAccess( testBucket );
+
+					expect( results.BlockPublicAcls ).toBeFalse();
+					expect( results.IgnorePublicAcls ).toBeFalse();
+					expect( results.BlockPublicPolicy ).toBeFalse();
+					expect( results.RestrictPublicBuckets ).toBeFalse();
+				} );
+
+				it( "can set bucket ACL", function(){
+					s3.putBucketACL( testBucket, "private" );
 				} );
 			} );
 

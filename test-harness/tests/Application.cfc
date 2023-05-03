@@ -11,7 +11,7 @@ component {
 	request.MODULE_PATH = "s3sdk";
 
 	// APPLICATION CFC PROPERTIES
-	this.name               = "cbfs Testing Suite";
+	this.name               = "s3sdk Testing Suite";
 	this.sessionManagement  = true;
 	this.sessionTimeout     = createTimespan( 0, 0, 15, 0 );
 	this.applicationTimeout = createTimespan( 0, 0, 15, 0 );

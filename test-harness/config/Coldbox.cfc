@@ -78,15 +78,15 @@
 		moduleSettings = {
 			s3sdk = {
 				// Settings
-				accessKey          : getSystemSetting( "AWS_ACCESS_KEY" ),
-				secretKey          : getSystemSetting( "AWS_ACCESS_SECRET" ),
-				defaultBucketName  : getSystemSetting(
-										"AWS_DEFAULT_BUCKET_NAME",
-										"ortus2-s3sdk-bdd-#replace( settings.targetEngine, "@", "-" )#"
-									),
-				awsRegion         	: getSystemSetting( "AWS_REGION" ),
-				awsDomain         	: getSystemSetting( "AWS_DOMAIN" ),
-				ssl               	: getSystemSetting( "AWS_SSL", true )
+				accessKey          		: getSystemSetting( "AWS_ACCESS_KEY" ),
+				secretKey          		: getSystemSetting( "AWS_ACCESS_SECRET" ),
+				defaultBucketName  		: getSystemSetting(
+											"AWS_DEFAULT_BUCKET_NAME",
+											"ortus2-s3sdk-bdd-#replace( settings.targetEngine, "@", "-" )#"
+										),
+				awsRegion         		: getSystemSetting( "AWS_REGION" ),
+				awsDomain         		: getSystemSetting( "AWS_DOMAIN" ),
+				ssl               		: getSystemSetting( "AWS_SSL", true )
 			}
 		};
 
