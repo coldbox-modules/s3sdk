@@ -1,6 +1,6 @@
 {
     "name":"Amazon S3 SDK",
-    "version":"5.6.0",
+    "version":"5.7.0",
     "slug":"s3sdk",
     "location":"https://downloads.ortussolutions.com/ortussolutions/coldbox-modules/s3sdk/@build.version@/s3sdk-@build.version@.zip",
     "author":"Ortus Solutions, Corp",
@@ -46,9 +46,6 @@
         "format":"cfformat run models,test-harness/tests/**/*.cfc,*.cfc --overwrite",
         "format:watch":"cfformat watch models,test-harness/tests/**/*.cfc,*.cfc ./.cfformat.json",
         "format:check":"cfformat check models,test-harness/tests/**/*.cfc,*.cfc",
-        "cfpm":"echo '\".engine/adobe2021/WEB-INF/cfusion/bin/cfpm.sh\"' | run",
-        "cfpm:install":"echo '\".engine/adobe2021/WEB-INF/cfusion/bin/cfpm.sh\" install ${1}' | run",
-        "install:2021":"run-script cfpm:install zip,debugger,mysql",
-        "install:dependencies":"install && cd test-harness && install"
+        "install:dependencies":"install --force && cd test-harness && install --force"
     }
 }
