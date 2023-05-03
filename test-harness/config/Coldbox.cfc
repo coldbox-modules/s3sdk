@@ -83,7 +83,7 @@
 				secretKey          		: getSystemSetting( "AWS_ACCESS_SECRET" ),
 				defaultBucketName  		: getSystemSetting(
 											"AWS_DEFAULT_BUCKET_NAME",
-											"ortus3-s3sdk-bdd-#replace( settings.targetEngine, "@", "-" )#-#replace( settings.coldBoxVersion, '^', '' )#"
+											"ortus3-s3sdk-bdd-#replace( settings.targetEngine, "@", "-" )#-#reReplace( settings.coldBoxVersion, '[^a-zA-Z0-9]', '' )#"
 										),
 				awsRegion         		: getSystemSetting( "AWS_REGION" ),
 				awsDomain         		: getSystemSetting( "AWS_DOMAIN" ),
