@@ -45,7 +45,8 @@ component {
 			defaultBlockPublicAcls       : false,
 			defaultIgnorePublicAcls      : false,
 			defaultBlockPublicPolicy     : false,
-			defaultRestrictPublicBuckets : false
+			defaultRestrictPublicBuckets : false,
+			urlStyle					 : "path"
 		};
 	}
 
@@ -83,6 +84,9 @@ component {
 			.initArg(
 				name  = "defaultRestrictPublicBuckets",
 				value = variables.settings.defaultRestrictPublicBuckets
+			).initArg(
+			name  = "urlStyle",
+			value = variables.settings.urlStyle
 			);
 		binder.map( "Sv4Util@s3sdk" ).to( "#moduleMapping#.models.AmazonS3" );
 

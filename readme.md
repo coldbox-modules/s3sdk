@@ -53,7 +53,8 @@ This SDK will be installed into a directory called `s3sdk` and then the SDK can 
  * @debug Used to turn debugging on or off outside of logbox. Defaults to false.
  * @defaultEncryptionAlgorithm The default server side encryption algorithm to use.  Usually "AES256". Not needed if using custom defaultEncryptionKey
  * @defaultEncryptionKey	The default base64 encoded AES 356 bit key for server side encryption.
- *
+ * @urlStyle					 Specifies the format of the URL whether it is the `path` format or `virtual` format. Defaults to path. For more information see https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html
+ * 
  * @return An AmazonS3 instance.
  */
 public AmazonS3 function init(
@@ -75,6 +76,7 @@ public AmazonS3 function init(
 	boolean debug= false,
 	string defaultEncryptionAlgorithm = "",
 	string defaultEncryptionKey = "",
+	string urlStyle	= "path"
 )
 ```
 
@@ -125,7 +127,9 @@ moduleSettings = {
 		// SSL mode or not on cfhttp calls and when generating put/get authenticated URLs: Defaults to true
 		ssl = true,
 		// Throw exceptions when s3 requests fail, else it swallows them up.
-		throwOnRequestError : true
+		throwOnRequestError : true,
+		// What format of endpoint to use whether path or virtual
+		urlStyle = "path"
 	}
 };
 ```
