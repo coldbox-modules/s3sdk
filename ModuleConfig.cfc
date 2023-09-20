@@ -88,12 +88,9 @@ component {
 			name  = "urlStyle",
 			value = variables.settings.urlStyle
 			);
-		//This change might be based on ignorance but it didn't look correct. 
-		//binder.map( "Sv4Util@s3sdk" ).to( "#moduleMapping#.models.AmazonS3" );
-		binder.map( "Sv4Util@s3sdk" ).to( "#moduleMapping#.models.Sv4Util" );
+		binder.map( "Sv4Util@s3sdk" ).to( "#moduleMapping#.models.AmazonS3" );
 
-		//binder.map( "Sv2Util@s3sdk" ).to( "#moduleMapping#.models.AmazonS3" );
-		binder.map( "Sv2Util@s3sdk" ).to( "#moduleMapping#.models.Sv2Util" );
+		binder.map( "Sv2Util@s3sdk" ).to( "#moduleMapping#.models.AmazonS3" );
 	}
 
 
