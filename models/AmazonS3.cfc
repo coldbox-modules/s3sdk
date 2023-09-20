@@ -337,12 +337,12 @@ component accessors="true" singleton {
 		if ( results.error ) {
 			throw( message = "Error making Amazon REST Call", detail = results.message );
 		}
-
-		if ( len( results.response.LocationConstraint.XMLText ) ) {
+		//Should this return whatever comes from AWS? It seems like hardcoding a potentially wrong answer is not a good idea. 
+		//if ( len( results.response.LocationConstraint.XMLText ) ) {
 			return results.response.LocationConstraint.XMLText;
-		}
+		//}
 
-		return "US";
+		//return "US";
 	}
 
 	/**
