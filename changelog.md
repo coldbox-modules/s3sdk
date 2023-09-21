@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ----
+## v5.7.1 => 2023-SEP-21
+### Fixed
+* Added `entryPoint`, `modelNamespace` and `cfmapping` keys to ModuleConfig, to ensure mappings for downstream modules are available during framework load
+## v5.7.0 => 2023-MAY-03
+### Changed
+* Updates permission handling to account for updated AWS default bucket policies
 ## v5.6.0 => 2023-MAR-07
 ### Added
 * Support for overriding response headers like content type for pre-signed URLs
