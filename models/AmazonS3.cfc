@@ -44,6 +44,7 @@ component accessors="true" singleton {
 	property name="defaultBucketName";
 	property name="defaultCacheControl";
 	property name="defaultStorageClass";
+	property name="defaultObjectOwnership";
 	property name="defaultACL";
 	property name="throwOnRequestError";
 	property name="retriesOnError";
@@ -54,6 +55,11 @@ component accessors="true" singleton {
 	property name="defaultEncryptionAlgorithm";
 	property name="defaultEncryptionKey";
 	property name="multiPartByteThreshold";
+	property name="defaultBlockPublicAcls";
+	property name="defaultIgnorePublicAcls";
+	property name="defaultBlockPublicPolicy";
+	property name="defaultRestrictPublicBuckets";
+
 
 	// STATIC Contsants
 	this.ACL_PRIVATE           = "private";
@@ -78,51 +84,62 @@ component accessors="true" singleton {
 	/**
 	 * Create a new S3SDK Instance
 	 *
-	 * @accessKey                  The Amazon access key.
-	 * @secretKey                  The Amazon secret key.
-	 * @awsDomain                  The Domain used S3 Service (amazonws.com, digitalocean.com, storage.googleapis.com). Defaults to amazonws.com
-	 * @awsRegion                  The Amazon region. Defaults to us-east-1 for amazonaws.com
-	 * @encryptionCharset          The charset for the encryption. Defaults to UTF-8.
-	 * @signature                  The signature version to calculate, "V2" is deprecated but more compatible with other endpoints. "V4" requires Sv4Util.cfc & ESAPI on Lucee. Defaults to V4
-	 * @ssl                        True if the request should use SSL. Defaults to true.
-	 * @defaultTimeOut             Default HTTP timeout for all requests. Defaults to 300.
-	 * @defaultDelimiter           Delimter to use for getBucket calls. "/" is standard to treat keys as file paths
-	 * @defaultBucketName          Bucket name to use by default
-	 * @defaultCacheControl        Default caching policy for objects. Defaults to: no-store, no-cache, must-revalidate
-	 * @defaultStorageClass        Default storage class for objects that affects cost, access speed and durability. Defaults to STANDARD.
-	 * @defaultACL                 Default access control policy for objects and buckets. Defaults to public-read.
-	 * @throwOnRequestError        If an exception should be thrown for request errors. Defaults to true.
-	 * @autoContentType            Tries to determine content type of file by file extension. Defaults to false.
-	 * @autoMD5                    Calculates MD5 hash of content automatically. Defaults to false.
-	 * @debug                      Used to turn debugging on or off outside of logbox. Defaults to false.
-	 * @defaultEncryptionAlgorithm The default server side encryption algorithm to use.  Usually "AES256". Not needed if using custom defaultEncryptionKey
-	 * @defaultEncryptionKey       The default base64 encoded AES 356 bit key for server side encryption.
+	 * @accessKey                    The Amazon access key.
+	 * @secretKey                    The Amazon secret key.
+	 * @awsDomain                    The Domain used S3 Service (amazonws.com, digitalocean.com, storage.googleapis.com). Defaults to amazonws.com
+	 * @awsRegion                    The Amazon region. Defaults to us-east-1 for amazonaws.com
+	 * @encryptionCharset            The charset for the encryption. Defaults to UTF-8.
+	 * @signature                    The signature version to calculate, "V2" is deprecated but more compatible with other endpoints. "V4" requires Sv4Util.cfc & ESAPI on Lucee. Defaults to V4
+	 * @ssl                          True if the request should use SSL. Defaults to true.
+	 * @defaultTimeOut               Default HTTP timeout for all requests. Defaults to 300.
+	 * @defaultDelimiter             Delimter to use for getBucket calls. "/" is standard to treat keys as file paths
+	 * @defaultBucketName            Bucket name to use by default
+	 * @defaultCacheControl          Default caching policy for objects. Defaults to: no-store, no-cache, must-revalidate
+	 * @defaultStorageClass          Default storage class for objects that affects cost, access speed and durability. Defaults to STANDARD.
+	 * @defaultACL                   Default access control policy for objects and buckets. Defaults to public-read.
+	 * @throwOnRequestError          If an exception should be thrown for request errors. Defaults to true.
+	 * @autoContentType              Tries to determine content type of file by file extension. Defaults to false.
+	 * @autoMD5                      Calculates MD5 hash of content automatically. Defaults to false.
+	 * @debug                        Used to turn debugging on or off outside of logbox. Defaults to false.
+	 * @defaultEncryptionAlgorithm   The default server side encryption algorithm to use.  Usually "AES256". Not needed if using custom defaultEncryptionKey
+	 * @defaultEncryptionKey         The default base64 encoded AES 356 bit key for server side encryption.
+	 * @multiPartByteThreshold       Min size for multi-part uploads
+	 * @defaultObjectOwnership       Default bucket object ownership.  One of the values BucketOwnerPreferred, ObjectWriter, BucketOwnerEnforced
+	 * @defaultBlockPublicAcls       Specifies whether Amazon S3 should block public access control lists (ACLs) for this bucket and objects in this bucket.
+	 * @defaultIgnorePublicAcls      Specifies whether Amazon S3 should block public bucket policies for this bucket. Setting this element to TRUE causes Amazon S3 to reject calls to PUT Bucket policy if the specified bucket policy allows public access.
+	 * @defaultBlockPublicPolicy     Specifies whether Amazon S3 should ignore public ACLs for this bucket and objects in this bucket. Setting this element to TRUE causes Amazon S3 to ignore all public ACLs on this bucket and objects in this bucket.
+	 * @defaultRestrictPublicBuckets Specifies whether Amazon S3 should restrict public bucket policies for this bucket. Setting this element to TRUE restricts access to this bucket to only AWS service principals and authorized users within this account if the bucket has a public policy.
 	 *
 	 * @return An AmazonS3 instance.
 	 */
 	AmazonS3 function init(
 		required string accessKey,
 		required string secretKey,
-		string  awsDomain                  = "amazonaws.com",
-		string  awsRegion                  = "", //        us-east-1 default for aws
-		string  encryptionCharset          = "UTF-8",
-		string  signatureType              = "V4",
-		boolean ssl                        = true,
-		string  defaultTimeOut             = 300,
-		string  defaultDelimiter           = "/",
-		string  defaultBucketName          = "",
-		string  defaultCacheControl        = "no-store, no-cache, must-revalidate",
-		string  defaultStorageClass        = this.S3_STANDARD,
-		string  defaultACL                 = this.ACL_PUBLIC_READ,
-		string  throwOnRequestError        = true,
-		numeric retriesOnError             = 3,
-		boolean autoContentType            = false,
-		boolean autoMD5                    = false,
-		string  serviceName                = "s3",
-		boolean debug                      = false,
-		string  defaultEncryptionAlgorithm = "",
-		string  defaultEncryptionKey       = "",
-		numeric multiPartByteThreshold     = 5242880 // 5.2MB is the AWS default minimum size for multipart uploads
+		string  awsDomain                    = "amazonaws.com",
+		string  awsRegion                    = "", //        us-east-1 default for aws
+		string  encryptionCharset            = "UTF-8",
+		string  signatureType                = "V4",
+		boolean ssl                          = true,
+		string  defaultTimeOut               = 300,
+		string  defaultDelimiter             = "/",
+		string  defaultBucketName            = "",
+		string  defaultCacheControl          = "no-store, no-cache, must-revalidate",
+		string  defaultStorageClass          = this.S3_STANDARD,
+		string  defaultACL                   = this.ACL_PUBLIC_READ,
+		string  throwOnRequestError          = true,
+		numeric retriesOnError               = 3,
+		boolean autoContentType              = false,
+		boolean autoMD5                      = false,
+		string  serviceName                  = "s3",
+		boolean debug                        = false,
+		string  defaultEncryptionAlgorithm   = "",
+		string  defaultEncryptionKey         = "",
+		numeric multiPartByteThreshold       = 5242880, // 5.2MB is the AWS default minimum size for multipart uploads
+		string defaultObjectOwnership        = "ObjectWriter",
+		boolean defaultBlockPublicAcls       = false,
+		boolean defaultIgnorePublicAcls      = false,
+		boolean defaultBlockPublicPolicy     = false,
+		boolean defaultRestrictPublicBuckets = false
 	){
 		if ( arguments.awsDomain == "amazonaws.com" && arguments.awsRegion == "" ) {
 			arguments.awsRegion = "us-east-1";
@@ -134,26 +151,31 @@ component accessors="true" singleton {
 		if ( arguments.keyExists( "encryption_charset" ) ) {
 			arguments.encryptionCharset = arguments.encryption_charset;
 		}
-		variables.accessKey                  = arguments.accessKey;
-		variables.secretKey                  = arguments.secretKey;
-		variables.encryptionCharset          = arguments.encryptionCharset;
-		variables.signatureType              = arguments.signatureType;
-		variables.awsDomain                  = arguments.awsDomain;
-		variables.awsRegion                  = arguments.awsRegion;
-		variables.defaultTimeOut             = arguments.defaultTimeOut;
-		variables.defaultDelimiter           = arguments.defaultDelimiter;
-		variables.defaultBucketName          = arguments.defaultBucketName;
-		variables.defaultCacheControl        = arguments.defaultCacheControl;
-		variables.defaultStorageClass        = arguments.defaultStorageClass;
-		variables.defaultACL                 = arguments.defaultACL;
-		variables.throwOnRequestError        = arguments.throwOnRequestError;
-		variables.retriesOnError             = arguments.retriesOnError;
-		variables.autoContentType            = arguments.autoContentType;
-		variables.autoMD5                    = ( variables.signatureType == "V2" || arguments.autoMD5 ? "auto" : "" );
-		variables.serviceName                = arguments.serviceName;
-		variables.defaultEncryptionAlgorithm = arguments.defaultEncryptionAlgorithm;
-		variables.defaultEncryptionKey       = arguments.defaultEncryptionKey;
-		variables.multiPartByteThreshold     = arguments.multiPartByteThreshold;
+		variables.accessKey                    = arguments.accessKey;
+		variables.secretKey                    = arguments.secretKey;
+		variables.encryptionCharset            = arguments.encryptionCharset;
+		variables.signatureType                = arguments.signatureType;
+		variables.awsDomain                    = arguments.awsDomain;
+		variables.awsRegion                    = arguments.awsRegion;
+		variables.defaultTimeOut               = arguments.defaultTimeOut;
+		variables.defaultDelimiter             = arguments.defaultDelimiter;
+		variables.defaultBucketName            = arguments.defaultBucketName;
+		variables.defaultCacheControl          = arguments.defaultCacheControl;
+		variables.defaultStorageClass          = arguments.defaultStorageClass;
+		variables.defaultACL                   = arguments.defaultACL;
+		variables.throwOnRequestError          = arguments.throwOnRequestError;
+		variables.retriesOnError               = arguments.retriesOnError;
+		variables.autoContentType              = arguments.autoContentType;
+		variables.autoMD5                      = ( variables.signatureType == "V2" || arguments.autoMD5 ? "auto" : "" );
+		variables.serviceName                  = arguments.serviceName;
+		variables.defaultEncryptionAlgorithm   = arguments.defaultEncryptionAlgorithm;
+		variables.defaultEncryptionKey         = arguments.defaultEncryptionKey;
+		variables.multiPartByteThreshold       = arguments.multiPartByteThreshold;
+		variables.defaultObjectOwnership       = arguments.defaultObjectOwnership;
+		variables.defaultBlockPublicAcls       = arguments.defaultBlockPublicAcls;
+		variables.defaultIgnorePublicAcls      = arguments.defaultIgnorePublicAcls;
+		variables.defaultBlockPublicPolicy     = arguments.defaultBlockPublicPolicy;
+		variables.defaultRestrictPublicBuckets = arguments.defaultRestrictPublicBuckets;
 
 		// Construct the SSL Domain
 		setSSL( arguments.ssl );
@@ -504,21 +526,41 @@ component accessors="true" singleton {
 	/**
 	 * Create a new bucket.
 	 *
-	 * @bucketName The name for the new bucket.
-	 * @acl        The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL()
-	 * @location   The bucket location.
+	 * @bucketName      The name for the new bucket.
+	 * @acl             The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL()
+	 * @location        The bucket location.
+	 * @objectOwnership One of the values BucketOwnerPreferred, ObjectWriter, BucketOwnerEnforced
 	 *
 	 * @return True if the bucket was created successfully.
 	 */
 	boolean function putBucket(
-		required string bucketName = variables.defaultBucketName,
-		string acl                 = variables.defaultACL,
-		string location            = "USA"
+		required string bucketName    = variables.defaultBucketName,
+		string acl                    = variables.defaultACL,
+		string location               = "USA",
+		string objectOwnership        = variables.defaultObjectOwnership,
+		boolean BlockPublicAcls       = false,
+		boolean IgnorePublicAcls      = false,
+		boolean BlockPublicPolicy     = false,
+		boolean RestrictPublicBuckets = false
 	){
 		requireBucketName( arguments.bucketName );
 		var constraintXML = arguments.location == "EU" ? "<CreateBucketConfiguration><LocationConstraint>EU</LocationConstraint></CreateBucketConfiguration>" : "";
 		var headers       = { "content-type" : "text/xml" };
-		applyACLHeaders( headers, arguments.acl );
+
+		if ( len( arguments.objectOwnership ) ) {
+			if (
+				!listFindNoCase(
+					"BucketOwnerPreferred,ObjectWriter,BucketOwnerEnforced",
+					arguments.objectOwnership
+				)
+			) {
+				throw(
+					message = "Invalid value [#arguments.objectOwnership#] for [objectOwnership] when creating bucket.",
+					detail  = "Valid options are: [BucketOwnerPreferred, ObjectWriter, BucketOwnerEnforced]"
+				);
+			}
+			headers[ "x-amz-object-ownership" ] = arguments.objectOwnership;
+		}
 
 		var results = s3Request(
 			method   = "PUT",
@@ -527,8 +569,105 @@ component accessors="true" singleton {
 			headers  = headers
 		);
 
+		// s3 does not provide a way to set this when creating the bucket
+		putBucketPublicAccess(
+			arguments.bucketName,
+			arguments.BlockPublicAcls,
+			arguments.IgnorePublicAcls,
+			arguments.BlockPublicPolicy,
+			arguments.RestrictPublicBuckets
+		);
+
+		// Must set ACL in second step in case public access settings above would prevent the ACL from being saved.
+		putBucketACL( arguments.bucketName, arguments.acl );
+
 		return results.responseheader.status_code == 200;
 	}
+
+	/**
+	 * Sets a bucket's ACL.
+	 *
+	 * @bucketName The name for the new bucket.
+	 * @acl        The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL()
+	 */
+	function putBucketACL( required string bucketName = variables.defaultBucketName, required string acl ){
+		requireBucketName( arguments.bucketName );
+
+		var results = s3Request(
+			method       = "PUT",
+			resource     = arguments.bucketName,
+			parameters   = { "acl" : "" },
+			headers      = applyACLHeaders( {}, arguments.acl ),
+			throwOnError = true
+		);
+	}
+
+	/**
+	 * Set the block public access configuration on a bucket
+	 *
+	 * @bucketName            The name for the new bucket.
+	 * @BlockPublicAcls       Specifies whether Amazon S3 should block public access control lists (ACLs) for this bucket and objects in this bucket.
+	 * @IgnorePublicAcls      Specifies whether Amazon S3 should block public bucket policies for this bucket. Setting this element to TRUE causes Amazon S3 to reject calls to PUT Bucket policy if the specified bucket policy allows public access.
+	 * @BlockPublicPolicy     Specifies whether Amazon S3 should ignore public ACLs for this bucket and objects in this bucket. Setting this element to TRUE causes Amazon S3 to ignore all public ACLs on this bucket and objects in this bucket.
+	 * @RestrictPublicBuckets Specifies whether Amazon S3 should restrict public bucket policies for this bucket. Setting this element to TRUE restricts access to this bucket to only AWS service principals and authorized users within this account if the bucket has a public policy.
+	 *
+	 * @return True if the bucket was created successfully.
+	 */
+	function putBucketPublicAccess(
+		required string bucketName    = variables.defaultBucketName,
+		boolean BlockPublicAcls       = true,
+		boolean IgnorePublicAcls      = true,
+		boolean BlockPublicPolicy     = true,
+		boolean RestrictPublicBuckets = true
+	){
+		requireBucketName( arguments.bucketName );
+		var body = "
+			<PublicAccessBlockConfiguration xmlns=""http://s3.amazonaws.com/doc/2006-03-01/"">
+				<BlockPublicAcls>#uCase( arguments.BlockPublicAcls )#</BlockPublicAcls>
+				<IgnorePublicAcls>#uCase( arguments.IgnorePublicAcls )#</IgnorePublicAcls>
+				<BlockPublicPolicy>#uCase( arguments.BlockPublicPolicy )#</BlockPublicPolicy>
+				<RestrictPublicBuckets>#uCase( arguments.RestrictPublicBuckets )#</RestrictPublicBuckets>
+			</PublicAccessBlockConfiguration>";
+
+		var headers = { "content-type" : "text/xml" };
+
+		var results = s3Request(
+			method       = "PUT",
+			resource     = arguments.bucketName,
+			body         = body,
+			headers      = headers,
+			parameters   = { "publicAccessBlock" : "" },
+			throwOnError = true
+		);
+		return;
+	}
+
+	/**
+	 * Get the block public access configuration on a bucket
+	 *
+	 * @bucketName The name for the new bucket.
+	 *
+	 * @return struct with keys BlockPublicAcls, IgnorePublicAcls, BlockPublicPolicy, RestrictPublicBuckets
+	 */
+	function getBucketPublicAccess( required string bucketName = variables.defaultBucketName ){
+		requireBucketName( arguments.bucketName );
+
+		var results = s3Request(
+			method       = "GET",
+			resource     = arguments.bucketName,
+			parameters   = { "publicAccessBlock" : "" },
+			throwOnError = true
+		);
+		var data = xmlParse( results.response );
+		return {
+			"BlockPublicAcls"       : data.PublicAccessBlockConfiguration.BlockPublicAcls.XmlText,
+			"IgnorePublicAcls"      : data.PublicAccessBlockConfiguration.IgnorePublicAcls.XmlText,
+			"BlockPublicPolicy"     : data.PublicAccessBlockConfiguration.BlockPublicPolicy.XmlText,
+			"RestrictPublicBuckets" : data.PublicAccessBlockConfiguration.RestrictPublicBuckets.XmlText
+		};
+	}
+
+
 
 	/**
 	 * Checks for the existance of a bucket
@@ -645,13 +784,12 @@ component accessors="true" singleton {
 			arguments.contentType = getFileMimeType( arguments.filepath );
 		}
 
-		var byteCount   = getFileInfo( arguments.filepath ).size;
+		var byteCount = getFileInfo( arguments.filepath ).size;
 
 		if ( byteCount <= variables.multiPartByteThreshold ) {
 			arguments.data = fileReadBinary( arguments.filepath );
 			return putObject( argumentCollection = arguments );
 		} else {
-
 			var jFiles = createObject( "java", "java.nio.file.Files" );
 			var jPath  = createObject( "java", "java.nio.file.Paths" ).get(
 				// Java is less lax on slashes than CF, so getCanonicalPath() cleans that up
@@ -668,24 +806,24 @@ component accessors="true" singleton {
 				for ( var i = 1; i <= numberOfUploads; i++ ) {
 					var remaining = byteCount - ( ( i - 1 ) * variables.multiPartByteThreshold );
 					parts.append( {
-						"uploadId"    : uploadId,
-						"partNumber"  : i,
-						"offset"      : (i-1) * variables.multiPartByteThreshold,
-						"limit"       : remaining <= variables.multiPartByteThreshold ? remaining : variables.multiPartByteThreshold,
-						"timeout"     : arguments.HTTPTimeout,
-						"channel"	  : jFiles.newByteChannel( jPath, [] )
+						"uploadId"   : uploadId,
+						"partNumber" : i,
+						"offset"     : ( i - 1 ) * variables.multiPartByteThreshold,
+						"limit"      : remaining <= variables.multiPartByteThreshold ? remaining : variables.multiPartByteThreshold,
+						"timeout"    : arguments.HTTPTimeout,
+						"channel"    : jFiles.newByteChannel( jPath, [] )
 					} );
 				}
 				try {
 					parts = variables.asyncManager.allApply( parts, function( part ){
 						var channel = part.channel.position( part.offset );
-						var buffer = createObject( "java", "java.nio.ByteBuffer" ).allocate( part.limit );
+						var buffer  = createObject( "java", "java.nio.ByteBuffer" ).allocate( part.limit );
 						channel.read( buffer );
 
 						return {
 							"partNumber" : part.partNumber,
 							"size"       : part.limit,
-							"channel"	 : part.channel,
+							"channel"    : part.channel,
 							"response"   : s3Request(
 								method     = "PUT",
 								resource   = bucketName & "/" & uri,
@@ -695,9 +833,7 @@ component accessors="true" singleton {
 									"uploadId"   : part.uploadId,
 									"partNumber" : part.partNumber
 								},
-								headers = {
-									"content-type" : "binary/octet-stream"
-								}
+								headers = { "content-type" : "binary/octet-stream" }
 							)
 						};
 					} );
@@ -753,10 +889,11 @@ component accessors="true" singleton {
 				arguments.data = fileReadBinary( arguments.filepath );
 				return putObject( argumentCollection = arguments );
 			} finally {
-				parts.each( (p)=>{
-					try{
+				parts.each( ( p ) => {
+					try {
 						p.channel.close()
-					} catch( any e ) {}
+					} catch ( any e ) {
+					}
 				} );
 			}
 		}
@@ -1019,15 +1156,16 @@ component accessors="true" singleton {
 	/**
 	 * Returns a query string authenticated URL to an object in S3.
 	 *
-	 * @bucketName    The bucket the object resides in.
-	 * @uri           The uri to the object to create a link for.
-	 * @minutesValid  The minutes the link is valid for. Defaults to 60 minutes.
-	 * @useSSL        Use SSL for the returned url.
-	 * @method        HTTP method that will be used
-	 * @acl           The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL(). If omitted, any ACL will be allowed when PUTting the file.
-	 * @metaHeaders   Additonal metadata headers to add.
-	 * @contentType   The object content type for PUT.  If omitted, any content-type will be allowed when PUTting the file.
-	 * @encryptionKey The base64 encoded AES 356 bit key for server side encryption.
+	 * @bucketName      The bucket the object resides in.
+	 * @uri             The uri to the object to create a link for.
+	 * @minutesValid    The minutes the link is valid for. Defaults to 60 minutes.
+	 * @useSSL          Use SSL for the returned url.
+	 * @method          HTTP method that will be used
+	 * @acl             The security policy to use. Specify a canned ACL like "public-read" as a string, or provide a struct in the format of the "grants" key returned by getObjectACL(). If omitted, any ACL will be allowed when PUTting the file.
+	 * @metaHeaders     Additonal metadata headers to add.
+	 * @contentType     The object content type for PUT.  If omitted, any content-type will be allowed when PUTting the file.
+	 * @encryptionKey   The base64 encoded AES 356 bit key for server side encryption.
+	 * @responseHeaders A struct of headers to be forced for the HTTP response of GET requests.  Valid options are content-type, content-language, expires, cache-control, content-disposition, content-encoding
 	 *
 	 * @return An authenticated url to the resource.
 	 */
@@ -1040,7 +1178,8 @@ component accessors="true" singleton {
 		any acl             = "",
 		struct metaHeaders  = {},
 		string contentType,
-		string encryptionKey = variables.defaultEncryptionKey
+		string encryptionKey   = variables.defaultEncryptionKey,
+		struct responseHeaders = {}
 	){
 		requireBucketName( arguments.bucketName );
 
@@ -1057,13 +1196,35 @@ component accessors="true" singleton {
 
 		var hostname = "#bucketName#.#variables.URLEndpointHostname#";
 
+		var requestParams        = { "X-Amz-Expires" : arguments.minutesValid * 60 };
+		var validResponseHeaders = [
+			"content-type",
+			"content-language",
+			"expires",
+			"cache-control",
+			"content-disposition",
+			"content-encoding"
+		];
+		responseHeaders.each( ( header, value ) => {
+			if ( !validResponseHeaders.findNoCase( header ) ) {
+				throw(
+					message = "Invalid Reponse Header for signed URL: [#header#].",
+					detail  = "Valid options are: [#validResponseHeaders.toList()#]"
+				);
+			}
+			if ( header == "content-type" && value == "auto" ) {
+				value = getFileMimeType( uri );
+			}
+			requestParams[ "response-" & header ] = value;
+		} );
+
 		var sigData = variables.signatureUtil.generateSignatureData(
 			requestMethod      = arguments.method,
 			hostName           = hostname,
 			requestURI         = arguments.uri,
 			requestBody        = "",
 			requestHeaders     = headers,
-			requestParams      = { "X-Amz-Expires" : arguments.minutesValid * 60 },
+			requestParams      = requestParams,
 			accessKey          = variables.accessKey,
 			secretKey          = variables.secretKey,
 			regionName         = variables.awsRegion,
@@ -1395,8 +1556,8 @@ component accessors="true" singleton {
 			"message"        : "",
 			"responseheader" : {}
 		};
-		var param       = "";
-		var md5         = "";
+		var param = "";
+		var md5   = "";
 
 		// Default Content Type
 		if ( NOT structKeyExists( arguments.headers, "content-type" ) ) {
@@ -1428,7 +1589,7 @@ component accessors="true" singleton {
 			// Let the CF engine directly save the file so it can stream large files to disk and not eat up memory
 			cfhttpAttributes[ "file" ] = getFileFromPath( arguments.filename );
 			cfhttpAttributes[ "path" ] = getDirectoryFromPath( arguments.filename );
-			if( !directoryExists( cfhttpAttributes[ "path" ] ) ) {
+			if ( !directoryExists( cfhttpAttributes[ "path" ] ) ) {
 				directoryCreate( cfhttpAttributes[ "path" ] );
 			}
 			if ( !isNull( server.lucee ) ) {
@@ -1437,7 +1598,6 @@ component accessors="true" singleton {
 				// https://luceeserver.atlassian.net/browse/LDEV-4357
 				cfhttpAttributes[ "result" ] = "";
 			}
-
 		}
 
 		cfhttp(
@@ -1487,7 +1647,7 @@ component accessors="true" singleton {
 
 		// Lucee behavior mentioned above regarding file download incompat with Adobe
 		// When Lucee direct-downnloads a file, it doesn't return ANY details from the HTTP request :/
-		if( isNull( local.HTTPResults ) || !isStruct( local.HTTPResults ) ) {
+		if ( isNull( local.HTTPResults ) || !isStruct( local.HTTPResults ) ) {
 			return results;
 		}
 

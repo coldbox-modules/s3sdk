@@ -11,7 +11,7 @@ component {
 	request.MODULE_PATH = "s3sdk";
 
 	// APPLICATION CFC PROPERTIES
-	this.name               = "#request.MODULE_NAME# Testing Suite";
+	this.name               = "s3sdk Testing Suite";
 	this.sessionManagement  = true;
 	this.sessionTimeout     = createTimespan( 0, 0, 15, 0 );
 	this.applicationTimeout = createTimespan( 0, 0, 15, 0 );
@@ -26,15 +26,14 @@ component {
 
 	// The module root path
 	moduleRootPath = reReplaceNoCase(
-		this.mappings[ "/root" ],
-		"#request.module_name#(\\|/)test-harness(\\|/)",
+		rootPath,
+		"#request.MODULE_PATH#(\\|/)test-harness(\\|/)",
 		""
 	);
 	this.mappings[ "/moduleroot" ]            = moduleRootPath;
 	this.mappings[ "/#request.MODULE_NAME#" ] = moduleRootPath & "#request.MODULE_NAME#";
 
-	// request start
-	public boolean function onRequestStart( String targetPage ){
+	function onRequestStart( required targetPage ){
 		// Set a high timeout for long running tests
 		setting requestTimeout   ="9999";
 		// New ColdBox Virtual Application Starter

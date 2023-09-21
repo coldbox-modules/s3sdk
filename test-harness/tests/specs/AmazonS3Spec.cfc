@@ -1,38 +1,39 @@
 component extends="coldbox.system.testing.BaseTestCase" {
 
-	variables.targetEngine = getUtil().getSystemSetting( "ENGINE", "localhost" );
-	variables.testBucket   = getUtil().getSystemSetting(
-		"AWS_DEFAULT_BUCKET_NAME",
-		"ortus2-s3sdk-bdd-#replace( variables.targetEngine, "@", "-" )#"
-	);
-
 	this.loadColdbox   = true;
 	this.unloadColdbox = false;
 
 	function beforeAll(){
 		super.beforeAll();
+
 		prepTmpFolder();
 
+		var moduleSettings = getWirebox().getInstance( "box:moduleSettings:s3sdk" );
+
+		variables.testBucket = moduleSettings.defaultBucketName;
+
 		variables.s3 = new s3sdk.models.AmazonS3(
-			accessKey         = getUtil().getSystemSetting( "AWS_ACCESS_KEY" ),
-			secretKey         = getUtil().getSystemSetting( "AWS_ACCESS_SECRET" ),
-			awsRegion         = getUtil().getSystemSetting( "AWS_REGION" ),
-			awsDomain         = getUtil().getSystemSetting( "AWS_DOMAIN" ),
-			ssl               = getUtil().getSystemSetting( "AWS_SSL", true ),
-			defaultBucketName = variables.testBucket
+			accessKey              = moduleSettings.accessKey,
+			secretKey              = moduleSettings.secretKey,
+			awsRegion              = moduleSettings.awsRegion,
+			awsDomain              = moduleSettings.awsDomain,
+			ssl                    = moduleSettings.ssl,
+			defaultBucketName      = moduleSettings.defaultBucketName,
+			defaultObjectOwnership = moduleSettings.defaultObjectOwnership
 		);
+
 		getWirebox().autowire( s3 );
 		prepareMock( s3 );
 		s3.$property( propertyName = "log", mock = createLogStub() );
 
-		try {
+		//try {
 			s3.putBucket( testBucket );
-		} catch ( any e ) {
-			writeDump(
-				var    = "Error putting test bucket, maybe cached: #e.message# #e.detail#",
-				output = "console"
-			);
-		}
+		//} catch ( any e ) {
+		//	writeDump(
+		//		var    = "Error putting test bucket, maybe cached: #e.message# #e.detail#",
+		//		output = "console"
+		//	);
+		//}
 	}
 
 	private function prepTmpFolder(){
@@ -130,7 +131,9 @@ component extends="coldbox.system.testing.BaseTestCase" {
 						expandPath( "/tests/tmp/big_file2.txt" )
 					);
 					// And confirm a hash of both file contents still matches
-					expect( hash( fileRead( expandPath( "/tests/tmp/big_file2.txt" ) ) ) ).toBe( hash( fileRead( expandPath( "/tests/tmp/big_file.txt" ) ) ) )
+					expect( hash( fileRead( expandPath( "/tests/tmp/big_file2.txt" ) ) ) ).toBe(
+						hash( fileRead( expandPath( "/tests/tmp/big_file.txt" ) ) )
+					)
 				} );
 
 				it(
@@ -462,6 +465,41 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					expect( results ).toBeTrue();
 					s3.putBucket( testBucket );
 				} );
+
+				it( "can get bucketPublicAccess", function(){
+					var results = s3.getBucketPublicAccess( testBucket );
+					expect( results ).toHaveKey( "BlockPublicAcls" );
+					expect( results ).toHaveKey( "IgnorePublicAcls" );
+					expect( results ).toHaveKey( "BlockPublicPolicy" );
+					expect( results ).toHaveKey( "RestrictPublicBuckets" );
+
+					expect( results.BlockPublicAcls ).toBeBoolean();
+					expect( results.IgnorePublicAcls ).toBeBoolean();
+					expect( results.BlockPublicPolicy ).toBeBoolean();
+					expect( results.RestrictPublicBuckets ).toBeBoolean();
+				} );
+
+				it( "can set bucketPublicAccess", function(){
+					s3.putBucketPublicAccess( testBucket, true, true, true, true );
+					var results = s3.getBucketPublicAccess( testBucket );
+
+					expect( results.BlockPublicAcls ).toBeTrue();
+					expect( results.IgnorePublicAcls ).toBeTrue();
+					expect( results.BlockPublicPolicy ).toBeTrue();
+					expect( results.RestrictPublicBuckets ).toBeTrue();
+
+					s3.putBucketPublicAccess( testBucket, false, false, false, false );
+					var results = s3.getBucketPublicAccess( testBucket );
+
+					expect( results.BlockPublicAcls ).toBeFalse();
+					expect( results.IgnorePublicAcls ).toBeFalse();
+					expect( results.BlockPublicPolicy ).toBeFalse();
+					expect( results.RestrictPublicBuckets ).toBeFalse();
+				} );
+
+				it( "can set bucket ACL", function(){
+					s3.putBucketACL( testBucket, "private" );
+				} );
 			} );
 
 			describe( "Presigned URL", function(){
@@ -599,6 +637,61 @@ component extends="coldbox.system.testing.BaseTestCase" {
 						);
 					};
 					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "403", local.cfhttp.fileContent );
+				} );
+
+				it( "Can use presigned URL with forced response headers", function(){
+					s3.putObject( testBucket, "example.txt", "Hello, world!" );
+					var presignedURL = s3.getAuthenticatedURL(
+						bucketName      = testBucket,
+						uri             = "example.txt",
+						responseHeaders = {
+							"content-type"        : "custom-type",
+							"content-language"    : "custom-language",
+							"expires"             : "custom-expires",
+							"cache-control"       : "custom-cache",
+							"content-disposition" : "custom-disposition",
+							"content-encoding"    : "custom-encoding"
+						}
+					);
+					cfhttp( url = "#presignedURL#", result = "local.cfhttp" );
+
+					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "200", local.cfhttp.fileContent );
+					expect( local.cfhttp.fileContent ).toBe( "Hello, world!" );
+					expect( local.cfhttp.Responseheader[ "content-type" ] ).toBe( "custom-type" );
+					expect( local.cfhttp.Responseheader[ "content-language" ] ).toBe( "custom-language" );
+					expect( local.cfhttp.Responseheader[ "expires" ] ).toBe( "custom-expires" );
+					expect( local.cfhttp.Responseheader[ "cache-control" ] ).toBe( "custom-cache" );
+					expect( local.cfhttp.Responseheader[ "content-disposition" ] ).toBe( "custom-disposition" );
+					expect( local.cfhttp.Responseheader[ "content-encoding" ] ).toBe( "custom-encoding" );
+				} );
+
+				it( "Can use presigned URL with auto response content type", function(){
+					s3.putObject(
+						testBucket,
+						"example.txt",
+						"Hello, world!",
+						"",
+						"wacky-content-type"
+					);
+					var presignedURL = s3.getAuthenticatedURL(
+						bucketName      = testBucket,
+						uri             = "example.txt",
+						responseHeaders = { "content-type" : "auto" }
+					);
+					cfhttp( url = "#presignedURL#", result = "local.cfhttp" );
+
+					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "200", local.cfhttp.fileContent );
+					expect( local.cfhttp.fileContent ).toBe( "Hello, world!" );
+					// Our explicit content type when storing the file is ignored and the corret type is automatically returned based on MIME type
+					expect( local.cfhttp.Responseheader[ "content-type" ] ).toBe( "text/plain" );
+				} );
+
+				it( "Creating presigned URL with invalid response header throws error", function(){
+					expect( () => s3.getAuthenticatedURL(
+						bucketName      = testBucket,
+						uri             = "example.txt",
+						responseHeaders = { "fake" : "" }
+					) ).toThrow();
 				} );
 			} );
 		} );
