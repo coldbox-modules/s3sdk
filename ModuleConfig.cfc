@@ -7,12 +7,19 @@
 component {
 
 	// Module Properties
-	this.title         = "Amazon S3 SDK";
-	this.author        = "Ortus Solutions, Corp";
-	this.webURL        = "https://www.ortussolutions.com";
-	this.description   = "This SDK will provide you with Amazon S3 connectivity for any ColdFusion (CFML) application.";
-	// We will map the models
-	this.autoMapModels = false;
+	this.title				= "Amazon S3 SDK";
+	this.author				= "Ortus Solutions, Corp";
+	this.webURL				= "https://www.ortussolutions.com";
+	this.description		= "This SDK will provide you with Amazon S3 connectivity for any ColdFusion (CFML) application.";
+
+    // Module Entry Point
+	this.entryPoint			= "s3sdk";
+	// Model Namespace
+	this.modelNamespace		= "s3sdk";
+	// CF Mapping
+	this.cfmapping 	 	 	= "s3sdk";
+	// Auto-map models
+	this.autoMapModels		= false;
 
 	/**
 	 * Configure
