@@ -19,21 +19,22 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			awsDomain              = moduleSettings.awsDomain,
 			ssl                    = moduleSettings.ssl,
 			defaultBucketName      = moduleSettings.defaultBucketName,
-			defaultObjectOwnership = moduleSettings.defaultObjectOwnership
+			defaultObjectOwnership = moduleSettings.defaultObjectOwnership,
+			urlStyle               = "path"
 		);
 
 		getWirebox().autowire( s3 );
 		prepareMock( s3 );
 		s3.$property( propertyName = "log", mock = createLogStub() );
 
-		//try {
-			s3.putBucket( testBucket );
-		//} catch ( any e ) {
+		// try {
+		s3.putBucket( testBucket );
+		// } catch ( any e ) {
 		//	writeDump(
 		//		var    = "Error putting test bucket, maybe cached: #e.message# #e.detail#",
 		//		output = "console"
 		//	);
-		//}
+		// }
 	}
 
 	private function prepTmpFolder(){
