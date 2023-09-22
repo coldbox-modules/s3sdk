@@ -19,21 +19,15 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			awsDomain              = moduleSettings.awsDomain,
 			ssl                    = moduleSettings.ssl,
 			defaultBucketName      = moduleSettings.defaultBucketName,
-			defaultObjectOwnership = moduleSettings.defaultObjectOwnership
+			defaultObjectOwnership = moduleSettings.defaultObjectOwnership,
+			urlStyle               = "path"
 		);
 
 		getWirebox().autowire( s3 );
 		prepareMock( s3 );
 		s3.$property( propertyName = "log", mock = createLogStub() );
 
-		//try {
-			s3.putBucket( testBucket );
-		//} catch ( any e ) {
-		//	writeDump(
-		//		var    = "Error putting test bucket, maybe cached: #e.message# #e.detail#",
-		//		output = "console"
-		//	);
-		//}
+		s3.putBucket( testBucket );
 	}
 
 	private function prepTmpFolder(){
@@ -97,7 +91,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 						contentType = "auto"
 					);
 					var md = s3.getObjectInfo( testBucket, "example.txt" );
-					// debug( md );
+
 					expect( md ).notToBeEmpty();
 					expect( md[ "Content-Type" ] ).toBe( "text/plain" );
 				} );
@@ -119,7 +113,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					);
 					expect( resp.contains( "multipart" ) ).toBeTrue();
 					var md = s3.getObjectInfo( testBucket, uploadFileName );
-					// debug( md );
+
 					expect( md ).notToBeEmpty();
 					expect( md[ "Content-Length" ] ).toBe( fileSize );
 					expect( md[ "Content-Type" ] ).toBe( "text/plain" );
@@ -146,7 +140,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 							"Hello, space world!"
 						);
 						var md = s3.getObjectInfo( testBucket, "Word Doc Tests.txt" );
-						// debug( md );
+
 						expect( md ).notToBeEmpty();
 					}
 				);
@@ -570,7 +564,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					var get = s3.getObject( testBucket, "presignedput.txt" );
 
 					expect( get.error ).toBeFalse();
-					// toString() since there is no content type set in thnis test, Adobe doesn't send back the file as a string, but a byte output stream
+					// toString() since there is no content type set in this test, Adobe doesn't send back the file as a string, but a byte output stream
 					expect( toString( get.response ) ).toBe( "Pre-Signed Put!" );
 				} );
 
