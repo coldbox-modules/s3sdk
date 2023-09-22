@@ -58,27 +58,35 @@ component extends="coldbox.system.testing.BaseTestCase" {
 				expect( testme.getURLEndpointHostname() ).tobe( "s3.amazonaws.com" );
 				expect( testme.getURLEndpoint() ).tobe( "https://s3.amazonaws.com" );
 			} );
-			it( "If the urlStyle is virtual, build according to https://bucket-name.s3.region-code.amazonaws.com/key-name", function(){
+			it( "If the urlStyle is virtual and the domain has amazonaws.com, build according to https://bucket-name.s3.region-code.amazonaws.com/key-name", function(){
 				testObj.setUrlStyle( "virtual" );
 				testObj.setawsDomain( "amazonaws.com" );
 				var testme = testObj.buildUrlEndpoint( bucketName );
 				expect( testme.getURLEndpointHostname() ).tobe( "#bucketName#.s3.#region#.amazonaws.com" );
 				expect( testme.getURLEndpoint() ).tobe( "https://#bucketName#.s3.#region#.amazonaws.com" );
 			} );
-			it( "If the urlStyle is virtual, but a bucket name is not submitted, do not include it", function(){
+			it( "If the urlStyle is virtual and the domain has amazonaws.com, but a bucket name is not submitted, do not include it", function(){
 				testObj.setUrlStyle( "virtual" );
 				testObj.setawsDomain( "amazonaws.com" );
 				var testme = testObj.buildUrlEndpoint();
 				expect( testme.getURLEndpointHostname() ).tobe( "s3.#region#.amazonaws.com" );
 				expect( testme.getURLEndpoint() ).tobe( "https://s3.#region#.amazonaws.com" );
 			} );
-			it( "If the urlStyle is virtual, but a region is not set, do not include it", function(){
+			it( "If the urlStyle is virtual and the domain has amazonaws.com, but a region is not set, do not include it", function(){
 				testObj.setUrlStyle( "virtual" );
 				testObj.setawsDomain( "amazonaws.com" );
 				testObj.setawsRegion( "" );
 				var testme = testObj.buildUrlEndpoint( bucketName );
 				expect( testme.getURLEndpointHostname() ).tobe( "#bucketName#.s3.amazonaws.com" );
 				expect( testme.getURLEndpoint() ).tobe( "https://#bucketName#.s3.amazonaws.com" );
+			} );
+			it( "If the urlStyle is virtual and the domain does not have amazonaws.com, do not alter the domain name", function(){
+				testObj.setUrlStyle( "virtual" );
+				testObj.setawsDomain( "mydomain.com" );
+				testObj.setawsRegion( "" );
+				var testme = testObj.buildUrlEndpoint( bucketName );
+					expect( testme.getURLEndpointHostname() ).tobe( "mydomain.com" );
+					expect( testme.getURLEndpoint() ).tobe( "https://mydomain.com" );
 			} );
 			it( "It should return an instance of AmazonS3", function(){
 				testObj.setUrlStyle( "path" );

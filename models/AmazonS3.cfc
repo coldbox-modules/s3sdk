@@ -277,14 +277,16 @@ component accessors="true" singleton {
 				hostnameComponents.append( variables.awsRegion );
 			}
 		} else if ( variables.urlStyle == "virtual" ) {
-			if ( !isNull( arguments.bucketName ) ) {
-				hostnameComponents.append( arguments.bucketName );
-			}
 			if ( variables.awsDomain contains "amazonaws.com" ) {
-				hostnameComponents.append("s3");
-			}
-			if ( len( variables.awsRegion && variables.awsDomain contains "amazonaws.com" ) ) {
-				hostnameComponents.append( variables.awsRegion );
+				if ( !isNull( arguments.bucketName ) ) {
+					hostnameComponents.append( arguments.bucketName );
+				}
+
+				hostnameComponents.append( "s3" );
+
+				if ( len( variables.awsRegion ) ) {
+					hostnameComponents.append( variables.awsRegion );
+				}
 			}
 		}
 		hostnameComponents.append( variables.awsDomain );
@@ -1903,11 +1905,11 @@ component accessors="true" singleton {
 
 
 	/**
-	* Creates the s3 key name based on the format (path or virtual) from the bucket name and the object key
-	*
-	* @url        The key for the file in question
-	* @bucketName The name of the bucket to use. Not needed if the urlStyle is `virtual`
-	**/
+	 * Creates the s3 key name based on the format (path or virtual) from the bucket name and the object key
+	 *
+	 * @url        The key for the file in question
+	 * @bucketName The name of the bucket to use. Not needed if the urlStyle is `virtual`
+	 **/
 	function buildKeyName( required string uri, string bucketName = "" ){
 		return variables.urlStyle == "path" ? arguments.bucketName & ( arguments.bucketName.len() ? "/" : "" ) & arguments.uri : arguments.uri;
 	}
