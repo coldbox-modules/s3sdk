@@ -88,6 +88,14 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					expect( testme.getURLEndpointHostname() ).tobe( "mydomain.com" );
 					expect( testme.getURLEndpoint() ).tobe( "https://mydomain.com" );
 			} );
+			it( "If the urlStyle is path  and the domain does not have amazonaws.com, do not alter the domain name", function(){
+				testObj.setUrlStyle( "virtual" );
+				testObj.setawsDomain( "mydomain.com" );
+				testObj.setawsRegion( "" );
+				var testme = testObj.buildUrlEndpoint( bucketName );
+					expect( testme.getURLEndpointHostname() ).tobe( "mydomain.com" );
+					expect( testme.getURLEndpoint() ).tobe( "https://mydomain.com" );
+			} );
 			it( "It should return an instance of AmazonS3", function(){
 				testObj.setUrlStyle( "path" );
 				testObj.setawsDomain( "amazonaws.com" );
