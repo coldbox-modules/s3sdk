@@ -280,8 +280,10 @@ component accessors="true" singleton {
 			if ( !isNull( arguments.bucketName ) ) {
 				hostnameComponents.append( arguments.bucketName );
 			}
-			hostnameComponents.append( "s3" );
-			if ( len( variables.awsRegion ) ) {
+			if ( variables.awsDomain contains "amazonaws.com" ) {
+				hostnameComponents.append("s3");
+			}
+			if ( len( variables.awsRegion && variables.awsDomain contains "amazonaws.com" ) ) {
 				hostnameComponents.append( variables.awsRegion );
 			}
 		}
@@ -338,11 +340,11 @@ component accessors="true" singleton {
 			throw( message = "Error making Amazon REST Call", detail = results.message );
 		}
 		// Should this return whatever comes from AWS? It seems like hardcoding a potentially wrong answer is not a good idea.
-		// if ( len( results.response.LocationConstraint.XMLText ) ) {
-		return results.response.LocationConstraint.XMLText;
-		// }
+		if ( len( results.response.LocationConstraint.XMLText ) ) {
+			return results.response.LocationConstraint.XMLText;
+		}
 
-		// return "US";
+		return "US";
 	}
 
 	/**
