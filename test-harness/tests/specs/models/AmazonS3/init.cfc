@@ -10,11 +10,6 @@ component extends="coldbox.system.testing.BaseTestCase" {
 		super.beforeAll();
 	}
 
-	// executes after all suites+specs in the run() method
-	// function afterAll(){
-
-	// }
-
 	/*********************************** BDD SUITES ***********************************/
 
 	function run( testResults, testBox ){

@@ -10,15 +10,9 @@ component extends="coldbox.system.testing.BaseTestCase" {
 		super.beforeAll();
 	}
 
-	// executes after all suites+specs in the run() method
-	// function afterAll(){
-
-	// }
-
 	/*********************************** BDD SUITES ***********************************/
 
 	function run( testResults, testBox ){
-		// all your suites go here.
 		describe( "The buildKeyName function should...", function(){
 			beforeEach( function(){
 				uri                = mockData( $num = 1, $type = "words:1" )[ 1 ];
@@ -34,7 +28,6 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					defaultBucketName      = mockdata( $num = 1, $type = "words:1" )[ 1 ],
 					defaultObjectOwnership = mockdata( $num = 1, $type = "words:1" )[ 1 ]
 				);
-				// = getInstance("AmazonS3@s3sdk");
 			} );
 			it( "If the urlStyle is path and a bucket is submitted, return bucket\uri", function(){
 				testObj.setUrlStyle( "path" );
