@@ -800,7 +800,12 @@ component accessors="true" singleton {
 			arguments.contentType = getFileMimeType( arguments.filepath );
 		}
 
-		var byteCount = getFileInfo( arguments.filepath ).size;
+		var byteCount = 0;
+		if( structKeyExists( variables, "asyncManager" )  ) {
+			// if these is an asyncManager then check the file size
+			// outside of coldbox there is no asyncManager so this would fall apart
+			byteCount = getFileInfo( arguments.filepath ).size;
+		}
 
 		if ( byteCount <= variables.multiPartByteThreshold ) {
 			arguments.data = fileReadBinary( arguments.filepath );
