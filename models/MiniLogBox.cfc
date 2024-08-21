@@ -24,6 +24,13 @@ component {
 		}
 	}
 
+	function warn( required string msg, data ){
+		arrayAppend( variables.logs, "Warn: " & arguments.msg );
+		if ( structKeyExists( arguments, "data" ) ) {
+			arrayAppend( variables.logs, arguments.data );
+		}
+	}
+
 	array function getLogs(){
 		return variables.logs;
 	}
