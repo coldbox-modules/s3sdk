@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ----
 ## [Unreleased]
 
+### Fixed
+
+* Set all `hash` usage algorithms to MD5 for Adobe change to default algorithm
+
 ## v5.7.1 => 2023-SEP-21
 
 ### Fixed
