@@ -77,10 +77,13 @@ jobs:
 
       - name: Setup CommandBox CLI
         uses: Ortus-Solutions/setup-commandbox@v2.0.1
+        with:
+          version: 6.1.0
 
-      - name: Update Commandbox Boxlang Module
-        if: ${{ matrix.cfengine == 'boxlang@1' }}
-        run:
+      # This needs to happen until v6.2 of commandbox is released
+      - name: Update CommandBox-BoxLang
+        if : ${{ matrix.cfengine == 'boxlang-cfml@1' }}
+        run: |
           box install --force commandbox-boxlang
 
       - name: Install Test Harness with ColdBox ${{ matrix.coldboxVersion }}
@@ -106,13 +109,13 @@ jobs:
         if: always()
         with:
           files: test-harness/tests/results/**/*.xml
-          check_name: "${{ matrix.cfengine }} Test Results"
+          check_name: "${{ matrix.cfengine }} Test Results - Coldbox ${{matrix.coldboxVersion}}"
 
       - name: Upload Test Results to Artifacts
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.cfengine }}-${{ matrix.experimental }}
+          name: ${{ matrix.cfengine }}-test-results-${{matrix.coldboxVersion}}-${{ matrix.experimental }}
           path: |
             test-harness/tests/results/**/*
 
