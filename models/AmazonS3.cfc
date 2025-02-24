@@ -1854,7 +1854,7 @@ component accessors="true" singleton {
 			headers[ "x-amz-server-side-encryption-customer-key" ]     = args.encryptionKey;
 			// Convert base64 key to bytes, and then MD5 hash with base64 output encoding instead of hex
 			headers[ "x-amz-server-side-encryption-customer-key-MD5" ] = toBase64(
-				binaryDecode( hash( toBinary( args.encryptionKey ) ), "hex" )
+				binaryDecode( hash( toBinary( args.encryptionKey ), "MD5" ), "hex" )
 			);
 		} else if ( len( args.encryptionAlgorithm ) ) {
 			headers[ "x-amz-server-side-encryption" ] = args.encryptionAlgorithm;
@@ -1870,7 +1870,7 @@ component accessors="true" singleton {
 			headers[ "x-amz-copy-source-server-side-encryption-customer-key" ]     = args.encryptionKeySource;
 			// Convert base64 key to bytes, and then MD5 hash with base64 output encoding instead of hex
 			headers[ "x-amz-copy-source-server-side-encryption-customer-key-MD5" ] = toBase64(
-				binaryDecode( hash( toBinary( args.encryptionKeySource ) ), "hex" )
+				binaryDecode( hash( toBinary( args.encryptionKeySource ), "MD5" ), "hex" )
 			);
 		}
 
