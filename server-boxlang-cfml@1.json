@@ -3,7 +3,7 @@
         "cfengine":"boxlang@be",
         "serverHomeDirectory":".engine/boxlang"
     },
-    "name":"s3sdk-boxlang@1",
+    "name":"s3sdk-boxlang-cfml@1",
     "force":true,
     "openBrowser":false,
     "web":{
