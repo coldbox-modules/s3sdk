@@ -7,34 +7,59 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ----
 ## [Unreleased]
+
 ## v5.7.1 => 2023-SEP-21
+
 ### Fixed
+
 * Added `entryPoint`, `modelNamespace` and `cfmapping` keys to ModuleConfig, to ensure mappings for downstream modules are available during framework load
+
 ## v5.7.0 => 2023-MAY-03
+
 ### Changed
+
 * Updates permission handling to account for updated AWS default bucket policies
+
 ## v5.6.0 => 2023-MAR-07
+
 ### Added
+
 * Support for overriding response headers like content type for pre-signed URLs
+
 ## v5.5.2 => 2023-FEB-07
+
 ### Fixed
+
 * Multi-part upload concurrency fixes
+
 ## v5.5.1 => 2023-FEB-03
+
 ### Added
+
 * Support for multi-part file uploads to conserve memory usage
 
 ## v5.4.1 => 2023-FEB-02
 
+
 ## v5.3.1 => 2023-FEB-02
+
 ## v5.2.0 => 2023-JAN-26
+
 ### Added
+
 * Add support for server side encryption
 * Add retry support for S3 connection failures
+
 ## v5.1.2 => 2022-OCT-19
+
 ### Added
+
 * Added property to ensure URLEndpointHostname can be retreived
+
 ## v5.1.1 => 2022-NOV-1
+
 ### Fixed
+
 * Fixes an issue when header content types were not present in the arguments scope
 
 ## v5.0.0 => 2022-OCT-19

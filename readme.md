@@ -14,6 +14,7 @@ This SDK allows you to add Amazon S3, Digital Ocean Spaces capabilities to your 
 
 ## Requirements
 
+* [Boxlang](https://www.boxlang.io/) 1+
 * Lucee 5+
 * Adobe 2018+
 
