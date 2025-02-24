@@ -737,7 +737,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			it( "can get presigned URL for encrypted file with custom encrypted key", function(){
 				var data   = "Hello, encrypted world!";
 				var key    = generateSecretKey( "AES", 256 );
-				var keyMD5 = toBase64( binaryDecode( hash( toBinary( key ) ), "hex" ) );
+				var keyMD5 = toBase64( binaryDecode( hash( toBinary( key ), "MD5" ), "hex" ) );
 				s3.putObject(
 					bucketName          = testBucket,
 					uri                 = "encrypted.txt",
@@ -825,7 +825,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			it( "can put encrypted with custom encryption key", function(){
 				var data   = "Hello, encrypted world!";
 				var key    = generateSecretKey( "AES", 256 );
-				var keyMD5 = toBase64( binaryDecode( hash( toBinary( key ) ), "hex" ) );
+				var keyMD5 = toBase64( binaryDecode( hash( toBinary( key ), "MD5" ), "hex" ) );
 				s3.putObject(
 					bucketName    = testBucket,
 					uri           = "encrypted.txt",
@@ -858,7 +858,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 				);
 
 				var newKey = generateSecretKey( "AES", 256 );
-				var keyMD5 = toBase64( binaryDecode( hash( toBinary( newKey ) ), "hex" ) );
+				var keyMD5 = toBase64( binaryDecode( hash( toBinary( newKey ), "MD5" ), "hex" ) );
 
 				// Copy file with new encryption key
 				var o = s3.copyObject(
@@ -887,7 +887,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			it( "can rename encrypted file with custom encryption key", function(){
 				var data   = "Hello, encrypted world!";
 				var key    = generateSecretKey( "AES", 256 );
-				var keyMD5 = toBase64( binaryDecode( hash( toBinary( key ) ), "hex" ) );
+				var keyMD5 = toBase64( binaryDecode( hash( toBinary( key ), "MD5" ), "hex" ) );
 				// Store file with original encryption key
 				s3.putObject(
 					bucketName    = testBucket,
@@ -922,7 +922,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			it( "can put encrypted with custom encryption key and custom algorithm", function(){
 				var data   = "Hello, encrypted world!";
 				var key    = generateSecretKey( "AES", 256 );
-				var keyMD5 = toBase64( binaryDecode( hash( toBinary( key ) ), "hex" ) );
+				var keyMD5 = toBase64( binaryDecode( hash( toBinary( key ), "MD5" ), "hex" ) );
 				s3.putObject(
 					bucketName          = testBucket,
 					uri                 = "encrypted.txt",
@@ -1041,7 +1041,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			it( "can use default encryption key", function(){
 				var data   = "Hello, encrypted world!";
 				var key    = generateSecretKey( "AES", 256 );
-				var keyMD5 = toBase64( binaryDecode( hash( toBinary( key ) ), "hex" ) );
+				var keyMD5 = toBase64( binaryDecode( hash( toBinary( key ), "MD5" ), "hex" ) );
 				s3.setDefaultEncryptionKey( key );
 
 				s3.putObject(
