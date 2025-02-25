@@ -2,7 +2,7 @@
     "name":"s3sdk-adobe@2023",
     "app":{
         "serverHomeDirectory":".engine/adobe2023",
-        "cfengine":"adobe@2023.0.4+330500"
+        "cfengine":"adobe@2023"
     },
     "web":{
         "http":{
