@@ -1212,7 +1212,7 @@ component accessors="true" singleton {
 
 		var hostname = "#bucketName#.#variables.URLEndpointHostname#";
 
-		var requestParams        = { "X-Amz-Expires" : arguments.minutesValid * 60 };
+		var requestParams        = { "X-Amz-Expires" : round( arguments.minutesValid * 60 ) };
 		var validResponseHeaders = [
 			"content-type",
 			"content-language",
@@ -1612,7 +1612,7 @@ component accessors="true" singleton {
 			if ( !directoryExists( cfhttpAttributes[ "path" ] ) ) {
 				directoryCreate( cfhttpAttributes[ "path" ] );
 			}
-			if ( !isNull( server.lucee ) ) {
+			if ( !isNull( server.lucee ) && !structKeyExists( server, "boxlang" ) ) {
 				// Crummy workaround in Lucee due to lack of compat with Adobe CF.  See...
 				// https://luceeserver.atlassian.net/browse/LDEV-3377
 				// https://luceeserver.atlassian.net/browse/LDEV-4357

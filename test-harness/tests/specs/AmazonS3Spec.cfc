@@ -84,6 +84,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 				it( "can store a new object from file", function(){
 					var filePath = expandPath( "/tests/tmp/example.txt" );
 					fileWrite( filePath, "file contents" );
+					sleepIfNIO();
 					s3.putObjectFile(
 						bucketName  = testBucket,
 						uri         = "example.txt",
@@ -104,6 +105,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 						repeatString( randRange( 0, 9 ), fileSize ),
 						"utf-8"
 					);
+					sleepIfNIO();
 					var uploadFileName = "big_file.txt";
 					var resp           = s3.putObjectFile(
 						bucketName  = testBucket,
@@ -124,6 +126,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 						"big_file.txt",
 						expandPath( "/tests/tmp/big_file2.txt" )
 					);
+					sleepIfNIO();
 					// And confirm a hash of both file contents still matches
 					expect( hash( fileRead( expandPath( "/tests/tmp/big_file2.txt" ) ) ) ).toBe(
 						hash( fileRead( expandPath( "/tests/tmp/big_file.txt" ) ) )
@@ -510,10 +513,9 @@ component extends="coldbox.system.testing.BaseTestCase" {
 				it( "can access via get", function(){
 					s3.putObject( testBucket, "example.txt", "Hello, world!" );
 					var presignedURL = s3.getAuthenticatedURL( bucketName = testBucket, uri = "example.txt" );
-					cfhttp( url = "#presignedURL#", result = "local.cfhttp" );
-
-					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "200", local.cfhttp.fileContent );
-					expect( local.cfhttp.fileContent ).toBe( "Hello, world!" );
+					cfhttp( url = "#presignedURL#", result = "local.httpResponse" );
+					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "200", local.httpResponse.fileContent );
+					expect( local.httpResponse.fileContent ).toBe( "Hello, world!" );
 				} );
 
 				it( "can expire", function(){
@@ -524,10 +526,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 						minutesValid = 1 / 60
 					);
 					sleep( 2000 )
-					cfhttp( url = "#presignedURL#", result = "local.cfhttp" );
+					cfhttp( url = "#presignedURL#", result = "local.httpResponse" );
 
-					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "403", local.cfhttp.fileContent );
-					expect( local.cfhttp.fileContent ).toMatch( "expired" );
+					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "403", local.httpResponse.fileContent );
+					expect( local.httpResponse.fileContent ).toMatch( "expired" );
 				} );
 
 				it( "cannot PUT with a GET URL", function(){
@@ -536,14 +538,14 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
 					cfhttp(
 						url    = "#presignedURL#",
-						result = "local.cfhttp",
+						result = "local.httpResponse",
 						method = "PUT"
 					) {
 						cfhttpparam( type = "body", value = "Pre-Signed Put!" );
 					};
 
 					// If a presigned URL is created for a GET operation, it can't be used for anything else!
-					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "403", local.cfhttp.fileContent );
+					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "403", local.httpResponse.fileContent );
 				} );
 
 				it( "can put file", function(){
@@ -554,12 +556,12 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					);
 					cfhttp(
 						url    = "#presignedURL#",
-						result = "local.cfhttp",
+						result = "local.httpResponse",
 						method = "PUT"
 					) {
 						cfhttpparam( type = "body", value = "Pre-Signed Put!" );
 					};
-					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "200", local.cfhttp.fileContent );
+					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "200", local.httpResponse.fileContent );
 
 					var get = s3.getObject( testBucket, "presignedput.txt" );
 
@@ -581,7 +583,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
 					cfhttp(
 						url    = "#presignedURL#",
-						result = "local.cfhttp",
+						result = "local.httpResponse",
 						method = "PUT"
 					) {
 						cfhttpparam( type = "body", value = "Pre-Signed Put!" );
@@ -601,7 +603,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 							value = "custom value"
 						);
 					};
-					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "200", local.cfhttp.fileContent );
+					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "200", local.httpResponse.fileContent );
 
 					var get = s3.getObject( testBucket, "presignedputfriends.txt" );
 
@@ -619,7 +621,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
 					cfhttp(
 						url    = "#presignedURL#",
-						result = "local.cfhttp",
+						result = "local.httpResponse",
 						method = "PUT"
 					) {
 						cfhttpparam( type = "body", value = "Pre-Signed Put!" );
@@ -630,7 +632,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 							value = "public-read-write"
 						);
 					};
-					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "403", local.cfhttp.fileContent );
+					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "403", local.httpResponse.fileContent );
 				} );
 
 				it( "Can use presigned URL with forced response headers", function(){
@@ -647,16 +649,16 @@ component extends="coldbox.system.testing.BaseTestCase" {
 							"content-encoding"    : "custom-encoding"
 						}
 					);
-					cfhttp( url = "#presignedURL#", result = "local.cfhttp" );
+					cfhttp( url = "#presignedURL#", result = "local.httpResponse" );
 
-					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "200", local.cfhttp.fileContent );
-					expect( local.cfhttp.fileContent ).toBe( "Hello, world!" );
-					expect( local.cfhttp.Responseheader[ "content-type" ] ).toBe( "custom-type" );
-					expect( local.cfhttp.Responseheader[ "content-language" ] ).toBe( "custom-language" );
-					expect( local.cfhttp.Responseheader[ "expires" ] ).toBe( "custom-expires" );
-					expect( local.cfhttp.Responseheader[ "cache-control" ] ).toBe( "custom-cache" );
-					expect( local.cfhttp.Responseheader[ "content-disposition" ] ).toBe( "custom-disposition" );
-					expect( local.cfhttp.Responseheader[ "content-encoding" ] ).toBe( "custom-encoding" );
+					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "200", local.httpResponse.fileContent );
+					expect( local.httpResponse.fileContent ).toBe( "Hello, world!" );
+					expect( local.httpResponse.Responseheader[ "content-type" ] ).toBe( "custom-type" );
+					expect( local.httpResponse.Responseheader[ "content-language" ] ).toBe( "custom-language" );
+					expect( local.httpResponse.Responseheader[ "expires" ] ).toBe( "custom-expires" );
+					expect( local.httpResponse.Responseheader[ "cache-control" ] ).toBe( "custom-cache" );
+					expect( local.httpResponse.Responseheader[ "content-disposition" ] ).toBe( "custom-disposition" );
+					expect( local.httpResponse.Responseheader[ "content-encoding" ] ).toBe( "custom-encoding" );
 				} );
 
 				it( "Can use presigned URL with auto response content type", function(){
@@ -672,12 +674,12 @@ component extends="coldbox.system.testing.BaseTestCase" {
 						uri             = "example.txt",
 						responseHeaders = { "content-type" : "auto" }
 					);
-					cfhttp( url = "#presignedURL#", result = "local.cfhttp" );
+					cfhttp( url = "#presignedURL#", result = "local.httpResponse" );
 
-					expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "200", local.cfhttp.fileContent );
-					expect( local.cfhttp.fileContent ).toBe( "Hello, world!" );
+					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "200", local.httpResponse.fileContent );
+					expect( local.httpResponse.fileContent ).toBe( "Hello, world!" );
 					// Our explicit content type when storing the file is ignored and the corret type is automatically returned based on MIME type
-					expect( local.cfhttp.Responseheader[ "content-type" ] ).toBe( "text/plain" );
+					expect( local.httpResponse.Responseheader[ "content-type" ] ).toBe( "text/plain" );
 				} );
 
 				it( "Creating presigned URL with invalid response header throws error", function(){
@@ -728,10 +730,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 				);
 
 				var presignedURL = s3.getAuthenticatedURL( bucketName = testBucket, uri = "encrypted.txt" );
-				cfhttp( url = "#presignedURL#", result = "local.cfhttp" );
+				cfhttp( url = "#presignedURL#", result = "local.httpResponse" );
 
-				expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "200", local.cfhttp.fileContent );
-				expect( local.cfhttp.fileContent ).toBe( data );
+				expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "200", local.httpResponse.fileContent );
+				expect( local.httpResponse.fileContent ).toBe( data );
 			} );
 
 			it( "can get presigned URL for encrypted file with custom encrypted key", function(){
@@ -754,7 +756,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
 				// Since the encryption details MUST be sent via HTTP headers, it is not possible to use this signed URL in a web browser
 				// Per https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerSideEncryptionCustomerKeys.html#ssec-and-presignedurl
-				cfhttp( url = "#presignedURL#", result = "local.cfhttp" ) {
+				cfhttp( url = "#presignedURL#", result = "local.httpResponse" ) {
 					cfhttpparam(
 						type  = "header",
 						name  = "x-amz-server-side-encryption-customer-algorithm",
@@ -772,8 +774,8 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					);
 				};
 
-				expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "200", local.cfhttp.fileContent );
-				expect( local.cfhttp.fileContent ).toBe( data );
+				expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "200", local.httpResponse.fileContent );
+				expect( local.httpResponse.fileContent ).toBe( data );
 			} );
 
 			it( "can copy encrypted file", function(){
@@ -1002,10 +1004,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
 
 				var presignedURL = s3.getAuthenticatedURL( bucketName = testBucket, uri = "encrypted.txt" );
-				cfhttp( url = "#presignedURL#", result = "local.cfhttp" );
+				cfhttp( url = "#presignedURL#", result = "local.httpResponse" );
 
-				expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "200", local.cfhttp.fileContent );
-				expect( local.cfhttp.fileContent ).toBe( data );
+				expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "200", local.httpResponse.fileContent );
+				expect( local.httpResponse.fileContent ).toBe( data );
 
 				var o = s3.copyObject(
 					fromBucket = testBucket,
@@ -1066,7 +1068,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
 
 				var presignedURL = s3.getAuthenticatedURL( bucketName = testBucket, uri = "encrypted.txt" );
-				cfhttp( url = "#presignedURL#", result = "local.cfhttp" ) {
+				cfhttp( url = "#presignedURL#", result = "local.httpResponse" ) {
 					cfhttpparam(
 						type  = "header",
 						name  = "x-amz-server-side-encryption-customer-algorithm",
@@ -1084,8 +1086,8 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					);
 				};
 
-				expect( local.cfhttp.Responseheader.status_code ?: 0 ).toBe( "200", local.cfhttp.fileContent );
-				expect( local.cfhttp.fileContent ).toBe( data );
+				expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "200", local.httpResponse.fileContent );
+				expect( local.httpResponse.fileContent ).toBe( data );
 
 				var o = s3.copyObject(
 					fromBucket = testBucket,
@@ -1128,6 +1130,15 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			.$( "debug" )
 			.$( "error" )
 			.$( "warn" );
+	}
+
+	/**
+	 * Boxlang uses java.nio which is non blocking so file operations may take a few ms to complete.
+	 */
+	function sleepIfNIO( duration = 50 ){
+		if ( getMetadata( this ).name == "LocalProvider" && server.keyExists( "boxlang" ) ) {
+			sleep( duration );
+		}
 	}
 
 }
