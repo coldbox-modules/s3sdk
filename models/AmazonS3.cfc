@@ -855,8 +855,8 @@ component accessors="true" singleton {
 						};
 					}
 					// Alow for using outside of `box` context
-					if( !isNull( variables.asyncManager ) ){
-						variables.asyncManager.allApply( parts, processPart );
+					if( structKeyExists( variables, "asyncManager" ) ){
+						parts = variables.asyncManager.allApply( parts, processPart );
 					} else {
 						parts = parts.map( processPart );
 					}
