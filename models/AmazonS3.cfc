@@ -22,7 +22,7 @@
  * s3_accessKey : The Amazon access key
  * s3_secretKey : The Amazon secret key
  * s3_encryption_charset : encryptyion charset (Optional, defaults to utf-8)
- * s3_ssl : Whether to use ssl on all cals or not (Optional, defaults to false)
+ * s3_ssl : Whether to use ssl on all calls or not (Optional, defaults to false)
  */
 component accessors="true" singleton {
 
@@ -59,7 +59,7 @@ component accessors="true" singleton {
 	property name="defaultIgnorePublicAcls";
 	property name="defaultBlockPublicPolicy";
 	property name="defaultRestrictPublicBuckets";
-
+	property name="urlStyle";
 
 	// STATIC Contsants
 	this.ACL_PRIVATE           = "private";
@@ -109,6 +109,7 @@ component accessors="true" singleton {
 	 * @defaultIgnorePublicAcls      Specifies whether Amazon S3 should block public bucket policies for this bucket. Setting this element to TRUE causes Amazon S3 to reject calls to PUT Bucket policy if the specified bucket policy allows public access.
 	 * @defaultBlockPublicPolicy     Specifies whether Amazon S3 should ignore public ACLs for this bucket and objects in this bucket. Setting this element to TRUE causes Amazon S3 to ignore all public ACLs on this bucket and objects in this bucket.
 	 * @defaultRestrictPublicBuckets Specifies whether Amazon S3 should restrict public bucket policies for this bucket. Setting this element to TRUE restricts access to this bucket to only AWS service principals and authorized users within this account if the bucket has a public policy.
+	 * @urlStyle                     Specifies the format of the URL whether it is the `path` format or `virtual` format. Defaults to path. For more information see https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html
 	 *
 	 * @return An AmazonS3 instance.
 	 */
@@ -139,7 +140,8 @@ component accessors="true" singleton {
 		boolean defaultBlockPublicAcls       = false,
 		boolean defaultIgnorePublicAcls      = false,
 		boolean defaultBlockPublicPolicy     = false,
-		boolean defaultRestrictPublicBuckets = false
+		boolean defaultRestrictPublicBuckets = false,
+		string urlStyle                      = "path"
 	){
 		if ( arguments.awsDomain == "amazonaws.com" && arguments.awsRegion == "" ) {
 			arguments.awsRegion = "us-east-1";
@@ -176,6 +178,7 @@ component accessors="true" singleton {
 		variables.defaultIgnorePublicAcls      = arguments.defaultIgnorePublicAcls;
 		variables.defaultBlockPublicPolicy     = arguments.defaultBlockPublicPolicy;
 		variables.defaultRestrictPublicBuckets = arguments.defaultRestrictPublicBuckets;
+		variables.urlStyle                     = arguments.urlStyle;
 
 		// Construct the SSL Domain
 		setSSL( arguments.ssl );
@@ -261,21 +264,34 @@ component accessors="true" singleton {
 	/**
 	 * This function builds variables.UrlEndpoint and variables.URLEndpointHostname according to credentials and ssl configuration, usually called after init() for you automatically.
 	 */
-	AmazonS3 function buildUrlEndpoint(){
+	AmazonS3 function buildUrlEndpoint( string bucketName ){
 		// Build accordingly
 		var URLEndPointProtocol = ( variables.ssl ) ? "https://" : "http://";
 
 		var hostnameComponents = [];
-		if ( variables.awsDomain contains "amazonaws.com" ) {
-			hostnameComponents.append( "s3" );
-		}
-		if ( len( variables.awsRegion ) ) {
-			hostnameComponents.append( variables.awsRegion );
+		if ( variables.urlStyle == "path" ) {
+			if ( variables.awsDomain contains "amazonaws.com" ) {
+				hostnameComponents.append( "s3" );
+			}
+			if ( len( variables.awsRegion ) ) {
+				hostnameComponents.append( variables.awsRegion );
+			}
+		} else if ( variables.urlStyle == "virtual" ) {
+			if ( variables.awsDomain contains "amazonaws.com" ) {
+				if ( !isNull( arguments.bucketName ) ) {
+					hostnameComponents.append( arguments.bucketName );
+				}
+
+				hostnameComponents.append( "s3" );
+
+				if ( len( variables.awsRegion ) ) {
+					hostnameComponents.append( variables.awsRegion );
+				}
+			}
 		}
 		hostnameComponents.append( variables.awsDomain );
 		variables.URLEndpointHostname = arrayToList( hostnameComponents, "." );
 		variables.URLEndpoint         = URLEndpointProtocol & variables.URLEndpointHostname;
-
 		return this;
 	}
 
@@ -325,7 +341,7 @@ component accessors="true" singleton {
 		if ( results.error ) {
 			throw( message = "Error making Amazon REST Call", detail = results.message );
 		}
-
+		// Should this return whatever comes from AWS? It seems like hardcoding a potentially wrong answer is not a good idea.
 		if ( len( results.response.LocationConstraint.XMLText ) ) {
 			return results.response.LocationConstraint.XMLText;
 		}
@@ -815,28 +831,56 @@ component accessors="true" singleton {
 					} );
 				}
 				try {
-					parts = variables.asyncManager.allApply( parts, function( part ){
-						var channel = part.channel.position( part.offset );
-						var buffer  = createObject( "java", "java.nio.ByteBuffer" ).allocate( part.limit );
-						channel.read( buffer );
 
-						return {
-							"partNumber" : part.partNumber,
-							"size"       : part.limit,
-							"channel"    : part.channel,
-							"response"   : s3Request(
-								method     = "PUT",
-								resource   = bucketName & "/" & uri,
-								body       = buffer.array(),
-								timeout    = part.timeout,
-								parameters = {
-									"uploadId"   : part.uploadId,
-									"partNumber" : part.partNumber
-								},
-								headers = { "content-type" : "binary/octet-stream" }
-							)
-						};
-					} );
+					// We have to do this manually due to the async manager losing scope when we use it as a UDF
+					// TODO: Move this to a function and pass in the all of the args used
+					if( !isNull( variables.asyncManager ) ){
+						parts = variables.asyncManager.allApply( parts, function( part ){
+							var channel = part.channel.position( part.offset );
+							var buffer  = createObject( "java", "java.nio.ByteBuffer" ).allocate( part.limit );
+							channel.read( buffer );
+
+							return {
+								"partNumber" : part.partNumber,
+								"size"       : part.limit,
+								"channel"    : part.channel,
+								"response"   : s3Request(
+									method     = "PUT",
+									resource   = bucketName & "/" & uri,
+									body       = buffer.array(),
+									timeout    = part.timeout,
+									parameters = {
+										"uploadId"   : part.uploadId,
+										"partNumber" : part.partNumber
+									},
+									headers = { "content-type" : "binary/octet-stream" }
+								)
+							};
+						} );
+					} else {
+						parts = parts.map(  function( part ){
+							var channel = part.channel.position( part.offset );
+							var buffer  = createObject( "java", "java.nio.ByteBuffer" ).allocate( part.limit );
+							channel.read( buffer );
+
+							return {
+								"partNumber" : part.partNumber,
+								"size"       : part.limit,
+								"channel"    : part.channel,
+								"response"   : s3Request(
+									method     = "PUT",
+									resource   = bucketName & "/" & uri,
+									body       = buffer.array(),
+									timeout    = part.timeout,
+									parameters = {
+										"uploadId"   : part.uploadId,
+										"partNumber" : part.partNumber
+									},
+									headers = { "content-type" : "binary/octet-stream" }
+								)
+							};
+						} );
+					}
 
 					var finalizeBody = "<?xml version=""1.0"" encoding=""UTF-8""?><CompleteMultipartUpload xmlns=""http://s3.amazonaws.com/doc/2006-03-01/"">";
 
@@ -858,7 +902,7 @@ component accessors="true" singleton {
 
 					var finalized = s3Request(
 						method     = "POST",
-						resource   = arguments.bucketName & "/" & arguments.uri,
+						resource   = buildKeyName( arguments.uri, arguments.bucketName ),
 						timeout    = arguments.HTTPTimeout,
 						parameters = { "uploadId" : uploadId },
 						body       = finalizeBody
@@ -875,7 +919,7 @@ component accessors="true" singleton {
 				} catch ( any e ) {
 					s3Request(
 						method     = "DELETE",
-						resource   = arguments.bucketName & "/" & arguments.uri,
+						resource   = buildKeyName( arguments.uri, arguments.bucketName ),
 						timeout    = arguments.HTTPTimeout,
 						parameters = { "uploadId" : uploadId }
 					);
@@ -1034,7 +1078,7 @@ component accessors="true" singleton {
 
 		var results = s3Request(
 			method   = "PUT",
-			resource = arguments.bucketName & "/" & arguments.uri,
+			resource = buildKeyName( arguments.uri, arguments.bucketName ),
 			body     = arguments.data,
 			timeout  = arguments.HTTPTimeout,
 			headers  = headers
@@ -1065,7 +1109,7 @@ component accessors="true" singleton {
 		var headers = applyEncryptionHeaders( {}, arguments );
 		var results = s3Request(
 			method   = "HEAD",
-			resource = arguments.bucketName & "/" & arguments.uri,
+			resource = buildKeyName( arguments.uri, arguments.bucketName ),
 			headers  = headers
 		);
 
@@ -1096,7 +1140,7 @@ component accessors="true" singleton {
 		requireBucketName( arguments.bucketName );
 		var results = s3Request(
 			method       = "GET",
-			resource     = arguments.bucketName & "/" & arguments.uri,
+			resource     = buildKeyName( arguments.uri, arguments.bucketName ),
 			parameters   = { "acl" : "" },
 			throwOnError = throwOnError
 		);
@@ -1139,7 +1183,7 @@ component accessors="true" singleton {
 		requireBucketName( arguments.bucketName );
 		var results = s3Request(
 			method       = "HEAD",
-			resource     = arguments.bucketName & "/" & arguments.uri,
+			resource     = buildKeyName( arguments.uri, arguments.bucketName ),
 			throwOnError = false
 		);
 		var status_code = results.responseHeader.status_code ?: 0;
@@ -1196,7 +1240,7 @@ component accessors="true" singleton {
 
 		var hostname = "#bucketName#.#variables.URLEndpointHostname#";
 
-		var requestParams        = { "X-Amz-Expires" : arguments.minutesValid * 60 };
+		var requestParams        = { "X-Amz-Expires" : round( arguments.minutesValid * 60 ) };
 		var validResponseHeaders = [
 			"content-type",
 			"content-language",
@@ -1292,7 +1336,7 @@ component accessors="true" singleton {
 
 		return s3Request(
 			method        = "POST",
-			resource      = arguments.bucketName & "/" & arguments.uri,
+			resource      = buildKeyName( arguments.uri, arguments.bucketName ),
 			timeout       = arguments.HTTPTimeout,
 			headers       = headers,
 			parameters    = { "uploads" : true },
@@ -1320,6 +1364,7 @@ component accessors="true" singleton {
 		required string uri,
 		string encryptionKey = variables.defaultEncryptionKey
 	){
+		buildUrlEndpoint( arguments.bucketName );
 		requireBucketName( arguments.bucketName );
 
 		var headers = applyEncryptionHeaders( {}, arguments );
@@ -1327,7 +1372,7 @@ component accessors="true" singleton {
 		var results = s3Request(
 			method   = "GET",
 			headers  = headers,
-			resource = arguments.bucketName & "/" & arguments.uri
+			resource = buildKeyName( arguments.uri, arguments.bucketName )
 		);
 		return results;
 	}
@@ -1365,7 +1410,7 @@ component accessors="true" singleton {
 		var results = s3Request(
 			method        = "GET",
 			headers       = headers,
-			resource      = arguments.bucketName & "/" & arguments.uri,
+			resource      = buildKeyName( arguments.uri, arguments.bucketName ),
 			filename      = arguments.filepath,
 			timeout       = arguments.HTTPTimeout,
 			getAsBinary   = arguments.getAsBinary,
@@ -1393,7 +1438,10 @@ component accessors="true" singleton {
 	boolean function deleteObject( required string bucketName = variables.defaultBucketName, required string uri ){
 		requireBucketName( arguments.bucketName );
 
-		var results = s3Request( method = "DELETE", resource = arguments.bucketName & "/" & arguments.uri );
+		var results = s3Request(
+			method   = "DELETE",
+			resource = buildKeyName( arguments.uri, arguments.bucketName )
+		);
 
 		return results.responseheader.status_code == 204;
 	}
@@ -1592,7 +1640,7 @@ component accessors="true" singleton {
 			if ( !directoryExists( cfhttpAttributes[ "path" ] ) ) {
 				directoryCreate( cfhttpAttributes[ "path" ] );
 			}
-			if ( !isNull( server.lucee ) ) {
+			if ( !isNull( server.lucee ) && !structKeyExists( server, "boxlang" ) ) {
 				// Crummy workaround in Lucee due to lack of compat with Adobe CF.  See...
 				// https://luceeserver.atlassian.net/browse/LDEV-3377
 				// https://luceeserver.atlassian.net/browse/LDEV-4357
@@ -1834,7 +1882,7 @@ component accessors="true" singleton {
 			headers[ "x-amz-server-side-encryption-customer-key" ]     = args.encryptionKey;
 			// Convert base64 key to bytes, and then MD5 hash with base64 output encoding instead of hex
 			headers[ "x-amz-server-side-encryption-customer-key-MD5" ] = toBase64(
-				binaryDecode( hash( toBinary( args.encryptionKey ) ), "hex" )
+				binaryDecode( hash( toBinary( args.encryptionKey ), "MD5" ), "hex" )
 			);
 		} else if ( len( args.encryptionAlgorithm ) ) {
 			headers[ "x-amz-server-side-encryption" ] = args.encryptionAlgorithm;
@@ -1850,7 +1898,7 @@ component accessors="true" singleton {
 			headers[ "x-amz-copy-source-server-side-encryption-customer-key" ]     = args.encryptionKeySource;
 			// Convert base64 key to bytes, and then MD5 hash with base64 output encoding instead of hex
 			headers[ "x-amz-copy-source-server-side-encryption-customer-key-MD5" ] = toBase64(
-				binaryDecode( hash( toBinary( args.encryptionKeySource ) ), "hex" )
+				binaryDecode( hash( toBinary( args.encryptionKeySource ), "MD5" ), "hex" )
 			);
 		}
 
@@ -1861,7 +1909,7 @@ component accessors="true" singleton {
 	 * Determines mime type from the file extension
 	 *
 	 * @filePath The path to the file stored in S3.
-	 *  
+	 *
 	 * @return string
 	 */
 	string function getFileMimeType( required string filePath ){
@@ -1881,6 +1929,17 @@ component accessors="true" singleton {
 			}
 		}
 		return contentType;
+	}
+
+
+	/**
+	 * Creates the s3 key name based on the format (path or virtual) from the bucket name and the object key
+	 *
+	 * @url        The key for the file in question
+	 * @bucketName The name of the bucket to use. Not needed if the urlStyle is `virtual`
+	 **/
+	function buildKeyName( required string uri, string bucketName = "" ){
+		return variables.urlStyle == "path" ? arguments.bucketName & ( arguments.bucketName.len() ? "/" : "" ) & arguments.uri : arguments.uri;
 	}
 
 }

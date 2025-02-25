@@ -6,6 +6,7 @@ on:
     branches:
       - development
       - master
+  workflow_dispatch:
 
 env:
   MODULE_ID: s3sdk
@@ -26,7 +27,7 @@ jobs:
   build:
     name: Build & Publish
     needs: tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v2
@@ -64,7 +65,7 @@ jobs:
 
       - name: Upload Build Artifacts
         if: success()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ env.MODULE_ID }}
           path: |

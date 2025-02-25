@@ -14,7 +14,7 @@ on:
 jobs:
   tests:
     name: Tests
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     env:
       DB_USER: root
       DB_PASSWORD: root
@@ -24,12 +24,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cfengine:  [ "lucee@5", "adobe@2018", "adobe@2021" ]
-        coldboxVersion: [ "^6.0.0" ]
+        cfengine:  [ "lucee@5", "adobe@2021", "boxlang-cfml@1" ]
+        coldboxVersion: [ "^7" ]
         experimental: [ false ]
         include:
           - cfengine: "adobe@2023"
-            coldboxVersion: "^6.0.0"
+            coldboxVersion: "^7"
+            experimental: true
+          - cfengine: "adobe@2018"
+            coldboxVersion: "^7"
             experimental: true
           - coldboxVersion: "be"
             cfengine: "lucee@5"
@@ -39,6 +42,9 @@ jobs:
             experimental: true
           - coldboxVersion: "be"
             cfengine: "adobe@2021"
+            experimental: true
+          - coldboxVersion: "be"
+            cfengine: "boxlang-cfml@1"
             experimental: true
     steps:
       - name: Checkout Repository
@@ -74,6 +80,14 @@ jobs:
 
       - name: Setup CommandBox CLI
         uses: Ortus-Solutions/setup-commandbox@v2.0.1
+        with:
+          version: 6.1.0
+
+      # This needs to happen until v6.2 of commandbox is released
+      - name: Update CommandBox-BoxLang
+        if : ${{ matrix.cfengine == 'boxlang-cfml@1' }}
+        run: |
+          box install --force commandbox-boxlang
 
       - name: Install Test Harness with ColdBox ${{ matrix.coldboxVersion }}
         run: |
@@ -94,17 +108,17 @@ jobs:
           ls -lR test-harness/tests
 
       - name: Publish Test Results
-        uses: EnricoMi/publish-unit-test-result-action@v1
+        uses: EnricoMi/publish-unit-test-result-action@v2
         if: always()
         with:
           files: test-harness/tests/results/**/*.xml
-          check_name: "${{ matrix.cfengine }} Test Results"
+          check_name: "${{ matrix.cfengine }} Test Results - Coldbox ${{matrix.coldboxVersion}}"
 
       - name: Upload Test Results to Artifacts
         if: always()
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
-          name: test-results-${{ matrix.cfengine }}
+          name: ${{ matrix.cfengine }}-test-results-${{matrix.coldboxVersion}}-${{ matrix.experimental }}
           path: |
             test-harness/tests/results/**/*
 
@@ -115,7 +129,7 @@ jobs:
 
       - name: Upload Debugging Log To Artifacts
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: Failure Debugging Info - ${{ matrix.cfengine }}
           path: |

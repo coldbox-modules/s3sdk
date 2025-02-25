@@ -1,0 +1,13 @@
+name: Daily Tests
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs at 00:00 UTC every day
+
+jobs:
+  tests:
+    uses: ./.github/workflows/tests.yml
+    secrets:
+      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      S3SDK_AWS_ACCESS_KEY: ${{ secrets.S3SDK_AWS_ACCESS_KEY }}
+      S3SDK_AWS_ACCESS_SECRET: ${{ secrets.S3SDK_AWS_ACCESS_SECRET }}
