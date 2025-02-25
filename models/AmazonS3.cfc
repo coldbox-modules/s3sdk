@@ -831,7 +831,8 @@ component accessors="true" singleton {
 					} );
 				}
 				try {
-					parts = variables.asyncManager.allApply( parts, function( part ){
+
+					function processPart( part ){
 						var channel = part.channel.position( part.offset );
 						var buffer  = createObject( "java", "java.nio.ByteBuffer" ).allocate( part.limit );
 						channel.read( buffer );
@@ -852,7 +853,13 @@ component accessors="true" singleton {
 								headers = { "content-type" : "binary/octet-stream" }
 							)
 						};
-					} );
+					}
+					// Alow for using outside of `box` context
+					if( !isNull( variables.asyncManager ) ){
+						variables.asyncManager.allApply( parts, processPart );
+					} else {
+						parts = parts.map( processPart );
+					}
 
 					var finalizeBody = "<?xml version=""1.0"" encoding=""UTF-8""?><CompleteMultipartUpload xmlns=""http://s3.amazonaws.com/doc/2006-03-01/"">";
 
