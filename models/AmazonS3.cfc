@@ -1776,7 +1776,7 @@ component accessors="true" singleton {
 			throw(
 				type    = "S3SDKError",
 				message = "Error making Amazon REST Call: #results.message#",
-				detail  = serializeJSON( results.response )
+				detail  = isXML( results.response ) ? toString( results.response ) : serializeJSON( results.response )
 			);
 		}
 
