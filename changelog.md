@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `devDependencies` : removed `commandbox-dotenv` and `commandbox-cfconfig`, added `commandbox-boxlang`
 * Module description updated to: "This SDK will provide you with Amazon S3 connectivity for any ColdBox, BoxLang or CFML Application."
 * `readme.md` rewritten and expanded, with BoxLang as the preferred/first-class engine
+* `test-harness/box.json` : `testbox` devDependency bumped from `be` to `*` to pick up TestBox's `isBoxLang()`/`isLucee()`/`isAdobe()` engine-detection helpers (and the 7.1.0 fix for `isLucee()` incorrectly returning `true` on BoxLang)
+* `test-harness/tests/specs/AmazonS3Spec.cfc` : replaced ad-hoc engine checks (`structKeyExists( server, "lucee" )`, `isNull( server.lucee )`, `server.keyExists( "boxlang" )`) with TestBox's `isAdobe()`/`isLucee()`/`isBoxLang()`
+* The 6 "customer encryption key" (SSE-C) specs in `AmazonS3Spec.cfc` now exercise SSE-S3 (`encryptionAlgorithm`) instead of SSE-C (`encryptionKey`), since the CI test bucket's policy blocks SSE-C uploads. The SDK's SSE-C support itself (`encryptionKey` argument) is unchanged for callers whose bucket allows it
 
 ### Fixed
 

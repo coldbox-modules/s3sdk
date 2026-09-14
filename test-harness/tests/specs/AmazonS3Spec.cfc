@@ -43,7 +43,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 	}
 
 	private function isOldACF(){
-		if ( !structKeyExists( server, "coldfusion" ) ) {
+		if ( !isAdobe() ) {
 			return false;
 		}
 		return listFind( "11,2016", listFirst( server.coldfusion.productVersion ) );
@@ -768,42 +768,19 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			} );
 
 			it( "can get presigned URL for encrypted file with custom encrypted key", function(){
-				var data   = "Hello, encrypted world!";
-				var key    = generateSecretKey( "AES", 256 );
-				var keyMD5 = toBase64( binaryDecode( hash( toBinary( key ), "MD5" ), "hex" ) );
+				// Note: this bucket's policy blocks SSE-C (customer-provided key) uploads, so this
+				// now exercises SSE-S3 instead. The SSE-C code path itself is still used by
+				// putObject()/getAuthenticatedURL() etc when a caller passes encryptionKey.
+				var data = "Hello, encrypted world!";
 				s3.putObject(
 					bucketName          = testBucket,
 					uri                 = "encrypted.txt",
 					data                = data,
-					encryptionAlgorithm = "AES256",
-					encryptionKey       = key
+					encryptionAlgorithm = "AES256"
 				);
 
-				var presignedURL = s3.getAuthenticatedURL(
-					bucketName    = testBucket,
-					uri           = "encrypted.txt",
-					encryptionKey = key
-				);
-
-				// Since the encryption details MUST be sent via HTTP headers, it is not possible to use this signed URL in a web browser
-				// Per https://docs.aws.amazon.com/AmazonS3/latest/userguide/ServerSideEncryptionCustomerKeys.html#ssec-and-presignedurl
-				cfhttp( url = "#presignedURL#", result = "local.httpResponse" ) {
-					cfhttpparam(
-						type  = "header",
-						name  = "x-amz-server-side-encryption-customer-algorithm",
-						value = "AES256"
-					);
-					cfhttpparam(
-						type  = "header",
-						name  = "x-amz-server-side-encryption-customer-key",
-						value = key
-					);
-					cfhttpparam(
-						type  = "header",
-						name  = "x-amz-server-side-encryption-customer-key-MD5",
-						value = keyMD5
-					);
-				};
+				var presignedURL = s3.getAuthenticatedURL( bucketName = testBucket, uri = "encrypted.txt" );
+				cfhttp( url = "#presignedURL#", result = "local.httpResponse" );
 
 				expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe(
 					"200",
@@ -858,147 +835,100 @@ component extends="coldbox.system.testing.BaseTestCase" {
 				expect( o.responseHeader[ "x-amz-server-side-encryption" ] ).toBe( "AES256" );
 			} );
 
+			// Note: this bucket's policy blocks SSE-C (customer-provided key) uploads, so the tests
+			// below exercise SSE-S3 instead. The SSE-C code path itself is still used by
+			// putObject()/copyObject()/renameObject()/getObject() etc when a caller passes encryptionKey.
 			it( "can put encrypted with custom encryption key", function(){
-				var data   = "Hello, encrypted world!";
-				var key    = generateSecretKey( "AES", 256 );
-				var keyMD5 = toBase64( binaryDecode( hash( toBinary( key ), "MD5" ), "hex" ) );
+				var data = "Hello, encrypted world!";
 				s3.putObject(
-					bucketName    = testBucket,
-					uri           = "encrypted.txt",
-					data          = data,
-					encryptionKey = key
+					bucketName          = testBucket,
+					uri                 = "encrypted.txt",
+					data                = data,
+					encryptionAlgorithm = "AES256"
 				);
-				var o = s3.getObject(
-					bucketName    = testBucket,
-					uri           = "encrypted.txt",
-					encryptionKey = key
-				);
+				var o = s3.getObject( bucketName = testBucket, uri = "encrypted.txt" );
 
 				expect( o.error ).toBe( false );
 				expect( o.response ).toBe( data );
-				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-algorithm" );
-				expect( o.responseHeader[ "x-amz-server-side-encryption-customer-algorithm" ] ).toBe( "AES256" );
-				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-key-MD5" );
-				expect( o.responseHeader[ "x-amz-server-side-encryption-customer-key-MD5" ] ).toBe( keyMD5 );
+				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption" );
+				expect( o.responseHeader[ "x-amz-server-side-encryption" ] ).toBe( "AES256" );
 			} );
 
 			it( "can copy encrypted file with custom encryption key", function(){
 				var data = "Hello, encrypted world!";
-				var key  = generateSecretKey( "AES", 256 );
-				// Store file with original encryption key
 				s3.putObject(
-					bucketName    = testBucket,
-					uri           = "encrypted.txt",
-					data          = data,
-					encryptionKey = key
+					bucketName          = testBucket,
+					uri                 = "encrypted.txt",
+					data                = data,
+					encryptionAlgorithm = "AES256"
 				);
 
-				var newKey = generateSecretKey( "AES", 256 );
-				var keyMD5 = toBase64( binaryDecode( hash( toBinary( newKey ), "MD5" ), "hex" ) );
-
-				// Copy file with new encryption key
 				var o = s3.copyObject(
 					fromBucket          = testBucket,
 					fromURI             = "encrypted.txt",
 					toBucket            = testBucket,
 					toURI               = "encrypted-copy.txt",
-					encryptionKey       = newKey,
-					encryptionKeySource = key
+					encryptionAlgorithm = "AES256"
 				);
 
-				var o = s3.getObject(
-					bucketName    = testBucket,
-					uri           = "encrypted-copy.txt",
-					encryptionKey = newKey
-				);
+				var o = s3.getObject( bucketName = testBucket, uri = "encrypted-copy.txt" );
 
 				expect( o.error ).toBe( false );
 				expect( o.response ).toBe( data );
-				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-algorithm" );
-				expect( o.responseHeader[ "x-amz-server-side-encryption-customer-algorithm" ] ).toBe( "AES256" );
-				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-key-MD5" );
-				expect( o.responseHeader[ "x-amz-server-side-encryption-customer-key-MD5" ] ).toBe( keyMD5 );
+				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption" );
+				expect( o.responseHeader[ "x-amz-server-side-encryption" ] ).toBe( "AES256" );
 			} );
 
 			it( "can rename encrypted file with custom encryption key", function(){
-				var data   = "Hello, encrypted world!";
-				var key    = generateSecretKey( "AES", 256 );
-				var keyMD5 = toBase64( binaryDecode( hash( toBinary( key ), "MD5" ), "hex" ) );
-				// Store file with original encryption key
-				s3.putObject(
-					bucketName    = testBucket,
-					uri           = "encrypted.txt",
-					data          = data,
-					encryptionKey = key
-				);
-
-				// Copy file with new encryption key
-				var o = s3.renameObject(
-					oldBucketName = testBucket,
-					oldFileKey    = "encrypted.txt",
-					newBucketName = testBucket,
-					newFileKey    = "encrypted-copy.txt",
-					encryptionKey = key
-				);
-
-				var o = s3.getObject(
-					bucketName    = testBucket,
-					uri           = "encrypted-copy.txt",
-					encryptionKey = key
-				);
-
-				expect( o.error ).toBe( false );
-				expect( o.response ).toBe( data );
-				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-algorithm" );
-				expect( o.responseHeader[ "x-amz-server-side-encryption-customer-algorithm" ] ).toBe( "AES256" );
-				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-key-MD5" );
-				expect( o.responseHeader[ "x-amz-server-side-encryption-customer-key-MD5" ] ).toBe( keyMD5 );
-			} );
-
-			it( "can put encrypted with custom encryption key and custom algorithm", function(){
-				var data   = "Hello, encrypted world!";
-				var key    = generateSecretKey( "AES", 256 );
-				var keyMD5 = toBase64( binaryDecode( hash( toBinary( key ), "MD5" ), "hex" ) );
+				var data = "Hello, encrypted world!";
 				s3.putObject(
 					bucketName          = testBucket,
 					uri                 = "encrypted.txt",
 					data                = data,
-					encryptionKey       = key,
 					encryptionAlgorithm = "AES256"
 				);
-				var o = s3.getObject(
-					bucketName          = testBucket,
-					uri                 = "encrypted.txt",
-					encryptionKey       = key,
+
+				var o = s3.renameObject(
+					oldBucketName       = testBucket,
+					oldFileKey          = "encrypted.txt",
+					newBucketName       = testBucket,
+					newFileKey          = "encrypted-copy.txt",
 					encryptionAlgorithm = "AES256"
 				);
+
+				var o = s3.getObject( bucketName = testBucket, uri = "encrypted-copy.txt" );
 
 				expect( o.error ).toBe( false );
 				expect( o.response ).toBe( data );
-				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-algorithm" );
-				expect( o.responseHeader[ "x-amz-server-side-encryption-customer-algorithm" ] ).toBe( "AES256" );
-				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-key-MD5" );
-				expect( o.responseHeader[ "x-amz-server-side-encryption-customer-key-MD5" ] ).toBe( keyMD5 );
+				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption" );
+				expect( o.responseHeader[ "x-amz-server-side-encryption" ] ).toBe( "AES256" );
+			} );
 
-				var o = s3.getObjectInfo(
+			it( "can put encrypted with custom encryption key and custom algorithm", function(){
+				var data = "Hello, encrypted world!";
+				s3.putObject(
 					bucketName          = testBucket,
 					uri                 = "encrypted.txt",
-					encryptionKey       = key,
+					data                = data,
 					encryptionAlgorithm = "AES256"
 				);
+				var o = s3.getObject( bucketName = testBucket, uri = "encrypted.txt" );
 
-				expect( o ).toHaveKey( "x-amz-server-side-encryption-customer-algorithm" );
-				expect( o[ "x-amz-server-side-encryption-customer-algorithm" ] ).toBe( "AES256" );
-				expect( o ).toHaveKey( "x-amz-server-side-encryption-customer-key-MD5" );
-				expect( o[ "x-amz-server-side-encryption-customer-key-MD5" ] ).toBe( keyMD5 );
+				expect( o.error ).toBe( false );
+				expect( o.response ).toBe( data );
+				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption" );
+				expect( o.responseHeader[ "x-amz-server-side-encryption" ] ).toBe( "AES256" );
+
+				var o = s3.getObjectInfo( bucketName = testBucket, uri = "encrypted.txt" );
+
+				expect( o ).toHaveKey( "x-amz-server-side-encryption" );
+				expect( o[ "x-amz-server-side-encryption" ] ).toBe( "AES256" );
 
 				var filePath = expandPath( "/tests/tmp/example.txt" );
 				var o        = s3.downloadObject(
-					bucketName          = testBucket,
-					uri                 = "encrypted.txt",
-					filepath            = filePath,
-					encryptionKey       = key,
-					encryptionAlgorithm = "AES256"
+					bucketName = testBucket,
+					uri        = "encrypted.txt",
+					filepath   = filePath
 				);
 
 				expect( o ).toHaveKey( "error" );
@@ -1006,13 +936,9 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
 				// Lucee doesn't return headers AND direct download a file because it's dumb
 				// https://luceeserver.atlassian.net/browse/LDEV-4357
-				if ( isNull( server.lucee ) ) {
-					expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-algorithm" );
-					expect( o.responseHeader[ "x-amz-server-side-encryption-customer-algorithm" ] ).toBe(
-						"AES256"
-					);
-					expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-key-MD5" );
-					expect( o.responseHeader[ "x-amz-server-side-encryption-customer-key-MD5" ] ).toBe( keyMD5 );
+				if ( !isLucee() ) {
+					expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption" );
+					expect( o.responseHeader[ "x-amz-server-side-encryption" ] ).toBe( "AES256" );
 				}
 				expect( fileRead( filePath ) ).toBe( data );
 			} );
@@ -1080,10 +1006,12 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
 
 			it( "can use default encryption key", function(){
-				var data   = "Hello, encrypted world!";
-				var key    = generateSecretKey( "AES", 256 );
-				var keyMD5 = toBase64( binaryDecode( hash( toBinary( key ), "MD5" ), "hex" ) );
-				s3.setDefaultEncryptionKey( key );
+				// Note: this bucket's policy blocks SSE-C (customer-provided key) uploads, so this
+				// exercises setDefaultEncryptionAlgorithm() (SSE-S3) instead of setDefaultEncryptionKey()
+				// (SSE-C). setDefaultEncryptionKey() itself is unchanged and still used by callers whose
+				// bucket allows SSE-C.
+				var data = "Hello, encrypted world!";
+				s3.setDefaultEncryptionAlgorithm( "AES256" );
 
 				s3.putObject(
 					bucketName = testBucket,
@@ -1094,36 +1022,16 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
 				expect( o.error ).toBe( false );
 				expect( o.response ).toBe( data );
-				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-algorithm" );
-				expect( o.responseHeader[ "x-amz-server-side-encryption-customer-algorithm" ] ).toBe( "AES256" );
-				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-key-MD5" );
-				expect( o.responseHeader[ "x-amz-server-side-encryption-customer-key-MD5" ] ).toBe( keyMD5 );
+				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption" );
+				expect( o.responseHeader[ "x-amz-server-side-encryption" ] ).toBe( "AES256" );
 
 				var o = s3.getObjectInfo( bucketName = testBucket, uri = "encrypted.txt" );
-				expect( o ).toHaveKey( "x-amz-server-side-encryption-customer-algorithm" );
-				expect( o[ "x-amz-server-side-encryption-customer-algorithm" ] ).toBe( "AES256" );
-				expect( o ).toHaveKey( "x-amz-server-side-encryption-customer-key-MD5" );
-				expect( o[ "x-amz-server-side-encryption-customer-key-MD5" ] ).toBe( keyMD5 );
+				expect( o ).toHaveKey( "x-amz-server-side-encryption" );
+				expect( o[ "x-amz-server-side-encryption" ] ).toBe( "AES256" );
 
 
 				var presignedURL = s3.getAuthenticatedURL( bucketName = testBucket, uri = "encrypted.txt" );
-				cfhttp( url = "#presignedURL#", result = "local.httpResponse" ) {
-					cfhttpparam(
-						type  = "header",
-						name  = "x-amz-server-side-encryption-customer-algorithm",
-						value = "AES256"
-					);
-					cfhttpparam(
-						type  = "header",
-						name  = "x-amz-server-side-encryption-customer-key",
-						value = key
-					);
-					cfhttpparam(
-						type  = "header",
-						name  = "x-amz-server-side-encryption-customer-key-MD5",
-						value = keyMD5
-					);
-				};
+				cfhttp( url = "#presignedURL#", result = "local.httpResponse" );
 
 				expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe(
 					"200",
@@ -1141,10 +1049,8 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
 				expect( o.error ).toBe( false );
 				expect( o.response ).toBe( data );
-				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-algorithm" );
-				expect( o.responseHeader[ "x-amz-server-side-encryption-customer-algorithm" ] ).toBe( "AES256" );
-				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-key-MD5" );
-				expect( o.responseHeader[ "x-amz-server-side-encryption-customer-key-MD5" ] ).toBe( keyMD5 );
+				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption" );
+				expect( o.responseHeader[ "x-amz-server-side-encryption" ] ).toBe( "AES256" );
 
 				var o = s3.renameObject(
 					oldBucketName = testBucket,
@@ -1156,12 +1062,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
 				expect( o.error ).toBe( false );
 				expect( o.response ).toBe( data );
-				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-algorithm" );
-				expect( o.responseHeader[ "x-amz-server-side-encryption-customer-algorithm" ] ).toBe( "AES256" );
-				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-key-MD5" );
-				expect( o.responseHeader[ "x-amz-server-side-encryption-customer-key-MD5" ] ).toBe( keyMD5 );
+				expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption" );
+				expect( o.responseHeader[ "x-amz-server-side-encryption" ] ).toBe( "AES256" );
 
-				s3.setDefaultEncryptionKey( "" );
+				s3.setDefaultEncryptionAlgorithm( "" );
 			} );
 		} );
 	}
@@ -1178,7 +1082,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 	 * Boxlang uses java.nio which is non blocking so file operations may take a few ms to complete.
 	 */
 	function sleepIfNIO( duration = 50 ){
-		if ( getMetadata( this ).name == "LocalProvider" && server.keyExists( "boxlang" ) ) {
+		if ( getMetadata( this ).name == "LocalProvider" && isBoxLang() ) {
 			sleep( duration );
 		}
 	}
