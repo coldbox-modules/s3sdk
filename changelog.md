@@ -41,6 +41,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `server-adobe@2023.json`/`server-adobe@2025.json` : pinned the server's own JVM to `javaVersion: openjdk21_jre`, matching the BoxLang server configs, for consistent Java 21 runtime behavior across engines
 * `Sv4UtilSpec.cfc` test fixture helpers named a parameter `file`, which is treated specially on Adobe ColdFusion ("Complex object types cannot be converted to simple values" when passed into `listToArray()`). Renamed to `requestContent`
 * `server-adobe@2023.json`/`server-adobe@2025.json` : added JVM arg `--add-opens java.base/sun.nio.fs=ALL-UNNAMED`, matching the working config in `coldbox-modules/cbfs`. On Java 17+, the module system blocks reflective access to `sun.nio.fs` (which backs `java.nio.file.Files`) unless explicitly opened, which is very likely why `putObjectFile()`'s multi-part upload path (`java.nio.file.Files.newByteChannel()`) silently failed and fell back to a non-multipart upload on Adobe
+* CI : replaced the separate `Ortus-Solutions/setup-commandbox` action plus manual `box install --force commandbox-boxlang`/`commandbox-cfconfig` steps with `ortus-boxlang/setup-boxlang@main` (`with-commandbox: true`, installing `commandbox-boxlang`, `commandbox-cfconfig` and `testbox-cli`), matching `coldbox-modules/cbfs`'s setup. Also bumped `Setup Java` from 17 to 21, matching cbfs and the server JVM pins
 
 ## v5.7.1 => 2023-SEP-21
 

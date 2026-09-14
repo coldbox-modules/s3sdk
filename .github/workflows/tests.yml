@@ -51,7 +51,7 @@ jobs:
         uses: actions/setup-java@v2
         with:
           distribution: "temurin"
-          java-version: "17"
+          java-version: "21"
 
       # - name: Setup Database and Fixtures
       #   run: |
@@ -76,20 +76,10 @@ jobs:
 
 
       - name: Setup CommandBox CLI
-        uses: Ortus-Solutions/setup-commandbox@v2.0.1
+        uses: ortus-boxlang/setup-boxlang@main
         with:
-          version: 6.1.0
-
-      # This needs to happen until v6.2 of commandbox is released
-      - name: Update CommandBox-BoxLang
-        if : ${{ startsWith( matrix.cfengine, 'boxlang' ) }}
-        run: |
-          box install --force commandbox-boxlang
-
-      # The CommandBox CLI bundles an older commandbox-cfconfig (no Adobe 2025 provider yet), so force the latest
-      - name: Update CommandBox-CFConfig
-        run: |
-          box install --force commandbox-cfconfig
+          with-commandbox: true
+          commandbox_modules: commandbox-boxlang,commandbox-cfconfig,testbox-cli
 
       - name: Install Test Harness with ColdBox ${{ matrix.coldboxVersion }}
         run: |
