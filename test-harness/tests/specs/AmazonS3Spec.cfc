@@ -43,8 +43,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 	}
 
 	private function isOldACF(){
-		var isLucee = structKeyExists( server, "lucee" );
-		return !isLucee and listFind( "11,2016", listFirst( server.coldfusion.productVersion ) );
+		if ( !structKeyExists( server, "coldfusion" ) ) {
+			return false;
+		}
+		return listFind( "11,2016", listFirst( server.coldfusion.productVersion ) );
 	}
 
 	function run(){

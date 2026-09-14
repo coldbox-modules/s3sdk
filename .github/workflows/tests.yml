@@ -86,6 +86,11 @@ jobs:
         run: |
           box install --force commandbox-boxlang
 
+      # The CommandBox CLI bundles an older commandbox-cfconfig (no Adobe 2025 provider yet), so force the latest
+      - name: Update CommandBox-CFConfig
+        run: |
+          box install --force commandbox-cfconfig
+
       - name: Install Test Harness with ColdBox ${{ matrix.coldboxVersion }}
         run: |
           box install

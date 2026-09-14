@@ -28,6 +28,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `Sv4Util.cfc`, `Sv2Util.cfc` : the UTC date stamp was generated with `dateFormat( utcDateTime, "yyyymmdd" )`. Lowercase `mm` is minutes, not month, on some engines. Corrected to `yyyyMMdd`
 * `copyObject()` ( and therefore `renameObject()`, which calls it internally ) manually set a `Content-Length: 0` header that duplicated the header CFHTTP already sends for a bodyless request. Adobe CF and BoxLang do not de-duplicate this, sending `content-length: 0,0` on the wire and breaking AWS's `SignatureDoesNotMatch` validation. Removed the redundant header
 * `server-boxlang-cfml@1.json` had leftover module aliases (`/moduleroot/cbfs`) copied from another module; corrected to `/moduleroot/s3sdk`
+* `test-harness/tests/specs/AmazonS3Spec.cfc` : `isOldACF()` unconditionally read `server.coldfusion.productVersion`, which doesn't exist on native BoxLang, crashing the whole test bundle on `boxlang@1`. Now guarded with `structKeyExists( server, "coldfusion" )`
+* CI : force-install the latest `commandbox-cfconfig` before starting servers, since the version bundled with the CommandBox CLI has no config provider for `adobe@2025` yet
 
 ## v5.7.1 => 2023-SEP-21
 
