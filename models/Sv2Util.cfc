@@ -51,15 +51,21 @@ component singleton {
 			excludeHeaders : arguments.excludeHeaders
 		};
 
+		// Generate UTC time stamps
+		var utcDateTime = dateConvert( "local2UTC", now() );
+		props.dateStamp = dateFormat( utcDateTime, "yyyymmdd" );
+		props.amzDate   = props.dateStamp & "T" & timeFormat( utcDateTime, "HHmmss" ) & "Z";
+
 		// Override current utc date and time
-		if ( structKeyExists( arguments, "amzDate" ) || structKeyExists( arguments, "dateStamp" ) ) {
+		// Note: each optional argument is checked independently with isNull() rather than
+		// structKeyExists( arguments, ... ), because engines with full null support (e.g. BoxLang)
+		// report an unpassed, no-default argument as an existing key holding null, which would make
+		// structKeyExists() return true and read the other (truly unpassed) argument as null.
+		if ( !isNull( arguments.dateStamp ) ) {
 			props.dateStamp = arguments.dateStamp;
-			props.amzDate   = arguments.amzDate;
-		} else {
-			var utcDateTime = dateConvert( "local2UTC", now() );
-			// Generate UTC time stamps
-			props.dateStamp = dateFormat( utcDateTime, "yyyymmdd" );
-			props.amzDate   = props.dateStamp & "T" & timeFormat( utcDateTime, "HHmmss" ) & "Z";
+		}
+		if ( !isNull( arguments.amzDate ) ) {
+			props.amzDate = arguments.amzDate;
 		}
 
 		var sortedHeaders = structSort( props.requestHeaders, "text", "asc" );
