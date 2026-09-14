@@ -430,8 +430,10 @@ component accessors="true" singleton {
 				"type"        : node.grantee.XMLAttributes[ "xsi:type" ],
 				"displayName" : "",
 				"permission"  : node.permission.XMLText,
-				// TODO:  
-				"uri"         : node.grantee.XMLAttributes[ "xsi:type" ] == "Group" ? node.grantee.uri.xmlText : ( node.grantee.displayName.xmlText ?:  node.grantee.ID.xmlText )
+				// TODO:
+				"uri"         : node.grantee.XMLAttributes[ "xsi:type" ] == "Group" ? node.grantee.uri.xmlText : (
+					node.grantee.displayName.xmlText ?: node.grantee.ID.xmlText
+				)
 			};
 		} );
 	}
@@ -832,10 +834,9 @@ component accessors="true" singleton {
 					} );
 				}
 				try {
-
 					// We have to do this manually due to the async manager losing scope when we use it as a UDF
 					// TODO: Move this to a function and pass in the all of the args used
-					if( !isNull( variables.asyncManager ) ){
+					if ( !isNull( variables.asyncManager ) ) {
 						parts = variables.asyncManager.allApply( parts, function( part ){
 							var channel = part.channel.position( part.offset );
 							var buffer  = createObject( "java", "java.nio.ByteBuffer" ).allocate( part.limit );
@@ -859,7 +860,7 @@ component accessors="true" singleton {
 							};
 						} );
 					} else {
-						parts = parts.map(  function( part ){
+						parts = parts.map( function( part ){
 							var channel = part.channel.position( part.offset );
 							var buffer  = createObject( "java", "java.nio.ByteBuffer" ).allocate( part.limit );
 							channel.read( buffer );
@@ -1487,7 +1488,6 @@ component accessors="true" singleton {
 	){
 		var headers = createMetaHeaders( arguments.metaHeaders );
 		applyEncryptionHeaders( headers, arguments );
-		headers[ "content-length" ] = 0;
 
 		// If not passed, keep source files content type
 		if ( !isNull( arguments.contentType ) ) {
@@ -1777,7 +1777,9 @@ component accessors="true" singleton {
 			throw(
 				type    = "S3SDKError",
 				message = "Error making Amazon REST Call: #results.message#",
-				detail  = isXML( results.response ) ? toString( results.response ) : serializeJSON( results.response )
+				detail  = isXML( results.response ) ? toString( results.response ) : serializeJSON(
+					results.response
+				)
 			);
 		}
 

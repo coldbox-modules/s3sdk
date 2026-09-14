@@ -7,19 +7,19 @@
 component {
 
 	// Module Properties
-	this.title				= "Amazon S3 SDK";
-	this.author				= "Ortus Solutions, Corp";
-	this.webURL				= "https://www.ortussolutions.com";
-	this.description		= "This SDK will provide you with Amazon S3 connectivity for any ColdFusion (CFML) application.";
+	this.title       = "Amazon S3 SDK";
+	this.author      = "Ortus Solutions, Corp";
+	this.webURL      = "https://www.ortussolutions.com";
+	this.description = "This SDK will provide you with Amazon S3 connectivity for any ColdFusion (CFML) application.";
 
-    // Module Entry Point
-	this.entryPoint			= "s3sdk";
+	// Module Entry Point
+	this.entryPoint     = "s3sdk";
 	// Model Namespace
-	this.modelNamespace		= "s3sdk";
+	this.modelNamespace = "s3sdk";
 	// CF Mapping
-	this.cfmapping 	 	 	= "s3sdk";
+	this.cfmapping      = "s3sdk";
 	// Auto-map models
-	this.autoMapModels		= false;
+	this.autoMapModels  = false;
 
 	/**
 	 * Configure
@@ -53,7 +53,7 @@ component {
 			defaultIgnorePublicAcls      : false,
 			defaultBlockPublicPolicy     : false,
 			defaultRestrictPublicBuckets : false,
-			urlStyle					 : "path"
+			urlStyle                     : "path"
 		};
 	}
 
@@ -91,10 +91,8 @@ component {
 			.initArg(
 				name  = "defaultRestrictPublicBuckets",
 				value = variables.settings.defaultRestrictPublicBuckets
-			).initArg(
-			name  = "urlStyle",
-			value = variables.settings.urlStyle
-			);
+			)
+			.initArg( name = "urlStyle", value = variables.settings.urlStyle );
 		binder.map( "Sv4Util@s3sdk" ).to( "#moduleMapping#.models.AmazonS3" );
 
 		binder.map( "Sv2Util@s3sdk" ).to( "#moduleMapping#.models.AmazonS3" );

@@ -514,7 +514,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					s3.putObject( testBucket, "example.txt", "Hello, world!" );
 					var presignedURL = s3.getAuthenticatedURL( bucketName = testBucket, uri = "example.txt" );
 					cfhttp( url = "#presignedURL#", result = "local.httpResponse" );
-					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "200", local.httpResponse.fileContent );
+					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe(
+						"200",
+						local.httpResponse.fileContent
+					);
 					expect( local.httpResponse.fileContent ).toBe( "Hello, world!" );
 				} );
 
@@ -528,7 +531,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					sleep( 2000 )
 					cfhttp( url = "#presignedURL#", result = "local.httpResponse" );
 
-					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "403", local.httpResponse.fileContent );
+					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe(
+						"403",
+						local.httpResponse.fileContent
+					);
 					expect( local.httpResponse.fileContent ).toMatch( "expired" );
 				} );
 
@@ -545,7 +551,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					};
 
 					// If a presigned URL is created for a GET operation, it can't be used for anything else!
-					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "403", local.httpResponse.fileContent );
+					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe(
+						"403",
+						local.httpResponse.fileContent
+					);
 				} );
 
 				it( "can put file", function(){
@@ -561,7 +570,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					) {
 						cfhttpparam( type = "body", value = "Pre-Signed Put!" );
 					};
-					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "200", local.httpResponse.fileContent );
+					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe(
+						"200",
+						local.httpResponse.fileContent
+					);
 
 					var get = s3.getObject( testBucket, "presignedput.txt" );
 
@@ -603,7 +615,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 							value = "custom value"
 						);
 					};
-					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "200", local.httpResponse.fileContent );
+					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe(
+						"200",
+						local.httpResponse.fileContent
+					);
 
 					var get = s3.getObject( testBucket, "presignedputfriends.txt" );
 
@@ -632,7 +647,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 							value = "public-read-write"
 						);
 					};
-					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "403", local.httpResponse.fileContent );
+					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe(
+						"403",
+						local.httpResponse.fileContent
+					);
 				} );
 
 				it( "Can use presigned URL with forced response headers", function(){
@@ -651,7 +669,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					);
 					cfhttp( url = "#presignedURL#", result = "local.httpResponse" );
 
-					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "200", local.httpResponse.fileContent );
+					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe(
+						"200",
+						local.httpResponse.fileContent
+					);
 					expect( local.httpResponse.fileContent ).toBe( "Hello, world!" );
 					expect( local.httpResponse.Responseheader[ "content-type" ] ).toBe( "custom-type" );
 					expect( local.httpResponse.Responseheader[ "content-language" ] ).toBe( "custom-language" );
@@ -676,7 +697,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					);
 					cfhttp( url = "#presignedURL#", result = "local.httpResponse" );
 
-					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "200", local.httpResponse.fileContent );
+					expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe(
+						"200",
+						local.httpResponse.fileContent
+					);
 					expect( local.httpResponse.fileContent ).toBe( "Hello, world!" );
 					// Our explicit content type when storing the file is ignored and the corret type is automatically returned based on MIME type
 					expect( local.httpResponse.Responseheader[ "content-type" ] ).toBe( "text/plain" );
@@ -732,7 +756,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 				var presignedURL = s3.getAuthenticatedURL( bucketName = testBucket, uri = "encrypted.txt" );
 				cfhttp( url = "#presignedURL#", result = "local.httpResponse" );
 
-				expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "200", local.httpResponse.fileContent );
+				expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe(
+					"200",
+					local.httpResponse.fileContent
+				);
 				expect( local.httpResponse.fileContent ).toBe( data );
 			} );
 
@@ -774,7 +801,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					);
 				};
 
-				expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "200", local.httpResponse.fileContent );
+				expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe(
+					"200",
+					local.httpResponse.fileContent
+				);
 				expect( local.httpResponse.fileContent ).toBe( data );
 			} );
 
@@ -1006,7 +1036,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 				var presignedURL = s3.getAuthenticatedURL( bucketName = testBucket, uri = "encrypted.txt" );
 				cfhttp( url = "#presignedURL#", result = "local.httpResponse" );
 
-				expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "200", local.httpResponse.fileContent );
+				expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe(
+					"200",
+					local.httpResponse.fileContent
+				);
 				expect( local.httpResponse.fileContent ).toBe( data );
 
 				var o = s3.copyObject(
@@ -1086,7 +1119,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					);
 				};
 
-				expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe( "200", local.httpResponse.fileContent );
+				expect( local.httpResponse.Responseheader.status_code ?: 0 ).toBe(
+					"200",
+					local.httpResponse.fileContent
+				);
 				expect( local.httpResponse.fileContent ).toBe( data );
 
 				var o = s3.copyObject(

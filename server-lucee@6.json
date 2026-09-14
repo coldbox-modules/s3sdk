@@ -1,8 +1,8 @@
 {
-    "name":"s3sdk-lucee@5",
+    "name":"s3sdk-lucee@6",
     "app":{
-        "serverHomeDirectory":".engine/lucee5",
-        "cfengine":"lucee@5"
+        "serverHomeDirectory":".engine/lucee6",
+        "cfengine":"lucee@6"
     },
     "web":{
         "http":{

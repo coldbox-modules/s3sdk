@@ -8,9 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ----
 ## [Unreleased]
 
+### Added
+
+* Native BoxLang (`boxlang@1`) server and CI matrix entry, in addition to the existing `boxlang-cfml@1` (CFML compatibility) entry
+
+### Changed
+
+* CI test matrix now covers `boxlang@1`, `boxlang-cfml@1`, `lucee@6` and `adobe@2023`/`adobe@2025`. Dropped `lucee@5` and `adobe@2018`/`adobe@2021` (EOL)
+* Minimum ColdBox version bumped to `^8`
+* `devDependencies` : removed `commandbox-dotenv` and `commandbox-cfconfig`, added `commandbox-boxlang`
+* Module description updated to: "This SDK will provide you with Amazon S3 connectivity for any ColdBox, BoxLang or CFML Application."
+* `readme.md` rewritten and expanded, with BoxLang as the preferred/first-class engine
+
 ### Fixed
 
 * Set all `hash` usage algorithms to MD5 for Adobe change to default algorithm
+* `Sv4Util.cfc`, `Sv2Util.cfc` : optional `amzDate`/`dateStamp` override arguments were checked with `structKeyExists( arguments, ... )`, which is unreliable on engines with full-null support like BoxLang (an unpassed argument still exists as a `null` key). Now checked independently with `isNull()`, fixing spurious `SignatureDoesNotMatch` errors on BoxLang
+* `MiniLogBox.cfc` : same `isNull()` fix applied to the optional `data` argument on `debug()`, `error()` and `warn()`
+* `Sv4Util.cfc`, `Sv2Util.cfc` : the UTC date stamp was generated with `dateFormat( utcDateTime, "yyyymmdd" )`. Lowercase `mm` is minutes, not month, on some engines. Corrected to `yyyyMMdd`
+* `copyObject()` ( and therefore `renameObject()`, which calls it internally ) manually set a `Content-Length: 0` header that duplicated the header CFHTTP already sends for a bodyless request. Adobe CF and BoxLang do not de-duplicate this, sending `content-length: 0,0` on the wire and breaking AWS's `SignatureDoesNotMatch` validation. Removed the redundant header
+* `server-boxlang-cfml@1.json` had leftover module aliases (`/moduleroot/cbfs`) copied from another module; corrected to `/moduleroot/s3sdk`
 
 ## v5.7.1 => 2023-SEP-21
 

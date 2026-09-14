@@ -1,10 +1,13 @@
 {
-    "name":"s3sdk-adobe@2018",
+    "name":"s3sdk-boxlang@1",
     "app":{
-        "serverHomeDirectory":".engine/adobe2018",
-        "cfengine":"adobe@2018"
+        "cfengine":"boxlang@1",
+        "serverHomeDirectory":".engine/boxlang1"
     },
+    "force":true,
+    "openBrowser":false,
     "web":{
+        "directoryBrowsing":true,
         "http":{
             "port":"60299"
         },
@@ -16,10 +19,10 @@
             "/moduleroot/s3sdk":"./"
         }
     },
-    "jvm":{
-        "heapSize":"1024"
+    "JVM":{
+        "heapSize":"1024",
+        "javaVersion":"openjdk21_jre"
     },
-    "openBrowser":"false",
     "cfconfig":{
         "file":".cfconfig.json"
     }

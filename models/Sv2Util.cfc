@@ -53,7 +53,7 @@ component singleton {
 
 		// Generate UTC time stamps
 		var utcDateTime = dateConvert( "local2UTC", now() );
-		props.dateStamp = dateFormat( utcDateTime, "yyyymmdd" );
+		props.dateStamp = dateFormat( utcDateTime, "yyyyMMdd" );
 		props.amzDate   = props.dateStamp & "T" & timeFormat( utcDateTime, "HHmmss" ) & "Z";
 
 		// Override current utc date and time

@@ -1,26 +1,46 @@
 [![AWS S3 SDK CI](https://github.com/coldbox-modules/s3sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/coldbox-modules/s3sdk/actions/workflows/ci.yml)
 
-# Welcome to the Amazon S3, DigitalOcean Spaces SDK
+# Amazon S3 SDK
 
-This SDK allows you to add Amazon S3, Digital Ocean Spaces capabilities to your ColdFusion (CFML) applications. It is also a ColdBox Module, so if you are using ColdBox, you get auto-registration and much more.
+This SDK will provide you with Amazon S3 connectivity for any ColdBox, BoxLang or CFML Application. It also works great as a standalone library outside of ColdBox, and is fully compatible with S3-compatible services like DigitalOcean Spaces, Google Cloud Storage and MinIO.
+
+Built natively for [BoxLang](https://www.boxlang.io/), and fully backwards compatible with Lucee and Adobe ColdFusion (ACF).
+
+## Features
+
+* First-class [BoxLang](https://www.boxlang.io/) support, running natively or in CFML compatibility mode
+* Works with Lucee and Adobe ColdFusion (ACF)
+* Full ColdBox Module integration with WireBox injection DSL: `AmazonS3@s3sdk`
+* Also usable 100% standalone, outside of ColdBox
+* AWS Signature Version 4 (default) and Version 2 support
+* Compatible with any S3-compatible endpoint: Amazon S3, DigitalOcean Spaces, Google Cloud Storage, MinIO, etc
+* Bucket operations: create, list, delete, ACLs, versioning, lifecycle rules
+* Object operations: put, get, copy, rename, delete, metadata, streaming downloads
+* Multi-part uploads for large files with configurable concurrency, keeping memory usage low
+* Pre-signed URL generation for both `GET` and `PUT` operations, so clients can upload/download directly to/from S3 without proxying through your server
+* Server-side encryption support (SSE-C / SSE-S3)
+* Automatic retries on `500`/`503` responses with configurable retry counts
+* LogBox integration for full request/response debugging
 
 ## Resources
 
 * Source: https://github.com/coldbox-modules/s3sdk
 * Issues: https://github.com/coldbox-modules/s3sdk/issues
 * [Changelog](changelog.md)
+* API Docs: https://apidocs.ortussolutions.com/#/coldbox-modules/s3sdk/
 * S3 API Reference: https://docs.aws.amazon.com/AmazonS3/latest/API/API_Operations_Amazon_Simple_Storage_Service.html
-* Digital Oceans Spaces API Reference: https://developers.digitalocean.com/documentation/spaces/
+* DigitalOcean Spaces API Reference: https://developers.digitalocean.com/documentation/spaces/
 
 ## Requirements
 
-* [Boxlang](https://www.boxlang.io/) 1+
-* Lucee 5+
-* Adobe 2018+
+* [BoxLang](https://www.boxlang.io/) 1+ (native or CFML compatibility mode)
+* Lucee 6+
+* Adobe ColdFusion 2023+
+* ColdBox 8+ (only if used as a ColdBox Module)
 
 ## Installation
 
-This SDK can be installed as standalone or as a ColdBox Module.  Either approach requires a simple CommandBox command:
+This SDK can be installed as a standalone library or as a ColdBox Module. Either approach requires a simple [CommandBox](https://www.ortussolutions.com/products/commandbox) command:
 
 ```bash
 box install s3sdk
@@ -28,9 +48,39 @@ box install s3sdk
 
 Then follow either the standalone or module instructions below.
 
-### Standalone
+### Standalone Usage
 
-This SDK will be installed into a directory called `s3sdk` and then the SDK can be instantiated via ` new s3sdk.models.AmazonS3()` with the following constructor arguments:
+This SDK will be installed into a directory called `s3sdk` and can be instantiated directly via `new s3sdk.models.AmazonS3()`:
+
+```js
+s3 = new s3sdk.models.AmazonS3(
+	accessKey = "your-access-key",
+	secretKey = "your-secret-key",
+	awsRegion = "us-east-1"
+);
+
+// Create a bucket
+s3.createBucket( bucketName = "my-bucket" );
+
+// Upload a file
+s3.putObjectFile(
+	bucketName = "my-bucket",
+	filepath   = "/path/to/file.pdf",
+	uri        = "documents/file.pdf"
+);
+
+// Generate a pre-signed download URL valid for 5 minutes
+url = s3.getAuthenticatedURL(
+	bucketName = "my-bucket",
+	uri        = "documents/file.pdf",
+	minutesValid = 5
+);
+
+// Delete an object
+s3.deleteObject( bucketName = "my-bucket", uri = "documents/file.pdf" );
+```
+
+Full constructor reference:
 
 ```js
 /**
@@ -55,7 +105,7 @@ This SDK will be installed into a directory called `s3sdk` and then the SDK can 
  * @defaultEncryptionAlgorithm The default server side encryption algorithm to use.  Usually "AES256". Not needed if using custom defaultEncryptionKey
  * @defaultEncryptionKey	The default base64 encoded AES 356 bit key for server side encryption.
  * @urlStyle					 Specifies the format of the URL whether it is the `path` format or `virtual` format. Defaults to path. For more information see https://docs.aws.amazon.com/AmazonS3/latest/userguide/VirtualHosting.html
- * 
+ *
  * @return An AmazonS3 instance.
  */
 public AmazonS3 function init(
@@ -83,7 +133,7 @@ public AmazonS3 function init(
 
 ### ColdBox Module
 
-This package also is a ColdBox module as well.  The module can be configured by creating an `s3sdk` configuration structure in your `moduleSettings` struct in the application configuration file: `config/Coldbox.cfc` with the following settings:
+This package is also a ColdBox module. Configure it by creating an `s3sdk` configuration structure in your `moduleSettings` struct in `config/Coldbox.cfc`:
 
 ```js
 moduleSettings = {
@@ -135,12 +185,58 @@ moduleSettings = {
 };
 ```
 
-Then you can leverage the SDK CFC via the injection DSL: `AmazonS3@s3sdk`
+Then leverage the SDK via the WireBox injection DSL: `AmazonS3@s3sdk`
+
+```js
+component {
+
+	property name="s3" inject="AmazonS3@s3sdk";
+
+	function index( event, rc, prc ){
+		s3.putObjectFile(
+			bucketName = "my-bucket",
+			filepath   = "/path/to/file.pdf"
+		);
+	}
+
+}
+```
+
+## S3-Compatible Services
+
+Since this SDK speaks the standard S3 REST API, it works out of the box with any S3-compatible storage provider by simply changing the `awsDomain` setting:
+
+| Provider              | `awsDomain`                  |
+|------------------------|-------------------------------|
+| Amazon S3               | `amazonaws.com` (default)    |
+| DigitalOcean Spaces      | `digitaloceanspaces.com`      |
+| Google Cloud Storage     | `storage.googleapis.com`      |
+| MinIO / self-hosted      | your MinIO endpoint hostname  |
 
 ## Usage
 
-Please check out the api docs: https://apidocs.ortussolutions.com/#/coldbox-modules/s3sdk/, choose your version and code away!
+Please check out the full API docs: https://apidocs.ortussolutions.com/#/coldbox-modules/s3sdk/, choose your version and code away!
+
+## Running the Tests
+
+This module ships with a `test-harness` and can be tested against any of the supported engines using CommandBox:
+
+```bash
+box install
+box server start serverConfigFile="server-boxlang@1.json"
+box testbox run
+```
+
+See `.github/workflows/tests.yml` for the full CI matrix, which runs against native BoxLang, BoxLang with CFML compatibility, Lucee and Adobe ColdFusion.
 
 ## Development
 
-See [Contributing](https://github.com/coldbox-modules/s3sdk/blob/development/CONTRIBUTING.md)
+See [Contributing](https://github.com/coldbox-modules/s3sdk/blob/development/CONTRIBUTING.md) and [AGENTS.md](AGENTS.md) for guidance on developing and testing this module, including for AI coding agents.
+
+## Contributing
+
+Pull requests are welcome! Please make sure any changes pass `box run-script format:check` and the full test suite before submitting.
+
+----
+
+&copy; Ortus Solutions, Corp
