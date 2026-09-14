@@ -107,9 +107,9 @@ component extends="coldbox.system.testing.BaseTestCase" {
 			stringToSign     : fileRead( "#folderPath#/#folderName#.sts" ).replace( chr( 13 ), "", "all" ),
 			authHeader       : fileRead( "#folderPath#/#folderName#.authz" ).replace( chr( 13 ), "", "all" )
 		};
-		data.method    = data.request.listToArray( " " )[ 1 ];
-		data.host      = data.request.listToArray( chr( 10 ) )[ 2 ].listToArray( ":" )[ 2 ];
-		data.uri       = data.request.listToArray( " " )[ 2 ].reReplace( "\?.*$", "" );
+		data.method    = listToArray( data.request, " " )[ 1 ];
+		data.host      = listToArray( listToArray( data.request, chr( 10 ) )[ 2 ], ":" )[ 2 ];
+		data.uri       = listToArray( data.request, " " )[ 2 ].reReplace( "\?.*$", "" );
 		data.headers   = headersFromRequestFile( data.request );
 		data.urlParams = urlParamsFromRequestFile( data.request );
 		return data;
@@ -117,7 +117,7 @@ component extends="coldbox.system.testing.BaseTestCase" {
 
 	// TODO: Handle multi-line headers
 	private function headersFromRequestFile( file ){
-		var lines                  = file.listToArray( chr( 10 ) );
+		var lines                  = listToArray( file, chr( 10 ) );
 		var lineNumberAfterHeaders = lines.find( "" );
 		if ( !lineNumberAfterHeaders ) {
 			lineNumberAfterHeaders = lines.len();
@@ -133,21 +133,19 @@ component extends="coldbox.system.testing.BaseTestCase" {
 	}
 
 	private function urlParamsFromRequestFile( file ){
-		var uri    = file.listToArray( " " )[ 2 ];
+		var uri    = listToArray( file, " " )[ 2 ];
 		var params = {};
 		if ( !uri.find( "?" ) ) {
 			return params;
 		}
-		var queryString = uri.listToArray( "?" )[ 2 ];
-		return queryString
-			.listToArray( "&" )
-			.reduce( function( memo, el ){
-				var eqPos        = el.find( "=" );
-				var name         = el.left( eqPos - 1 );
-				var value        = el.right( el.len() - eqPos );
-				memo[ "#name#" ] = value;
-				return memo;
-			}, params );
+		var queryString = listToArray( uri, "?" )[ 2 ];
+		return listToArray( queryString, "&" ).reduce( function( memo, el ){
+			var eqPos        = el.find( "=" );
+			var name         = el.left( eqPos - 1 );
+			var value        = el.right( el.len() - eqPos );
+			memo[ "#name#" ] = value;
+			return memo;
+		}, params );
 	}
 
 }

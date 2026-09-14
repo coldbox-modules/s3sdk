@@ -830,7 +830,7 @@ component accessors="true" singleton {
 						"offset"     : ( i - 1 ) * variables.multiPartByteThreshold,
 						"limit"      : remaining <= variables.multiPartByteThreshold ? remaining : variables.multiPartByteThreshold,
 						"timeout"    : arguments.HTTPTimeout,
-						"channel"    : jFiles.newByteChannel( jPath, [] )
+						"channel"    : jFiles.newByteChannel( jPath, javacast( "java.nio.file.OpenOption[]", [] ) )
 					} );
 				}
 				try {

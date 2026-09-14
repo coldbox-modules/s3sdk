@@ -33,6 +33,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * `server-boxlang-cfml@1.json` had leftover module aliases (`/moduleroot/cbfs`) copied from another module; corrected to `/moduleroot/s3sdk`
 * `test-harness/tests/specs/AmazonS3Spec.cfc` : `isOldACF()` unconditionally read `server.coldfusion.productVersion`, which doesn't exist on native BoxLang, crashing the whole test bundle on `boxlang@1`. Now guarded with `structKeyExists( server, "coldfusion" )`
 * CI : force-install the latest `commandbox-cfconfig` before starting servers, since the version bundled with the CommandBox CLI has no config provider for `adobe@2025` yet
+* `Sv4UtilSpec.cfc` test fixture helpers used `.listToArray()` member-function syntax, which Adobe ColdFusion doesn't resolve the same way Lucee/BoxLang do ("The listToArray method was not found"). Switched to the top-level `listToArray( string, delimiter )` function call, which is portable across all three engines
+* `putObjectFile()`'s multi-part upload path called `java.nio.file.Files.newByteChannel( path, [] )` with an untyped, empty CFML array for the varargs `OpenOption...` parameter. Adobe's stricter Java-interop overload resolution couldn't match it (silently caught and swallowed by the surrounding `try/catch`, falling back to a non-multipart upload), while Lucee/BoxLang tolerated it. Now explicitly `javacast( "java.nio.file.OpenOption[]", [] )`
 
 ## v5.7.1 => 2023-SEP-21
 
