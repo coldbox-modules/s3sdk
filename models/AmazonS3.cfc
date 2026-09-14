@@ -339,7 +339,11 @@ component accessors="true" singleton {
 		var results = s3Request( resource = arguments.bucketname, parameters = { "location" : true } );
 
 		if ( results.error ) {
-			throw( message = "Error making Amazon REST Call", detail = results.message );
+			throw(
+				type    = "Application",
+				message = "Error making Amazon REST Call",
+				detail  = results.message
+			);
 		}
 		// Should this return whatever comes from AWS? It seems like hardcoding a potentially wrong answer is not a good idea.
 		if ( len( results.response.LocationConstraint.XMLText ) ) {
@@ -574,6 +578,7 @@ component accessors="true" singleton {
 				)
 			) {
 				throw(
+					type    = "Application",
 					message = "Invalid value [#arguments.objectOwnership#] for [objectOwnership] when creating bucket.",
 					detail  = "Valid options are: [BucketOwnerPreferred, ObjectWriter, BucketOwnerEnforced]"
 				);
@@ -1195,7 +1200,11 @@ component accessors="true" singleton {
 		} else if ( status_code == 404 ) {
 			return false;
 		} else {
-			throw( message = "Error checking for the existence of [#uri#].", detail = results.message );
+			throw(
+				type    = "Application",
+				message = "Error checking for the existence of [#uri#].",
+				detail  = results.message
+			);
 		}
 	}
 
@@ -1254,6 +1263,7 @@ component accessors="true" singleton {
 		responseHeaders.each( ( header, value ) => {
 			if ( !validResponseHeaders.findNoCase( header ) ) {
 				throw(
+					type    = "Application",
 					message = "Invalid Reponse Header for signed URL: [#header#].",
 					detail  = "Valid options are: [#validResponseHeaders.toList()#]"
 				);
@@ -1823,7 +1833,8 @@ component accessors="true" singleton {
 	private function requireBucketName( bucketName ){
 		if ( isNull( arguments.bucketName ) || !len( arguments.bucketName ) ) {
 			throw(
-				"bucketName is required.  Please provide the name of the bucket to access or set a default bucket name in the SDk."
+				type    = "Application",
+				message = "bucketName is required.  Please provide the name of the bucket to access or set a default bucket name in the SDk."
 			);
 		}
 	}
@@ -1869,7 +1880,7 @@ component accessors="true" singleton {
 				}
 			}
 		} else {
-			throw( "Invalid acl argument. Must be string or struct." );
+			throw( type = "Application", message = "Invalid acl argument. Must be string or struct." );
 		}
 		return headers;
 	}

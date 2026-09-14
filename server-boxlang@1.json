@@ -25,5 +25,8 @@
     },
     "cfconfig":{
         "file":".cfconfig.json"
+    },
+    "scripts":{
+        "onServerInitialInstall":"install bx-esapi --noSave"
     }
 }
