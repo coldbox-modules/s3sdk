@@ -839,55 +839,34 @@ component accessors="true" singleton {
 					} );
 				}
 				try {
-					// We have to do this manually due to the async manager losing scope when we use it as a UDF
-					// TODO: Move this to a function and pass in the all of the args used
-					if ( !isNull( variables.asyncManager ) ) {
-						parts = variables.asyncManager.allApply( parts, function( part ){
-							var channel = part.channel.position( part.offset );
-							var buffer  = createObject( "java", "java.nio.ByteBuffer" ).allocate( part.limit );
-							channel.read( buffer );
+					// Note: this used to optionally route through variables.asyncManager.allApply() for
+					// concurrent part uploads. On Adobe, ColdBox's async cbproxies Function wrapper does
+					// not correctly marshal the "part" struct argument across the async boundary, causing
+					// "Element UPLOADID is undefined in PART" failures that are otherwise silently caught
+					// below and fall back to a non-multipart upload. Always use the synchronous path until
+					// that ColdBox/Adobe interop issue is resolved upstream.
+					parts = parts.map( function( part ){
+						var channel = part.channel.position( part.offset );
+						var buffer  = createObject( "java", "java.nio.ByteBuffer" ).allocate( part.limit );
+						channel.read( buffer );
 
-							return {
-								"partNumber" : part.partNumber,
-								"size"       : part.limit,
-								"channel"    : part.channel,
-								"response"   : s3Request(
-									method     = "PUT",
-									resource   = bucketName & "/" & uri,
-									body       = buffer.array(),
-									timeout    = part.timeout,
-									parameters = {
-										"uploadId"   : part.uploadId,
-										"partNumber" : part.partNumber
-									},
-									headers = { "content-type" : "binary/octet-stream" }
-								)
-							};
-						} );
-					} else {
-						parts = parts.map( function( part ){
-							var channel = part.channel.position( part.offset );
-							var buffer  = createObject( "java", "java.nio.ByteBuffer" ).allocate( part.limit );
-							channel.read( buffer );
-
-							return {
-								"partNumber" : part.partNumber,
-								"size"       : part.limit,
-								"channel"    : part.channel,
-								"response"   : s3Request(
-									method     = "PUT",
-									resource   = bucketName & "/" & uri,
-									body       = buffer.array(),
-									timeout    = part.timeout,
-									parameters = {
-										"uploadId"   : part.uploadId,
-										"partNumber" : part.partNumber
-									},
-									headers = { "content-type" : "binary/octet-stream" }
-								)
-							};
-						} );
-					}
+						return {
+							"partNumber" : part.partNumber,
+							"size"       : part.limit,
+							"channel"    : part.channel,
+							"response"   : s3Request(
+								method     = "PUT",
+								resource   = bucketName & "/" & uri,
+								body       = buffer.array(),
+								timeout    = part.timeout,
+								parameters = {
+									"uploadId"   : part.uploadId,
+									"partNumber" : part.partNumber
+								},
+								headers = { "content-type" : "binary/octet-stream" }
+							)
+						};
+					} );
 
 					var finalizeBody = "<?xml version=""1.0"" encoding=""UTF-8""?><CompleteMultipartUpload xmlns=""http://s3.amazonaws.com/doc/2006-03-01/"">";
 
