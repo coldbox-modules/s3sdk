@@ -59,8 +59,10 @@ component extends="coldbox.system.testing.BaseTestCase" {
 		message                = ""
 	){
 		return {
-			"response" : xmlParse( "<?xml version=""1.0"" encoding=""UTF-8"" standalone=""no""?>
-			<LocationConstraint xmlns=""http://s3.amazonaws.com/doc/2006-03-01/"">#arguments.location#</LocationConstraint>" ),
+			"response" : xmlParse(
+				"<?xml version=""1.0"" encoding=""UTF-8"" standalone=""no""?>
+			<LocationConstraint xmlns=""http://s3.amazonaws.com/doc/2006-03-01/"">#arguments.location#</LocationConstraint>"
+			),
 			"message"        : arguments.message,
 			"error"          : arguments.error,
 			"responseheader" : {
