@@ -38,6 +38,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 * CI : `Setup Java` was pinned to Java 11, but Adobe ColdFusion 2025's `cfpm` tooling requires Java 17+ (`UnsupportedClassVersionError: ... class file version 61.0 ... only recognizes ... up to 55.0`). Bumped to Temurin 17
 * `server-boxlang@1.json` (native BoxLang) didn't install the `bx-esapi` module, so any call to `encodeForURL()` (used by `Sv4Util.cfc`'s `urlEncodePath()`) failed with `Function [encodeForURL] not found`, crashing the entire `AmazonS3Spec` bundle at `beforeAll()`. Added `onServerInitialInstall: install bx-esapi`, matching `server-boxlang-cfml@1.json`
 * `requireBucketName()`, `getBucketLocation()`, `createBucket()`, `objectExists()`, `getAuthenticatedURL()` and `applyACLHeaders()` called `throw()` without an explicit `type`. Adobe/Lucee default the type to `Application`, but BoxLang defaults it to `Custom`, breaking tests asserting `toThrow( type = "application" )`. All now throw an explicit `type = "Application"`
+* `server-adobe@2023.json`/`server-adobe@2025.json` : pinned the server's own JVM to `javaVersion: openjdk21_jre`, matching the BoxLang server configs, for consistent Java 21 runtime behavior across engines
+* `Sv4UtilSpec.cfc` test fixture helpers named a parameter `file`, which is treated specially on Adobe ColdFusion ("Complex object types cannot be converted to simple values" when passed into `listToArray()`). Renamed to `requestContent`
 
 ## v5.7.1 => 2023-SEP-21
 

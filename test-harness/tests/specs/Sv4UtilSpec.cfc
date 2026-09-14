@@ -116,8 +116,8 @@ component extends="coldbox.system.testing.BaseTestCase" {
 	}
 
 	// TODO: Handle multi-line headers
-	private function headersFromRequestFile( file ){
-		var lines                  = listToArray( file, chr( 10 ) );
+	private function headersFromRequestFile( requestContent ){
+		var lines                  = listToArray( requestContent, chr( 10 ) );
 		var lineNumberAfterHeaders = lines.find( "" );
 		if ( !lineNumberAfterHeaders ) {
 			lineNumberAfterHeaders = lines.len();
@@ -132,8 +132,8 @@ component extends="coldbox.system.testing.BaseTestCase" {
 		}, {} );
 	}
 
-	private function urlParamsFromRequestFile( file ){
-		var uri    = listToArray( file, " " )[ 2 ];
+	private function urlParamsFromRequestFile( requestContent ){
+		var uri    = listToArray( requestContent, " " )[ 2 ];
 		var params = {};
 		if ( !uri.find( "?" ) ) {
 			return params;
