@@ -118,7 +118,9 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					// TEMP DIAGNOSTIC: surface the swallowed multipart exception, if any
 					if ( !resp.contains( "multipart" ) ) {
 						var errorCallLog = s3.getLog().$callLog().error ?: [];
-						fail( "MULTIPART DIAGNOSTIC (resp=#resp#) (calls=#errorCallLog.len()#): #serializeJSON( errorCallLog )#" );
+						fail(
+							"MULTIPART DIAGNOSTIC (resp=#resp#) (calls=#errorCallLog.len()#): #serializeJSON( errorCallLog )#"
+						);
 					}
 					expect( resp.contains( "multipart" ) ).toBeTrue();
 					var md = s3.getObjectInfo( testBucket, uploadFileName );
