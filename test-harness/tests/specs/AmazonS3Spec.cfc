@@ -107,6 +107,9 @@ component extends="coldbox.system.testing.BaseTestCase" {
 						repeatString( randRange( 0, 9 ), fileSize ),
 						"utf-8"
 					);
+					// Some engines' fileWrite() may not produce exactly fileSize bytes on disk (e.g. a
+					// trailing line-ending byte), so compare against the actual file size going forward
+					fileSize = getFileInfo( testFile ).size;
 					sleepIfNIO();
 					var uploadFileName = "big_file.txt";
 					var resp           = s3.putObjectFile(
