@@ -678,7 +678,9 @@ component extends="coldbox.system.testing.BaseTestCase" {
 					expect( local.httpResponse.Responseheader[ "content-language" ] ).toBe( "custom-language" );
 					expect( local.httpResponse.Responseheader[ "expires" ] ).toBe( "custom-expires" );
 					expect( local.httpResponse.Responseheader[ "cache-control" ] ).toBe( "custom-cache" );
-					expect( local.httpResponse.Responseheader[ "content-disposition" ] ).toBe( "custom-disposition" );
+					expect( local.httpResponse.Responseheader[ "content-disposition" ] ).toBe(
+						"custom-disposition"
+					);
 					expect( local.httpResponse.Responseheader[ "content-encoding" ] ).toBe( "custom-encoding" );
 				} );
 
@@ -1004,7 +1006,9 @@ component extends="coldbox.system.testing.BaseTestCase" {
 				// https://luceeserver.atlassian.net/browse/LDEV-4357
 				if ( isNull( server.lucee ) ) {
 					expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-algorithm" );
-					expect( o.responseHeader[ "x-amz-server-side-encryption-customer-algorithm" ] ).toBe( "AES256" );
+					expect( o.responseHeader[ "x-amz-server-side-encryption-customer-algorithm" ] ).toBe(
+						"AES256"
+					);
 					expect( o.responseHeader ).toHaveKey( "x-amz-server-side-encryption-customer-key-MD5" );
 					expect( o.responseHeader[ "x-amz-server-side-encryption-customer-key-MD5" ] ).toBe( keyMD5 );
 				}
