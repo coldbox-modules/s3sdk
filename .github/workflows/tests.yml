@@ -10,6 +10,7 @@ on:
         required: true
       S3SDK_AWS_ACCESS_SECRET:
         required: true
+  workflow_dispatch:
 
 jobs:
   tests:
@@ -24,45 +25,34 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        cfengine:  [ "lucee@5", "adobe@2021", "boxlang-cfml@1" ]
-        coldboxVersion: [ "^7" ]
+        cfengine:  [ "boxlang@1", "boxlang-cfml@1", "lucee@6", "adobe@2023", "adobe@2025" ]
+        coldboxVersion: [ "^8" ]
         experimental: [ false ]
         include:
-          - cfengine: "adobe@2023"
-            coldboxVersion: "^7"
-            experimental: true
-          - cfengine: "adobe@2018"
-            coldboxVersion: "^7"
-            experimental: true
           - coldboxVersion: "be"
-            cfengine: "lucee@5"
-            experimental: true
-          - coldboxVersion: "be"
-            cfengine: "adobe@2018"
-            experimental: true
-          - coldboxVersion: "be"
-            cfengine: "adobe@2021"
+            cfengine: "boxlang@1"
             experimental: true
           - coldboxVersion: "be"
             cfengine: "boxlang-cfml@1"
             experimental: true
+          - coldboxVersion: "be"
+            cfengine: "lucee@6"
+            experimental: true
+          - coldboxVersion: "be"
+            cfengine: "adobe@2023"
+            experimental: true
+          - coldboxVersion: "be"
+            cfengine: "adobe@2025"
+            experimental: true
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v7
 
       - name: Setup Java
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v6
         with:
-          distribution: "adopt"
-          java-version: "11"
-
-      # - name: Setup Database and Fixtures
-      #   run: |
-      #     #sudo systemctl start mysql.service
-      #     ## Create Database
-      #     #mysql -u${{ env.DB_USER }} -p${{ env.DB_PASSWORD }} -e 'CREATE DATABASE cbsecurity;'
-      #     ## Import Database
-      #     #mysql -u${{ env.DB_USER }} -p${{ env.DB_PASSWORD }} < test-harness/tests/resources/cbsecurity.sql
+          distribution: "temurin"
+          java-version: "21"
 
       - name: Setup Environment For Testing Process
         run: |
@@ -79,15 +69,10 @@ jobs:
 
 
       - name: Setup CommandBox CLI
-        uses: Ortus-Solutions/setup-commandbox@v2.0.1
+        uses: ortus-boxlang/setup-boxlang@main
         with:
-          version: 6.1.0
-
-      # This needs to happen until v6.2 of commandbox is released
-      - name: Update CommandBox-BoxLang
-        if : ${{ matrix.cfengine == 'boxlang-cfml@1' }}
-        run: |
-          box install --force commandbox-boxlang
+          with-commandbox: true
+          commandbox_modules: commandbox-boxlang,commandbox-cfconfig,testbox-cli
 
       - name: Install Test Harness with ColdBox ${{ matrix.coldboxVersion }}
         run: |
@@ -116,7 +101,7 @@ jobs:
 
       - name: Upload Test Results to Artifacts
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ${{ matrix.cfengine }}-test-results-${{matrix.coldboxVersion}}-${{ matrix.experimental }}
           path: |
@@ -129,7 +114,7 @@ jobs:
 
       - name: Upload Debugging Log To Artifacts
         if: ${{ failure() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: Failure Debugging Info - ${{ matrix.cfengine }}
           path: |
