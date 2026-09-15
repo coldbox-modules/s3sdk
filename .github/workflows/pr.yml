@@ -21,11 +21,11 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v7
 
-      - uses: Ortus-Solutions/commandbox-action@v1.0.2
+      - uses: Ortus-Solutions/commandbox-action@v1.0.3
         with:
           cmd: run-script format
 
       - name: Commit Format Changes
-        uses: stefanzweifel/git-auto-commit-action@v4
+        uses: stefanzweifel/git-auto-commit-action@v7
         with:
-          commit_message: Apply cfformat changes
+          commit_message: Apply formatting changes
