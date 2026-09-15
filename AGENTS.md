@@ -13,6 +13,28 @@ Guidance for AI coding agents (and human contributors) working in this repositor
 * `ModuleConfig.cfc` : ColdBox module registration
 * `test-harness/` : a full ColdBox test application used to run the TestBox test suite
 
+## AI skills
+
+This repository has a large collection of BoxLang, ColdBox, CommandBox, DocBox and TestBox skills in `.agents/skills/`. The skills directory is ignored from version control, while `skills-lock.json` records the installed skill sources. After a fresh checkout, restore the local skills with:
+
+```bash
+npx skills experimental_install
+```
+
+When working on a task, inspect and follow the relevant skill before changing code. Do not assume that an absent `.agents/skills/` directory means the repository has no applicable guidance.
+
+Use this quick guide to choose a starting point:
+
+* **BoxLang syntax and code:** `boxlang-language-fundamentals`, `boxlang-best-practices`, `boxlang-classes-and-oop`, or `boxlang-functional-programming`
+* **BoxLang runtime features:** the matching `boxlang-*` skill for applications, configuration, caching, files, async work, schedulers, watchers, Java integration, or web development
+* **ColdBox, CommandBox, and modules:** the matching `commandbox-*` or `boxlang-core-dev-*` skill for module development, interceptors, logging, components, BIFs, and runtime internals
+* **Testing:** `boxlang-testing`, `commandbox-testing`, or `bx-web-support` for web-context tests
+* **Documentation:** `boxlang-code-documenter`, `boxlang-docbox`, or `bx-docbox`
+* **Deployment and operations:** `boxlang-deployment`, the relevant `boxlang-runtime-*` skill, or `commandbox-deploying`
+* **Security:** `boxlang-security`, `bx-esapi`, `bx-csrf`, or `bx-password-encrypt`
+
+Prefer the most specific skill, and consult more than one when a task crosses domains.
+
 ## Supported engines
 
 CI (`.github/workflows/tests.yml`) runs the test suite against:
