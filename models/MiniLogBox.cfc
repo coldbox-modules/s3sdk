@@ -12,21 +12,21 @@ component {
 
 	function debug( required string msg, data ){
 		arrayAppend( variables.logs, arguments.msg );
-		if ( structKeyExists( arguments, "data" ) ) {
+		if ( !isNull( arguments.data ) ) {
 			arrayAppend( variables.logs, arguments.data );
 		}
 	}
 
 	function error( required string msg, data ){
 		arrayAppend( variables.logs, "Error: " & arguments.msg );
-		if ( structKeyExists( arguments, "data" ) ) {
+		if ( !isNull( arguments.data ) ) {
 			arrayAppend( variables.logs, arguments.data );
 		}
 	}
 
 	function warn( required string msg, data ){
 		arrayAppend( variables.logs, "Warn: " & arguments.msg );
-		if ( structKeyExists( arguments, "data" ) ) {
+		if ( !isNull( arguments.data ) ) {
 			arrayAppend( variables.logs, arguments.data );
 		}
 	}

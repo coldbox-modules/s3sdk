@@ -75,13 +75,19 @@ component singleton {
 		var utcDateTime    = dateConvert( "local2UTC", now() );
 
 		// Generate UTC time stamps
-		props.dateStamp = dateFormat( utcDateTime, "yyyymmdd" );
+		props.dateStamp = dateFormat( utcDateTime, "yyyyMMdd" );
 		props.amzDate   = props.dateStamp & "T" & timeFormat( utcDateTime, "HHmmss" ) & "Z";
 
 		// Override current utc date and time
-		if ( structKeyExists( arguments, "amzDate" ) || structKeyExists( arguments, "dateStamp" ) ) {
+		// Note: each optional argument is checked independently with isNull() rather than
+		// structKeyExists( arguments, ... ), because engines with full null support (e.g. BoxLang)
+		// report an unpassed, no-default argument as an existing key holding null, which would make
+		// structKeyExists() return true and read the other (truly unpassed) argument as null.
+		if ( !isNull( arguments.dateStamp ) ) {
 			props.dateStamp = arguments.dateStamp;
-			props.amzDate   = arguments.amzDate;
+		}
+		if ( !isNull( arguments.amzDate ) ) {
+			props.amzDate = arguments.amzDate;
 		}
 
 		props.accessKey   = arguments.accessKey;
@@ -374,7 +380,7 @@ component singleton {
 	 *
 	 * <p>Source: http://stackoverflow.com/questions/32513197/how-to-derive-a-sign-in-key-for-aws-signature-version-4-in-coldfusion</p>
 	 *
-	 * @dateStamp   Date stamp in yyyymmdd format. Example: 20150830
+	 * @dateStamp   Date stamp in yyyyMMdd format. Example: 20150830
 	 * @regionName  Region name that is part of the service's endpoint (alphanumeric). Example: "us-east-1"
 	 * @serviceName Service name that is part of the service's endpoint (alphanumeric). Example: "s3"
 	 * @algorithm   HMAC algorithm. Default is "HMACSHA256"
@@ -630,8 +636,8 @@ component singleton {
 
 	/**
 	 * Returns current UTC date and time in the following formats:
-	 *   - dateStamp - Current UTC date, format: yyyymmdd
-	 *   - timeStamp - Current UTC date and time, format: yyyymmddTHHnnssZ
+	 *   - dateStamp - Current UTC date, format: yyyyMMdd
+	 *   - timeStamp - Current UTC date and time, format: yyyyMMddTHHnnssZ
 	 *
 	 * @return structure containing date and time strings
 	 */
@@ -640,7 +646,7 @@ component singleton {
 		var result      = {};
 
 		// Generate UTC time stamps
-		result.dateStamp = dateFormat( utcDateTime, "yyyymmdd" );
+		result.dateStamp = dateFormat( utcDateTime, "yyyyMMdd" );
 		result.amzDate   = result.dateStamp & "T" & timeFormat( utcDateTime, "HHmmss" ) & "Z";
 		result.timeStamp = dateFormat( utcDateTime, "yyyy-mm-dd" ) & "T" & timeFormat( utcDateTime, "HH:mm:ss" ) & "Z";
 		return result;

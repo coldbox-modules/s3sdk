@@ -6,11 +6,46 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ----
+
 ## [Unreleased]
+
+### Added
+
+* AI Skills Integration
+* Native BoxLang (`boxlang@1`) server and CI matrix entry, in addition to the existing `boxlang-cfml@1` (CFML compatibility) entry
+
+### Changed
+
+* CI test matrix now covers `boxlang@1`, `boxlang-cfml@1`, `lucee@6` and `adobe@2023`/`adobe@2025`. Dropped `lucee@5` and `adobe@2018`/`adobe@2021` (EOL)
+* Minimum ColdBox version bumped to `^8`
+* `devDependencies` : removed `commandbox-dotenv` and `commandbox-cfconfig`, added `commandbox-boxlang`
+* Module description updated to: "This SDK will provide you with Amazon S3 connectivity for any ColdBox, BoxLang or CFML Application."
+* `readme.md` rewritten and expanded, with BoxLang as the preferred/first-class engine
+* `test-harness/box.json` : `testbox` devDependency bumped from `be` to `*` to pick up TestBox's `isBoxLang()`/`isLucee()`/`isAdobe()` engine-detection helpers (and the 7.1.0 fix for `isLucee()` incorrectly returning `true` on BoxLang)
+* `test-harness/tests/specs/AmazonS3Spec.cfc` : replaced ad-hoc engine checks (`structKeyExists( server, "lucee" )`, `isNull( server.lucee )`, `server.keyExists( "boxlang" )`) with TestBox's `isAdobe()`/`isLucee()`/`isBoxLang()`
+* The 6 "customer encryption key" (SSE-C) specs in `AmazonS3Spec.cfc` now exercise SSE-S3 (`encryptionAlgorithm`) instead of SSE-C (`encryptionKey`), since the CI test bucket's policy blocks SSE-C uploads. The SDK's SSE-C support itself (`encryptionKey` argument) is unchanged for callers whose bucket allows it
 
 ### Fixed
 
 * Set all `hash` usage algorithms to MD5 for Adobe change to default algorithm
+* `Sv4Util.cfc`, `Sv2Util.cfc` : optional `amzDate`/`dateStamp` override arguments were checked with `structKeyExists( arguments, ... )`, which is unreliable on engines with full-null support like BoxLang (an unpassed argument still exists as a `null` key). Now checked independently with `isNull()`, fixing spurious `SignatureDoesNotMatch` errors on BoxLang
+* `MiniLogBox.cfc` : same `isNull()` fix applied to the optional `data` argument on `debug()`, `error()` and `warn()`
+* `Sv4Util.cfc`, `Sv2Util.cfc` : the UTC date stamp was generated with `dateFormat( utcDateTime, "yyyymmdd" )`. Lowercase `mm` is minutes, not month, on some engines. Corrected to `yyyyMMdd`
+* `copyObject()` ( and therefore `renameObject()`, which calls it internally ) manually set a `Content-Length: 0` header that duplicated the header CFHTTP already sends for a bodyless request. Adobe CF and BoxLang do not de-duplicate this, sending `content-length: 0,0` on the wire and breaking AWS's `SignatureDoesNotMatch` validation. Removed the redundant header
+* `server-boxlang-cfml@1.json` had leftover module aliases (`/moduleroot/cbfs`) copied from another module; corrected to `/moduleroot/s3sdk`
+* `test-harness/tests/specs/AmazonS3Spec.cfc` : `isOldACF()` unconditionally read `server.coldfusion.productVersion`, which doesn't exist on native BoxLang, crashing the whole test bundle on `boxlang@1`. Now guarded with `structKeyExists( server, "coldfusion" )`
+* CI : force-install the latest `commandbox-cfconfig` before starting servers, since the version bundled with the CommandBox CLI has no config provider for `adobe@2025` yet
+* `Sv4UtilSpec.cfc` test fixture helpers used `.listToArray()` member-function syntax, which Adobe ColdFusion doesn't resolve the same way Lucee/BoxLang do ("The listToArray method was not found"). Switched to the top-level `listToArray( string, delimiter )` function call, which is portable across all three engines
+* `putObjectFile()`'s multi-part upload path called `java.nio.file.Files.newByteChannel( path, [] )` with an untyped, empty CFML array for the varargs `OpenOption...` parameter. Explicitly `javacast( "java.nio.file.OpenOption[]", [] )` now, for safer Java interop (this alone did not fix the underlying multi-part failure on Adobe; see below)
+* CI : `Setup Java` was pinned to Java 11, but Adobe ColdFusion 2025's `cfpm` tooling requires Java 17+ (`UnsupportedClassVersionError: ... class file version 61.0 ... only recognizes ... up to 55.0`). Bumped to Temurin 17
+* `server-boxlang@1.json` (native BoxLang) didn't install the `bx-esapi` module, so any call to `encodeForURL()` (used by `Sv4Util.cfc`'s `urlEncodePath()`) failed with `Function [encodeForURL] not found`, crashing the entire `AmazonS3Spec` bundle at `beforeAll()`. Added `onServerInitialInstall: install bx-esapi`, matching `server-boxlang-cfml@1.json`
+* `requireBucketName()`, `getBucketLocation()`, `createBucket()`, `objectExists()`, `getAuthenticatedURL()` and `applyACLHeaders()` called `throw()` without an explicit `type`. Adobe/Lucee default the type to `Application`, but BoxLang defaults it to `Custom`, breaking tests asserting `toThrow( type = "application" )`. All now throw an explicit `type = "Application"`
+* `server-adobe@2023.json`/`server-adobe@2025.json` : pinned the server's own JVM to `javaVersion: openjdk21_jre`, matching the BoxLang server configs, for consistent Java 21 runtime behavior across engines
+* `Sv4UtilSpec.cfc` test fixture helpers named a parameter `file`, which is treated specially on Adobe ColdFusion ("Complex object types cannot be converted to simple values" when passed into `listToArray()`). Renamed to `requestContent`
+* `server-adobe@2023.json`/`server-adobe@2025.json` : added JVM arg `--add-opens java.base/sun.nio.fs=ALL-UNNAMED`, matching the working config in `coldbox-modules/cbfs`, for safer Java NIO reflection on Java 17+
+* CI : replaced the separate `Ortus-Solutions/setup-commandbox` action plus manual `box install --force commandbox-boxlang`/`commandbox-cfconfig` steps with `ortus-boxlang/setup-boxlang@main` (`with-commandbox: true`, installing `commandbox-boxlang`, `commandbox-cfconfig` and `testbox-cli`), matching `coldbox-modules/cbfs`'s setup. This also fixed `adobe@2025`'s server failing to start. Also bumped `Setup Java` from 17 to 21, matching cbfs and the server JVM pins
+* `putObjectFile()`'s multi-part upload path optionally routed concurrent part uploads through `variables.asyncManager.allApply()`. On Adobe, ColdBox's async `cbproxies` `Function` wrapper does not correctly marshal the `part` struct argument across the async boundary, throwing `coldfusion.runtime.UndefinedElementException: Element UPLOADID is undefined in PART` inside the closure. This was silently caught by the surrounding `try/catch` and fell back to a non-multipart upload, with no visible error ("can perform a multi-part upload on a file over 5MB" failing only with the response not containing `"multipart"`). Always use the synchronous part-upload path now, until the ColdBox/Adobe async interop issue is resolved upstream
+* `AmazonS3Spec.cfc`'s multi-part upload test pre-computed the expected uploaded file size before calling `fileWrite()`, then asserted the S3 object's `Content-Length` against that pre-computed value. On `adobe@2025` the file written to disk was 1 byte larger than expected, failing the assertion. Now reads the actual on-disk size via `getFileInfo()` after writing, so the assertion is correct regardless of any engine-specific `fileWrite()` behavior
 
 ## v5.7.1 => 2023-SEP-21
 

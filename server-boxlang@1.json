@@ -1,10 +1,13 @@
 {
-    "name":"s3sdk-adobe@2023",
+    "name":"s3sdk-boxlang@1",
     "app":{
-        "serverHomeDirectory":".engine/adobe2023",
-        "cfengine":"adobe@2023"
+        "cfengine":"boxlang@1",
+        "serverHomeDirectory":".engine/boxlang1"
     },
+    "force":true,
+    "openBrowser":false,
     "web":{
+        "directoryBrowsing":true,
         "http":{
             "port":"60299"
         },
@@ -16,16 +19,14 @@
             "/moduleroot/s3sdk":"./"
         }
     },
-    "jvm":{
+    "JVM":{
         "heapSize":"1024",
-        "javaVersion":"openjdk21_jre",
-        "args":"--add-opens java.base/sun.nio.fs=ALL-UNNAMED"
+        "javaVersion":"openjdk21_jre"
     },
-    "openBrowser":"false",
     "cfconfig":{
         "file":".cfconfig.json"
     },
     "scripts":{
-        "onServerInstall":"cfpm install zip,debugger,mysql"
+        "onServerInitialInstall":"install bx-esapi --noSave"
     }
 }
