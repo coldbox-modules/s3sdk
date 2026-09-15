@@ -1,5 +1,10 @@
 [![AWS S3 SDK CI](https://github.com/coldbox-modules/s3sdk/actions/workflows/ci.yml/badge.svg)](https://github.com/coldbox-modules/s3sdk/actions/workflows/ci.yml)
 
+[![Total Downloads](https://forgebox.io/api/v1/entry/s3sdk/badges/downloads)](https://forgebox.io/view/s3sdk)
+[![Latest Stable Version](https://forgebox.io/api/v1/entry/s3sdk/badges/version)](https://forgebox.io/view/s3sdk)
+[![Apache2 License](https://img.shields.io/badge/License-Apache2-blue.svg)](https://forgebox.io/view/s3sdk)
+
+
 # Amazon S3 SDK
 
 This SDK will provide you with Amazon S3 connectivity for any ColdBox, BoxLang or CFML Application. It also works great as a standalone library outside of ColdBox, and is fully compatible with S3-compatible services like DigitalOcean Spaces, Google Cloud Storage and MinIO.
@@ -44,6 +49,14 @@ This SDK can be installed as a standalone library or as a ColdBox Module. Either
 
 ```bash
 box install s3sdk
+```
+
+### AI Skills
+
+The repository's BoxLang AI skills are ignored from version control. Install them locally with:
+
+```bash
+npx skills experimental_install
 ```
 
 Then follow either the standalone or module instructions below.
